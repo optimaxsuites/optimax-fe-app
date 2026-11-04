@@ -1,10 +1,31 @@
 import { Component, OnInit } from '@angular/core';
 // // import { CompanyProfileService }
+import { MessageService } from 'primeng/api';
+import { finalize } from 'rxjs';
 import { EmployeeService } from '../../../service/employee.service';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { PayrollService } from '../../../service/payroll.service';
+import { pickSalaryRecordForLevel } from '../../../service/loan/level-salary.util';
+import { escapeHtml } from '../onboarding-credentials.util';
+import { saveElementAsPdf } from '../letter-pdf.util';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 export type LetterTone = 'formal' | 'professional' | 'friendly';
+
+/** A `[Placeholder]` in a letter template. */
+const PLACEHOLDER_PATTERN = /\[([^\[\]<>]{1,60})\]/g;
+
+/**
+ * Nigeria Tax Act 2025 personal income tax bands (in force from 1 January 2026), applied to annual
+ * taxable income. Each band taxes the next `width` naira at `rate`.
+ */
+const PAYE_BANDS: { width: number; rate: number }[] = [
+  { width: 800_000, rate: 0 },
+  { width: 2_200_000, rate: 0.15 },
+  { width: 9_000_000, rate: 0.18 },
+  { width: 13_000_000, rate: 0.21 },
+  { width: 25_000_000, rate: 0.23 },
+  { width: Infinity, rate: 0.25 },
+];
 
 export interface LetterType {
   key: string;
@@ -22,6 +43,10 @@ export class HrLettersComponent implements OnInit {
   employee: any = {};
   companyProfile: any = {};
   salaryDetails: any = null;
+  /** Payroll setting: whether salary records hold monthly or yearly amounts. Letters always show monthly. */
+  salaryInputMode: 'monthly' | 'yearly' = 'monthly';
+  /** Values HR types in for placeholders the employee record can't fill (e.g. [Date of Incident]), for this letter only. */
+  placeholderValues: Record<string, string> = {};
   allowanceTypes: any[] = [];
   bonusTypes: any[] = [];
   deductionTypes: any[] = [];
@@ -204,6 +229,45 @@ export class HrLettersComponent implements OnInit {
     const raw: any = this.employee?.hireDate ?? this.employee?.employementStartDate ?? this.employee?.employmentStartDate ?? '';
     return this.formatDateValue(raw);
   }
+  get endDate(): string { return this.formatDateValue(this.employee?.employmentEndDate ?? ''); }
+
+  /** Placeholders filled from the employee record; empty values are left for HR to type in. */
+  private get autoPlaceholderValues(): Record<string, string> {
+    return {
+      'Employee Name': this.employeeName,
+      'Company Name': this.companyName,
+      'Job Title': this.jobTitle,
+      'Department': this.department,
+      'Start Date': this.startDate,
+      'End Date': this.endDate,
+    };
+  }
+
+  /** Placeholders in the current letter that HR has to fill in, in the order they appear. */
+  get manualPlaceholders(): string[] {
+    const auto = this.autoPlaceholderValues;
+    const names: string[] = [];
+    for (const match of this.editableBody.matchAll(PLACEHOLDER_PATTERN)) {
+      const name = match[1];
+      if (!auto[name] && !names.includes(name)) names.push(name);
+    }
+    return names;
+  }
+
+  get unfilledPlaceholders(): string[] {
+    return this.manualPlaceholders.filter((name) => !this.placeholderValues[name]?.trim());
+  }
+
+  isDatePlaceholder(name: string): boolean {
+    return /date/i.test(name);
+  }
+
+  private placeholderValue(name: string): string {
+    const auto = this.autoPlaceholderValues[name];
+    if (auto) return auto;
+    const typed = this.placeholderValues[name]?.trim() || '';
+    return typed && this.isDatePlaceholder(name) ? this.formatDateValue(typed) : typed;
+  }
 
   get salaryBreakdown(): {
     baseSalary: number;
@@ -217,16 +281,16 @@ export class HrLettersComponent implements OnInit {
     netSalary: number;
   } {
     const d = this.salaryDetails;
-    const base = this.toNum(d?.baseSalary);
+    const base = this.toMonthly(this.toNum(d?.baseSalary));
 
     const allowances = (d?.allowance ?? []).map((a: any) => ({
       name: this.allowanceTypes.find(t => t.id === (a.allowanceTypeId ?? a.typeId))?.name ?? 'Allowance',
-      amount: this.toNum(a.amount ?? a.value),
+      amount: this.toMonthly(this.toNum(a.amount ?? a.value)),
     }));
 
     const bonuses = (d?.bonus ?? []).map((b: any) => ({
       name: this.bonusTypes.find(t => t.id === (b.bonusTypeId ?? b.typeId))?.name ?? 'Bonus',
-      amount: this.toNum(b.amount ?? b.value),
+      amount: this.toMonthly(this.toNum(b.amount ?? b.value)),
     }));
 
     const grossTotal = base
@@ -235,9 +299,12 @@ export class HrLettersComponent implements OnInit {
 
     const deductions = (d?.deductions ?? []).map((x: any) => {
       const type = this.deductionTypes.find(t => t.id === (x.deductionsTypeId ?? x.typeId));
+      const value = this.toNum(x.amount ?? x.value);
+      // Percentage deductions are a share of base salary, as in the loan module's salary calculation.
+      const isPercentage = String(x.calculationType || '').toUpperCase().includes('PERCENT');
       return {
         name: type?.name ?? 'Deduction',
-        amount: this.toNum(x.amount ?? x.value),
+        amount: isPercentage ? (base * value) / 100 : this.toMonthly(value),
         isTax: type?.isTax === true,
       };
     });
@@ -256,26 +323,23 @@ export class HrLettersComponent implements OnInit {
     return Number.isFinite(n) ? n : 0;
   }
 
+  /** Salary records hold yearly amounts when payroll is set to yearly input; letters show monthly figures. */
+  private toMonthly(amount: number): number {
+    return this.salaryInputMode === 'yearly' ? amount / 12 : amount;
+  }
+
+  /**
+   * Estimated monthly PAYE on gross pay, using the Nigeria Tax Act 2025 bands. It ignores reliefs
+   * (pension, NHF, rent), so it can be higher than what payroll deducts; it's only used when the
+   * salary structure has no tax deduction configured.
+   */
   private computeMonthlyPAYE(monthlyGross: number): number {
     if (!monthlyGross) return 0;
-    const annual = monthlyGross * 12;
-    const cra = Math.max(200000, annual * 0.01) + annual * 0.20;
-    const taxable = Math.max(0, annual - cra);
-
-    const bands = [
-      { limit: 300000, rate: 0.07 },
-      { limit: 300000, rate: 0.11 },
-      { limit: 500000, rate: 0.15 },
-      { limit: 500000, rate: 0.19 },
-      { limit: 1600000, rate: 0.21 },
-      { limit: Infinity, rate: 0.24 },
-    ];
-
-    let remaining = taxable;
+    let remaining = monthlyGross * 12;
     let paye = 0;
-    for (const band of bands) {
+    for (const band of PAYE_BANDS) {
       if (remaining <= 0) break;
-      const chunk = Math.min(remaining, band.limit);
+      const chunk = Math.min(remaining, band.width);
       paye += chunk * band.rate;
       remaining -= chunk;
     }
@@ -305,6 +369,9 @@ export class HrLettersComponent implements OnInit {
   constructor(
     // // private companyProfileService: CompanyProfileService,
     private employeeService: EmployeeService,
+    private payrollService: PayrollService,
+    private messageService: MessageService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   ngOnInit(): void {
@@ -313,19 +380,12 @@ export class HrLettersComponent implements OnInit {
       this.companyProfile = { companyName: biz?.companyName || biz?.company?.name || '', logoUrl: biz?.logoUrl || biz?.logo || '' };
     } catch {}
 
-    const stored = localStorage.getItem('employeeInView');
-    if (stored) {
-      try { this.employee = JSON.parse(stored); } catch { this.employee = {}; }
-    }
+    this.loadEmployee();
 
-    if (this.employee?.salaryDetails) {
-      this.salaryDetails = this.employee.salaryDetails;
-    } else if (this.employee?.level?.id) {
-      this.employeeService.getSalaryById(this.employee.level.id).subscribe({
-        next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
-        error: () => {}
-      });
-    }
+    this.payrollService.getGeneralSettingsById().subscribe({
+      next: (res: any) => { this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly'; },
+      error: () => {}
+    });
 
     const savedTone = localStorage.getItem(this.toneStorageKey) as LetterTone | null;
     if (savedTone && this.tones.find(t => t.key === savedTone)) this.selectedTone = savedTone;
@@ -335,6 +395,35 @@ export class HrLettersComponent implements OnInit {
     this.employeeService.getAllDeductionTypes().subscribe({ next: (d: any) => this.deductionTypes = Array.isArray(d) ? d : (d?.content ?? []), error: () => {} });
 
     this.loadTemplate();
+  }
+
+  /** Fetches the selected employee fresh, so letters don't quote a stale salary level or title. */
+  private loadEmployee(): void {
+    this.employee = this.selectedEmployee.get() ?? {};
+    const id = this.selectedEmployee.id;
+    if (id === null) {
+      this.messageService.add({ severity: 'warn', summary: 'No employee', detail: 'Open an employee from the directory to write a letter.', key: 'tl', life: 4000 });
+      return;
+    }
+    this.employeeService.getEmployeeById(id).subscribe({
+      next: (fresh: any) => {
+        this.employee = fresh?.data ?? fresh ?? this.employee;
+        this.loadSalaryDetails();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'warn', summary: 'Using saved details', detail: 'The latest employee record could not be loaded, so letters may show older details.', key: 'tl', life: 4000 });
+        this.loadSalaryDetails();
+      }
+    });
+  }
+
+  private loadSalaryDetails(): void {
+    const levelId = this.employee?.levelId ?? this.employee?.level?.id;
+    if (!levelId) return;
+    this.employeeService.getSalaryById(levelId).subscribe({
+      next: (data: any) => { this.salaryDetails = (Array.isArray(data) ? pickSalaryRecordForLevel(data) : data) ?? null; },
+      error: () => {}
+    });
   }
 
   selectLetter(key: string): void {
@@ -355,8 +444,21 @@ export class HrLettersComponent implements OnInit {
   }
 
   saveTemplate(): void {
+    // A saved template is reused for every employee, so it must not carry this employee's details.
+    const name = this.employeeName.toLowerCase();
+    if (name && this.editableBody.toLowerCase().includes(name)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Template not saved',
+        detail: `The template mentions ${this.employeeName}. Use [Employee Name] instead so it works for other employees.`,
+        key: 'tl',
+        life: 6000,
+      });
+      return;
+    }
     localStorage.setItem(this.storageKey, this.editableBody);
     this.isEditing = false;
+    this.messageService.add({ severity: 'success', summary: 'Template saved', detail: 'This template will be used for this letter type and tone in this browser.', key: 'tl', life: 3000 });
   }
 
   resetTemplate(): void {
@@ -366,27 +468,36 @@ export class HrLettersComponent implements OnInit {
   }
 
   getFilledBody(): string {
-    return this.editableBody
-      .replace(/\[Employee Name\]/g, this.employeeName || '[Employee Name]')
-      .replace(/\[Company Name\]/g, this.companyName)
-      .replace(/\[Job Title\]/g, this.jobTitle || '[Job Title]')
-      .replace(/\[Department\]/g, this.department || '[Department]')
-      .replace(/\[Start Date\]/g, this.startDate || '[Start Date]');
+    return this.editableBody.replace(PLACEHOLDER_PATTERN, (token, name) => {
+      const value = this.placeholderValue(name);
+      return value ? escapeHtml(value) : token;
+    });
+  }
+
+  /** Warns and returns false when the letter still has placeholders HR hasn't filled in. */
+  private ensurePlaceholdersFilled(): boolean {
+    const missing = this.unfilledPlaceholders;
+    if (missing.length === 0) return true;
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Letter incomplete',
+      detail: `Fill in ${missing.map((name) => `[${name}]`).join(', ')} under Letter Details first.`,
+      key: 'tl',
+      life: 6000,
+    });
+    return false;
   }
 
   async generatePdf(): Promise<void> {
+    if (this.generatingPdf || !this.ensurePlaceholdersFilled()) return;
+    const target = document.getElementById('hr-letter-content');
+    if (!target) return;
     this.generatingPdf = true;
     try {
-      const target = document.getElementById('hr-letter-content');
-      if (!target) return;
-      const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       const slug = this.selectedLetter.label.toLowerCase().replace(/\s+/g, '-');
-      pdf.save(`${slug}-${this.employee?.firstName ?? ''}-${this.employee?.lastName ?? ''}.pdf`);
+      await saveElementAsPdf(target, `${slug}-${this.employee?.firstName ?? ''}-${this.employee?.lastName ?? ''}.pdf`);
+    } catch {
+      this.messageService.add({ severity: 'error', summary: 'PDF failed', detail: 'The PDF could not be generated. Please try again.', key: 'tl', life: 4000 });
     } finally {
       this.generatingPdf = false;
     }
@@ -396,22 +507,25 @@ export class HrLettersComponent implements OnInit {
     return !!localStorage.getItem(this.storageKey);
   }
 
-  async sendToRecipient(): Promise<void> {
+  sendToRecipient(): void {
+    if (this.sendingLetter) return;
     const email = this.employee?.email || this.employee?.workEmail;
-    if (!email) { alert('No recipient email address found for this employee.'); return; }
-    this.sendingLetter = true;
-    try {
-      const target = document.getElementById('hr-letter-content');
-      if (!target) return;
-      const subject = `${this.selectedLetter.label} — ${this.employeeName}`;
-      const htmlBody = target.innerHTML;
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({
-        next: () => { alert(`Letter sent to ${email} successfully.`); },
-        error: () => { alert('Failed to send letter. Please try again.'); },
-      });
-    } finally {
-      this.sendingLetter = false;
+    if (!email) {
+      this.messageService.add({ severity: 'warn', summary: 'No email address', detail: 'No recipient email address found for this employee.', key: 'tl', life: 4000 });
+      return;
     }
+    if (!this.ensurePlaceholdersFilled()) return;
+    const target = document.getElementById('hr-letter-content');
+    if (!target) return;
+
+    this.sendingLetter = true;
+    const subject = `${this.selectedLetter.label} — ${this.employeeName}`;
+    this.employeeService.sendNotificationEmail(email, subject, target.innerHTML)
+      .pipe(finalize(() => { this.sendingLetter = false; }))
+      .subscribe({
+        next: () => this.messageService.add({ severity: 'success', summary: 'Letter sent', detail: `Letter sent to ${email}.`, key: 'tl', life: 3000 }),
+        error: () => this.messageService.add({ severity: 'error', summary: 'Send failed', detail: 'Failed to send letter. Please try again.', key: 'tl', life: 4000 }),
+      });
   }
 
   toggleSignaturePad(): void {

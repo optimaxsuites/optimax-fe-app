@@ -19,6 +19,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { PayrollService } from '../../service/payroll.service';
 import { AttendancetableService } from '../../service/attendance/attendancetable.service';
+import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from '../employee-management/onboarding-credentials.util';
+import { SelectedEmployeeStore } from '../employee-management/selected-employee.store';
 
 export interface NextOfKin {
   id?: number;
@@ -187,6 +189,7 @@ export class EmployeeProfileDashboardComponent {
     private attendanceService: AttendancetableService,
     // // private companyProfileService: CompanyProfileService,
     private authenticationService: AuthenticationService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {
     this.editForm = this.fb.group({
       phone: [''],
@@ -406,8 +409,8 @@ export class EmployeeProfileDashboardComponent {
       employee?.accountNumber,
       employee?.nin,
       employee?.bvn,
-      employee?.nextOfKin?.length ? 'yes' : '',
-      employee?.guarantor?.length ? 'yes' : '',
+      this.nextOfKinList?.length ? 'yes' : '',
+      this.guarantorList?.length ? 'yes' : '',
       employee?.employeeMedia?.mediaNo || employee?.imageUrl,
     ];
     const complete = checks.filter((value) => String(value ?? '').trim() !== '').length;
@@ -525,17 +528,10 @@ export class EmployeeProfileDashboardComponent {
   }
 
   private fetchEmployeeForCurrentUser(): void {
-    const selectedEmployee = localStorage.getItem('employeeInView');
+    const selectedEmployee = this.selectedEmployee.get();
     if (selectedEmployee && this.isEmployeeManagementContext()) {
-      try {
-        const parsedEmployee = JSON.parse(selectedEmployee);
-        if (parsedEmployee) {
-          this.applyEmployeeView(parsedEmployee);
-          return;
-        }
-      } catch {
-        localStorage.removeItem('employeeInView');
-      }
+      this.applyEmployeeView(selectedEmployee);
+      return;
     }
 
     const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
@@ -847,7 +843,7 @@ export class EmployeeProfileDashboardComponent {
         this.employeeService.getEmployeeById(this.employeeInView.id).subscribe({
           next: (fresh: any) => {
             this.applyEmployeeView(fresh);
-            localStorage.setItem('employeeInView', JSON.stringify(fresh));
+            this.selectedEmployee.set(fresh);
           },
           error: () => {
             this.employeeInView = { ...this.employeeInView, ...patch };
@@ -1065,10 +1061,10 @@ export class EmployeeProfileDashboardComponent {
 
   private buildUpdatePayload(): { data: any; patch: any } {
     const employee = this.employeeInView || {};
-    const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
     const patch: any = {
       id: employee.id,
-      userId: employee.userId ?? employee.user?.userId ?? storedUserId ?? null,
+      // Only the account already linked to this employee, never the signed-in HR user's.
+      userId: employee.userId ?? employee.user?.userId ?? null,
       firstName: this.editForm.get('firstName')?.value ?? employee.firstName,
       lastName: this.editForm.get('lastName')?.value ?? employee.lastName,
       email: this.editForm.get('email')?.value ?? employee.email,
@@ -1245,7 +1241,6 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.getNOKByEmployeeId(this.employeeInView.id).subscribe({
       next: (res: any) => {
         this.nextOfKinList = res;
-        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
       },
       error: () => {
         this.nextOfKinList = [];
@@ -1255,7 +1250,6 @@ export class EmployeeProfileDashboardComponent {
     this.employeeService.getGuarantor(this.employeeInView.id).subscribe({
       next: (res: any) => {
         this.guarantorList = res;
-        // localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView))
       },
       error: () => {
         this.guarantorList = [];
@@ -1396,7 +1390,7 @@ export class EmployeeProfileDashboardComponent {
     ).subscribe({
       next: () => {
         this.employeeInView = { ...this.employeeInView, employeeStatus: newStatus, exitReason, exitReasonBy: currentUser };
-        localStorage.setItem('employeeInView', JSON.stringify(this.employeeInView));
+        this.selectedEmployee.set(this.employeeInView);
         this.messageService.add({ severity: 'success', summary: 'Status Updated', detail: `${name} is now marked as ${label}.`, key: 'tl', life: 3000 });
         if (newStatus === 'ACTIVE' && prevStatus !== 'ACTIVE') {
           this.dispatchWelcomeToActiveNotifications(this.employeeInView, name);
@@ -1431,7 +1425,7 @@ export class EmployeeProfileDashboardComponent {
     ).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Employee record removed.', key: 'tl', life: 3000 });
-        localStorage.removeItem('employeeInView');
+        this.selectedEmployee.clear();
         window.dispatchEvent(new CustomEvent('employee-record-changed'));
       },
       error: (err) => {
@@ -1455,7 +1449,7 @@ export class EmployeeProfileDashboardComponent {
     const resolvedUserId = employee?.userId ?? employee?.user?.id ?? employee?.user?.userId;
     const username = email;
     const name = `${employee?.firstName ?? ''} ${employee?.lastName ?? ''}`.trim();
-    const newPassword = this.generateRandomPassword();
+    const newPassword = generateTemporaryPassword();
     this.resendingCredentials = true;
 
     if (!resolvedUserId) {
@@ -1507,9 +1501,10 @@ export class EmployeeProfileDashboardComponent {
   private dispatchOnboardingEmail(employee: any, name: string, username: string, password: string): void {
     const companyName = 'The Company';
     const hrEmail = '';
-    const url = `${window.location.origin}/onboarding/${employee.id}/wer23456fghi367ghj?onboarding=1`;
+    const expiresAt = onboardingLinkExpiry();
+    const url = buildOnboardingLink(employee.id, expiresAt);
     const subject = `${companyName} — Your Onboarding Credentials`;
-    const htmlBody = this.buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail });
+    const htmlBody = buildOnboardingEmailHtml({ name, username, password, url, companyName, hrEmail, expiresAt });
     this.employeeService.sendNotificationEmail(employee.email, subject, htmlBody).subscribe({
       next: () => {
         this.resendingCredentials = false;
@@ -1656,25 +1651,20 @@ export class EmployeeProfileDashboardComponent {
     const logoUrl = '';
     const hrEmail = '';
     const subject = `Welcome to ${companyName}! 🎉`;
-    const htmlBody = this.buildWelcomeActiveEmailHtml({ name, companyName, logoUrl, hrEmail, jobTitle: employee?.jobTitle || '', department: employee?.department?.name || employee?.department || '' });
-
-    const sendTo: string[] = [];
-    if (employee?.email) sendTo.push(employee.email);
-    if (employee?.workEmail && employee.workEmail !== employee.email) sendTo.push(employee.workEmail);
-    sendTo.forEach(email => {
-      this.employeeService.sendNotificationEmail(email, subject, htmlBody).subscribe({ error: () => { } });
+    const htmlBody = this.buildWelcomeActiveEmailHtml({
+      name: escapeHtml(name),
+      companyName: escapeHtml(companyName),
+      logoUrl: escapeHtml(logoUrl),
+      hrEmail: escapeHtml(hrEmail),
+      jobTitle: escapeHtml(employee?.jobTitle || ''),
+      department: escapeHtml(employee?.department?.name || employee?.department || ''),
     });
 
-    this.employeeService.sendWelcomeEmail({
-      name,
-      email: employee?.email || '',
-      workEmail: employee?.workEmail || '',
-      jobTitle: employee?.jobTitle || '',
-      department: employee?.department?.name || employee?.department || '',
-      companyName,
-      event: 'JOINING_TO_ACTIVE',
-      timestamp: new Date().toISOString(),
-    }).subscribe({ error: () => { } });
+    // One email: to the work mailbox now they're staff, or the personal one if there isn't one.
+    const to = employee?.workEmail || employee?.email;
+    if (to) {
+      this.employeeService.sendNotificationEmail(to, subject, htmlBody).subscribe({ error: () => { } });
+    }
   }
 
   private buildWelcomeActiveEmailHtml(d: { name: string; companyName: string; logoUrl: string; hrEmail: string; jobTitle: string; department: string }): string {
@@ -1701,38 +1691,6 @@ ${d.jobTitle ? `<p style="margin:0 0 16px;font-size:14px;color:#475569;line-heig
 </table></td></tr></table></body></html>`;
   }
 
-  private buildOnboardingEmailHtml(d: { name: string; username: string; password: string; url: string; companyName: string; hrEmail: string }): string {
-    const hrLine = d.hrEmail
-      ? `Please contact HR at <a href="mailto:${d.hrEmail}" style="color:#1e3a5f;">${d.hrEmail}</a> for queries.`
-      : `Please contact the HR Department for queries.`;
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
-<tr><td style="background:#1b3358;padding:36px 40px;text-align:center;">
-<p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#7aa7d4;text-transform:uppercase;">Human Resources</p>
-<h1 style="margin:0;font-size:24px;font-weight:700;color:#fff;">${d.companyName}</h1>
-<p style="margin:8px 0 0;font-size:13px;color:#a8c5e8;">Staff Onboarding</p></td></tr>
-<tr><td style="padding:40px 40px 28px;">
-<p style="margin:0 0 20px;font-size:15px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
-<p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">Please complete your onboarding via the portal below.</p>
-<table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
-<tr><td style="background:#1b3358;border-radius:6px;padding:13px 30px;">
-<a href="${d.url}" style="color:#fff;text-decoration:none;font-size:14px;font-weight:600;">Begin Onboarding Process →</a></td></tr></table>
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px;">
-<tr><td style="padding:22px 26px;">
-<p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Portal Credentials</p>
-<table cellpadding="0" cellspacing="0">
-<tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;">Username</td><td style="font-size:13px;color:#1e293b;font-weight:600;">${d.username}</td></tr>
-<tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;">Password</td><td style="font-size:13px;color:#1e293b;font-family:monospace;font-weight:700;">${d.password}</td></tr>
-</table></td></tr></table>
-</td></tr>
-<tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
-<p style="margin:0;font-size:13px;color:#475569;">${hrLine}<br/><strong>Human Resources Department</strong><br/>${d.companyName}</p></td></tr>
-</table></td></tr></table></body></html>`;
-  }
-
   private buildOnboardingSignupPayload(username: string, password: string, email: string, firstName = '', lastName = '') {
     const business = sessionStorage.getItem('userPrimaryInfoRegData')
       ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}')
@@ -1753,11 +1711,5 @@ ${d.jobTitle ? `<p style="margin:0 0 16px;font-size:14px;color:#475569;line-heig
         timeZone: business?.timeZone,
       }
     };
-  }
-
-  private generateRandomPassword(length = 12): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%*?';
-    const pick = () => chars[Math.floor(Math.random() * chars.length)];
-    return Array.from({ length }, pick).join('');
   }
 }

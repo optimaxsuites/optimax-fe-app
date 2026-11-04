@@ -46,8 +46,15 @@ import { InterviewResponseComponent } from 'projects/hr/src/app/ui/view/recruitm
 import { VendorSignupComponent } from './ui/auth/view/vendor-signup/vendor-signup.component';
 import { VendorPendingComponent } from './ui/auth/view/vendor-pending/vendor-pending.component';
 import { VendorPortalGuard } from './ui/auth/service/vendor-portal.guard';
+import { WorkspaceSetupComponent } from './ui/auth/view/workspace-setup/workspace-setup.component';
+import { WorkspaceGuard } from './ui/auth/service/workspace.guard';
 
 const routes: Routes = [
+  {
+    path: 'workspace-setup',
+    component: WorkspaceSetupComponent,
+  },
+
   {
     path: 'users/auth/verify',
     component: VerifyTokenComponent,
@@ -61,6 +68,7 @@ const routes: Routes = [
       {
         path: ':uuid',
         component: LoginComponent,
+        canActivate: [WorkspaceGuard],
       },
       {
         path: 'sign-up/:uuid',

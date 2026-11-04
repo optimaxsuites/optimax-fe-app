@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, Input } from '@angular/core';
 import { ExtendedProcurementRequest } from '../../../service/procurement/rfq-quotation-bridge.util';
 
@@ -23,7 +24,7 @@ export class InvoicesComponent {
 
   formatDate(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'

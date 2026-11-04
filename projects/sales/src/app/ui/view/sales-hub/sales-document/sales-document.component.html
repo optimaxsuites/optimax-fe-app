@@ -1,0 +1,329 @@
+<div [attr.id]="elementId" class="sd-page" [ngClass]="['sd-' + layout, fontClass]" [style.--sd-accent]="accent">
+
+  <!-- ═══════════════ RECEIPT — conventional receipt layout ═══════════════ -->
+  <ng-container *ngIf="layout === 'receipt'">
+    <div class="sd-bar"></div>
+    <div class="sd-rc-head">
+      <div>
+        <img *ngIf="doc.logoUrl && show('showCompanyLogo')" [src]="doc.logoUrl" class="sd-logo" alt="Logo">
+        <div class="sd-company">{{ doc.from.name }}</div>
+        <div class="sd-muted sd-pre">{{ doc.from.address }}</div>
+        <div class="sd-muted" *ngIf="doc.from.phone || doc.from.email">{{ doc.from.phone }}<span *ngIf="doc.from.phone && doc.from.email"> · </span>{{ doc.from.email }}</div>
+      </div>
+      <div class="sd-rc-title">{{ title | uppercase }}</div>
+    </div>
+
+    <div class="sd-rc-grid">
+      <div>
+        <div class="sd-label">Bill To</div>
+        <div class="sd-strong">{{ doc.to.name }}</div>
+        <div class="sd-pre">{{ doc.to.address }}</div>
+        <div *ngIf="doc.to.phone">{{ doc.to.phone }}</div>
+        <div *ngIf="doc.to.email">{{ doc.to.email }}</div>
+      </div>
+      <div>
+        <div class="sd-label">Ship To</div>
+        <div class="sd-strong">{{ doc.to.name }}</div>
+        <div class="sd-pre">{{ doc.to.address }}</div>
+      </div>
+      <table class="sd-rc-refs">
+        <tr><th>Receipt #</th><td>{{ doc.number }}</td></tr>
+        <tr><th>Receipt Date</th><td>{{ date(doc.issueDate) }}</td></tr>
+        <tr *ngFor="let r of doc.references"><th>{{ r.label }}</th><td>{{ r.value }}</td></tr>
+        <tr *ngIf="doc.secondaryDate"><th>{{ doc.secondaryDate.label }}</th><td>{{ date(doc.secondaryDate.value) }}</td></tr>
+      </table>
+    </div>
+
+    <div class="sd-rc-total">
+      <span>Amount Received</span>
+      <span>{{ money(doc.paidNow) }}</span>
+    </div>
+
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: false }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+
+    <div class="sd-rc-sign" *ngIf="show('showSignature')">
+      <div class="sd-sign-line"></div>
+      <div class="sd-muted">Authorised Signature</div>
+    </div>
+
+    <div class="sd-block" *ngIf="doc.notes">
+      <div class="sd-label">Notes</div>
+      <div class="sd-pre">{{ doc.notes }}</div>
+    </div>
+    <div class="sd-block">
+      <div class="sd-label">Terms &amp; Conditions</div>
+      <div>This receipt confirms payment received by {{ doc.from.name }}. Please keep it for your records.</div>
+    </div>
+    <div class="sd-bar sd-bar--bottom"></div>
+  </ng-container>
+
+  <!-- ═══════════════ STANDARD (also 13th Comms) ═══════════════ -->
+  <ng-container *ngIf="layout === 'standard'">
+    <div class="sd-std-head">
+      <div class="sd-brand">
+        <img *ngIf="doc.logoUrl && show('showCompanyLogo')" [src]="doc.logoUrl" class="sd-logo" alt="Logo">
+        <div>
+          <div class="sd-company">{{ doc.from.name }}</div>
+          <div class="sd-muted sd-pre" *ngIf="show('showVendorInfo')">{{ doc.from.address }}</div>
+          <div class="sd-muted" *ngIf="show('showVendorInfo') && (doc.from.phone || doc.from.email)">{{ doc.from.phone }}<span *ngIf="doc.from.phone && doc.from.email"> · </span>{{ doc.from.email }}</div>
+        </div>
+      </div>
+      <div class="sd-std-title">
+        <div class="sd-title">{{ title | uppercase }}</div>
+        <div class="sd-muted"># {{ doc.number }}</div>
+      </div>
+    </div>
+    <div class="sd-rule"></div>
+    <ng-container *ngTemplateOutlet="metaStrip"></ng-container>
+    <ng-container *ngTemplateOutlet="parties; context: { toLabel: doc.kind === 'QUOTE' ? 'Prepared For' : 'Bill To', fromLabel: 'From' }"></ng-container>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: true }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+  </ng-container>
+
+  <!-- ═══════════════ CORPORATE (Emirates) ═══════════════ -->
+  <ng-container *ngIf="layout === 'centrifuge'">
+    <div class="sd-corp-head">
+      <div>
+        <div class="sd-corp-word">{{ title }}</div>
+        <div class="sd-muted">Ref. {{ doc.number }} · {{ date(doc.issueDate) }}</div>
+      </div>
+      <div class="sd-corp-brand">
+        <img *ngIf="doc.logoUrl && show('showCompanyLogo'); else corpName" [src]="doc.logoUrl" class="sd-logo sd-logo--lg" alt="Logo">
+        <ng-template #corpName><div class="sd-corp-name">{{ doc.from.name }}</div></ng-template>
+      </div>
+    </div>
+    <div class="sd-rule sd-rule--thick"></div>
+    <div class="sd-corp-bar">
+      <div><div class="sd-bar-label">{{ title }} No.</div><div class="sd-bar-value">{{ doc.number }}</div></div>
+      <div><div class="sd-bar-label">Date Issued</div><div class="sd-bar-value">{{ date(doc.issueDate) }}</div></div>
+      <div *ngIf="doc.secondaryDate"><div class="sd-bar-label">{{ doc.secondaryDate.label }}</div><div class="sd-bar-value">{{ date(doc.secondaryDate.value) }}</div></div>
+      <div class="sd-bar-total"><div class="sd-bar-label">Total ({{ doc.currency }})</div><div class="sd-bar-value">{{ money(doc.total) }}</div></div>
+    </div>
+    <ng-container *ngTemplateOutlet="parties; context: { toLabel: 'Prepared For', fromLabel: 'Prepared By' }"></ng-container>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: true }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+    <div class="sd-corp-foot" *ngIf="show('showVendorInfo')">{{ doc.from.address }}<span *ngIf="doc.from.email"> · {{ doc.from.email }}</span><span *ngIf="doc.from.phone"> · {{ doc.from.phone }}</span></div>
+  </ng-container>
+
+  <!-- ═══════════════ MINIMAL ═══════════════ -->
+  <ng-container *ngIf="layout === 'minimal'">
+    <div class="sd-min-head">
+      <div class="sd-min-title">{{ title }}</div>
+      <div class="sd-strong">{{ doc.from.name }}</div>
+    </div>
+    <div class="sd-thin"></div>
+    <table class="sd-fields">
+      <tr><th>To</th><td>{{ doc.to.name }}</td><th>{{ title }} #</th><td>{{ doc.number }}</td></tr>
+      <tr><th>Date</th><td>{{ date(doc.issueDate) }}</td><th>{{ doc.secondaryDate?.label || '' }}</th><td>{{ doc.secondaryDate ? date(doc.secondaryDate.value) : '' }}</td></tr>
+    </table>
+    <div class="sd-thin"></div>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: false }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+    <div class="sd-muted sd-italic sd-footnote">Thank you for your business.</div>
+  </ng-container>
+
+  <!-- ═══════════════ DETAILED ═══════════════ -->
+  <ng-container *ngIf="layout === 'detailed'">
+    <div class="sd-std-head">
+      <div class="sd-brand">
+        <img *ngIf="doc.logoUrl && show('showCompanyLogo')" [src]="doc.logoUrl" class="sd-logo" alt="Logo">
+        <div>
+          <div class="sd-company">{{ doc.from.name }}</div>
+          <div class="sd-muted sd-pre">{{ doc.from.address }}</div>
+          <div class="sd-muted">{{ doc.from.phone }}<span *ngIf="doc.from.phone && doc.from.email"> · </span>{{ doc.from.email }}</div>
+          <div class="sd-muted" *ngIf="doc.from.taxId">Tax ID: {{ doc.from.taxId }}</div>
+        </div>
+      </div>
+      <div class="sd-std-title">
+        <div class="sd-title">Detailed {{ title }}</div>
+        <div class="sd-muted"># {{ doc.number }}</div>
+      </div>
+    </div>
+    <div class="sd-rule"></div>
+    <ng-container *ngTemplateOutlet="metaStrip"></ng-container>
+    <div class="sd-two">
+      <div class="sd-box">
+        <div class="sd-label">Customer</div>
+        <div class="sd-strong">{{ doc.to.name }}</div>
+        <div class="sd-pre">{{ doc.to.address }}</div>
+        <div *ngIf="doc.to.phone">{{ doc.to.phone }}</div>
+        <div *ngIf="doc.to.email">{{ doc.to.email }}</div>
+        <div *ngIf="doc.to.taxId" class="sd-muted">Tax ID: {{ doc.to.taxId }}</div>
+      </div>
+      <div class="sd-box">
+        <div class="sd-label">Document Details</div>
+        <table class="sd-kv">
+          <tr><th>Issued</th><td>{{ date(doc.issueDate) }}</td></tr>
+          <tr *ngIf="doc.secondaryDate"><th>{{ doc.secondaryDate.label }}</th><td>{{ date(doc.secondaryDate.value) }}</td></tr>
+          <tr *ngFor="let r of doc.references"><th>{{ r.label }}</th><td>{{ r.value }}</td></tr>
+          <tr><th>Currency</th><td>{{ doc.currency }}</td></tr>
+        </table>
+      </div>
+    </div>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: true }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+  </ng-container>
+
+  <!-- ═══════════════ COMPACT ═══════════════ -->
+  <ng-container *ngIf="layout === 'compact'">
+    <div class="sd-cpt-head">
+      <span class="sd-strong">{{ doc.from.name }}</span>
+      <span class="sd-sep">·</span><span>{{ title }} {{ doc.number }}</span>
+      <span class="sd-sep">·</span><span>{{ date(doc.issueDate) }}</span>
+      <ng-container *ngIf="doc.secondaryDate"><span class="sd-sep">·</span><span>{{ doc.secondaryDate.label }} {{ date(doc.secondaryDate.value) }}</span></ng-container>
+    </div>
+    <div class="sd-thin"></div>
+    <div class="sd-cpt-party"><span class="sd-label">To</span> <span class="sd-strong">{{ doc.to.name }}</span> <span class="sd-muted">{{ doc.to.address }}</span></div>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: false }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+  </ng-container>
+
+  <!-- ═══════════════ CLIENT-FACING PREMIUM ═══════════════ -->
+  <ng-container *ngIf="layout === 'custom-client'">
+    <div class="sd-prem-head">
+      <div class="sd-prem-word">{{ title }}</div>
+      <div class="sd-brand sd-brand--right">
+        <div>
+          <div class="sd-company">{{ doc.from.name }}</div>
+          <div class="sd-muted sd-pre">{{ doc.from.address }}</div>
+        </div>
+        <img *ngIf="doc.logoUrl && show('showCompanyLogo')" [src]="doc.logoUrl" class="sd-logo" alt="Logo">
+      </div>
+    </div>
+    <div class="sd-rule sd-rule--thick"></div>
+    <div class="sd-prem-row">
+      <div class="sd-prem-card">
+        <div class="sd-label">{{ doc.kind === 'QUOTE' ? 'Prepared For' : 'Billed To' }}</div>
+        <div class="sd-prem-name">{{ doc.to.name }}</div>
+        <div class="sd-pre">{{ doc.to.address }}</div>
+        <div *ngIf="doc.to.phone || doc.to.email">{{ doc.to.phone }}<span *ngIf="doc.to.phone && doc.to.email"> · </span>{{ doc.to.email }}</div>
+      </div>
+      <table class="sd-kv sd-prem-meta">
+        <tr><th>{{ title }} #</th><td>{{ doc.number }}</td></tr>
+        <tr><th>Date</th><td>{{ date(doc.issueDate) }}</td></tr>
+        <tr *ngIf="doc.secondaryDate"><th>{{ doc.secondaryDate.label }}</th><td>{{ date(doc.secondaryDate.value) }}</td></tr>
+        <tr *ngFor="let r of doc.references"><th>{{ r.label }}</th><td>{{ r.value }}</td></tr>
+        <tr class="sd-prem-total"><th>Total</th><td>{{ money(doc.total) }}</td></tr>
+      </table>
+    </div>
+    <ng-container *ngTemplateOutlet="itemsTable; context: { sn: true }"></ng-container>
+    <ng-container *ngTemplateOutlet="totals"></ng-container>
+    <ng-container *ngTemplateOutlet="extras"></ng-container>
+  </ng-container>
+</div>
+
+<!-- ─────────────── Shared pieces ─────────────── -->
+
+<ng-template #metaStrip>
+  <div class="sd-meta">
+    <div><div class="sd-label">{{ title }} No.</div><div class="sd-strong">{{ doc.number }}</div></div>
+    <div><div class="sd-label">Date</div><div class="sd-strong">{{ date(doc.issueDate) }}</div></div>
+    <div *ngIf="doc.secondaryDate"><div class="sd-label">{{ doc.secondaryDate.label }}</div><div class="sd-strong">{{ date(doc.secondaryDate.value) }}</div></div>
+    <div *ngFor="let r of doc.references"><div class="sd-label">{{ r.label }}</div><div class="sd-strong">{{ r.value }}</div></div>
+    <div class="sd-meta-total"><div class="sd-label">Total ({{ doc.currency }})</div><div class="sd-strong">{{ money(doc.total) }}</div></div>
+  </div>
+</ng-template>
+
+<ng-template #parties let-toLabel="toLabel" let-fromLabel="fromLabel">
+  <div class="sd-two" *ngIf="show('showCustomerDetails')">
+    <div>
+      <div class="sd-label sd-label--accent">{{ toLabel }}</div>
+      <div class="sd-strong">{{ doc.to.name }}</div>
+      <div class="sd-pre">{{ doc.to.address }}</div>
+      <div *ngIf="doc.to.phone">{{ doc.to.phone }}</div>
+      <div *ngIf="doc.to.email">{{ doc.to.email }}</div>
+    </div>
+    <div *ngIf="show('showVendorInfo')">
+      <div class="sd-label sd-label--accent">{{ fromLabel }}</div>
+      <div class="sd-strong">{{ doc.from.name }}</div>
+      <div class="sd-pre">{{ doc.from.address }}</div>
+      <div *ngIf="doc.from.phone">{{ doc.from.phone }}</div>
+      <div *ngIf="doc.from.email">{{ doc.from.email }}</div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #itemsTable let-sn="sn">
+  <table class="sd-items">
+    <thead>
+      <tr>
+        <th *ngIf="sn" class="sd-c-sn">S/N</th>
+        <th *ngIf="layout === 'receipt'" class="sd-c-num">Qty</th>
+        <th>Description</th>
+        <th *ngIf="layout !== 'receipt'" class="sd-c-num">Qty</th>
+        <th class="sd-c-money">Unit Price</th>
+        <th *ngIf="hasLineTax" class="sd-c-num">Tax</th>
+        <th class="sd-c-money">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let line of doc.lines; let i = index">
+        <td *ngIf="sn" class="sd-c-sn">{{ i + 1 }}</td>
+        <td *ngIf="layout === 'receipt'" class="sd-c-num">{{ line.quantity }}</td>
+        <td>
+          <div class="sd-strong">{{ line.description }}</div>
+          <div class="sd-muted" *ngIf="line.detail">{{ line.detail }}</div>
+        </td>
+        <td *ngIf="layout !== 'receipt'" class="sd-c-num">{{ line.quantity }}</td>
+        <td class="sd-c-money">{{ money(line.unitPrice) }}</td>
+        <td *ngIf="hasLineTax" class="sd-c-num">{{ line.taxRate ? line.taxRate + '%' : '—' }}</td>
+        <td class="sd-c-money sd-strong">{{ money(line.amount) }}</td>
+      </tr>
+      <tr *ngIf="!doc.lines.length"><td colspan="7" class="sd-empty">No items</td></tr>
+    </tbody>
+  </table>
+</ng-template>
+
+<ng-template #totals>
+  <div class="sd-totals">
+    <table>
+      <tr><th>Subtotal</th><td>{{ money(doc.subtotal) }}</td></tr>
+      <tr *ngIf="doc.discount > 0"><th>Discount</th><td>-{{ money(doc.discount) }}</td></tr>
+      <tr *ngFor="let c of doc.charges"><th>{{ c.label }}</th><td>{{ money(c.amount) }}</td></tr>
+      <!-- Always shown when there is tax, so the totals add up; the template's tax switch only hides the per-line column -->
+      <tr *ngIf="doc.tax > 0"><th>{{ taxLabel }}</th><td>{{ money(doc.tax) }}</td></tr>
+      <tr class="sd-grand"><th>{{ doc.kind === 'RECEIPT' ? 'Invoice Total' : 'Total' }} ({{ doc.currency }})</th><td>{{ money(doc.total) }}</td></tr>
+      <ng-container *ngIf="doc.kind === 'RECEIPT'">
+        <tr><th>Amount Received</th><td>{{ money(doc.paidNow) }}</td></tr>
+        <tr *ngIf="doc.paidToDate !== doc.paidNow"><th>Total Paid to Date</th><td>{{ money(doc.paidToDate) }}</td></tr>
+        <tr class="sd-balance"><th>Balance Due</th><td>{{ money(doc.balanceDue) }}</td></tr>
+      </ng-container>
+    </table>
+  </div>
+</ng-template>
+
+<ng-template #extras>
+  <div class="sd-words" *ngIf="show('showTotalInWords')">
+    <div class="sd-label">Amount in Words</div>
+    <div class="sd-strong">{{ words }}</div>
+  </div>
+  <div class="sd-two sd-extras">
+    <div *ngIf="doc.bank && show('showPaymentTerms')">
+      <div class="sd-label sd-label--accent">Payment Details</div>
+      <table class="sd-kv">
+        <tr *ngIf="doc.bank.bankName"><th>Bank</th><td>{{ doc.bank.bankName }}</td></tr>
+        <tr *ngIf="doc.bank.accountName"><th>Account Name</th><td>{{ doc.bank.accountName }}</td></tr>
+        <tr *ngIf="doc.bank.accountNumber"><th>Account Number</th><td>{{ doc.bank.accountNumber }}</td></tr>
+      </table>
+    </div>
+    <div *ngIf="doc.terms && show('showTermsConditions')">
+      <div class="sd-label sd-label--accent">Terms &amp; Conditions</div>
+      <div class="sd-pre">{{ doc.terms }}</div>
+    </div>
+  </div>
+  <div class="sd-block" *ngIf="doc.notes && show('showNotes')">
+    <div class="sd-label sd-label--accent">Notes</div>
+    <div class="sd-pre">{{ doc.notes }}</div>
+  </div>
+  <div class="sd-sign" *ngIf="show('showSignature')">
+    <div class="sd-italic" *ngIf="doc.signatureText">{{ doc.signatureText }}</div>
+    <div class="sd-sign-line"></div>
+    <div class="sd-muted">Authorised Signature</div>
+  </div>
+</ng-template>

@@ -1,5 +1,6 @@
 // request-for-quotation-service-form.component.ts
 
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, EventEmitter, Output, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -329,7 +330,7 @@ export class RequestForQuotationServiceFormComponent implements OnChanges, OnIni
 
   private parseDateSafe(val: any): string {
     if (!val) return '';
-    const d = new Date(val);
+    const d = toApiDate(val);
     if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '';
     return d.toISOString().substring(0, 10);
   }

@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -110,8 +111,8 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
     groupsMap.forEach((list, rfqId) => {
       // Sort individual quotation responses within the group by submittedAt descending (most recent first)
       list.sort((a, b) => {
-        const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
-        const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+        const timeA = a.submittedAt ? toApiDate(a.submittedAt).getTime() : 0;
+        const timeB = b.submittedAt ? toApiDate(b.submittedAt).getTime() : 0;
         return timeB - timeA;
       });
 
@@ -155,21 +156,21 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
     if (this.dateFrom) {
       const from = new Date(this.dateFrom);
-      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && new Date(q.submittedAt) >= from));
+      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && toApiDate(q.submittedAt) >= from));
     }
 
     if (this.dateTo) {
       const to = new Date(this.dateTo);
       to.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && new Date(q.submittedAt) <= to));
+      filtered = filtered.filter(g => g.quotes.some(q => q.submittedAt && toApiDate(q.submittedAt) <= to));
     }
 
     // Sort
     if (this.sortField) {
       filtered.sort((a, b) => {
         if (this.sortField === 'mostRecent') {
-          const maxA = Math.max(...a.quotes.map(q => q.submittedAt ? new Date(q.submittedAt).getTime() : 0), 0);
-          const maxB = Math.max(...b.quotes.map(q => q.submittedAt ? new Date(q.submittedAt).getTime() : 0), 0);
+          const maxA = Math.max(...a.quotes.map(q => q.submittedAt ? toApiDate(q.submittedAt).getTime() : 0), 0);
+          const maxB = Math.max(...b.quotes.map(q => q.submittedAt ? toApiDate(q.submittedAt).getTime() : 0), 0);
           return this.sortAsc ? maxA - maxB : maxB - maxA;
         }
 
@@ -368,7 +369,7 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
   formatDate(date: any): string {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -377,13 +378,13 @@ export class QuotationsDashboardComponent implements OnInit, OnDestroy {
 
   getDaysRemaining(expiresAt: Date): number {
     const now = new Date();
-    const expiry = new Date(expiresAt);
+    const expiry = toApiDate(expiresAt);
     const diff = expiry.getTime() - now.getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
   isExpired(expiresAt: Date): boolean {
-    return new Date(expiresAt) < new Date();
+    return toApiDate(expiresAt) < new Date();
   }
 
   openVendorSummary(group: RFQGroup): void {

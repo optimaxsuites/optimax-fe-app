@@ -1,5 +1,6 @@
 // rfq-preview.component.ts
 
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcurementRequest, RFQTemplate, VendorSuggestion } from '../../../domain/procurement-request/procurement.dto';
@@ -105,7 +106,7 @@ export class RfqPreviewComponent implements OnInit, OnDestroy {
 
   formatDate(date: any): string {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return toApiDate(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   getTemplateClass(): string {

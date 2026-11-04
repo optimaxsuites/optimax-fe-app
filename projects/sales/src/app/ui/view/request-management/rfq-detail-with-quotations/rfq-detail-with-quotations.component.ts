@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -205,7 +206,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
 
   formatDate(date: any): string {
     if (!date) return '-';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -216,7 +217,7 @@ export class RfqDetailWithQuotationsComponent implements OnInit, OnDestroy {
 
   getDaysRemaining(expiresAt: Date): number {
     const now = new Date();
-    const expiry = new Date(expiresAt);
+    const expiry = toApiDate(expiresAt);
     const diff = expiry.getTime() - now.getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }

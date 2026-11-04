@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { MessageService } from 'primeng/api';
+import { finalize, map, Observable, of, switchMap, tap } from 'rxjs';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { SelectedEmployeeStore } from '../selected-employee.store';
 
 export type OffboardingStage =
   | 'not_started'
@@ -60,7 +63,69 @@ const STAGES: Array<{ key: OffboardingStage; label: string; icon: string }> = [
   { key: 'completed',     label: 'Completed',       icon: 'fa-check-circle'  },
 ];
 
-const STORE_KEY = 'offboarding_data_v1';
+/** Where offboarding data used to be cached. Removed on load so stale copies can't come back. */
+const LEGACY_STORAGE_PREFIXES = ['offboarding_data_v1', 'employee_offboarded_'];
+
+/** The employee status set when offboarding completes, by exit reason. */
+const EXIT_STATUS_BY_REASON: Record<string, string> = {
+  'Resignation (voluntary)': 'RESIGNED',
+  'Retirement': 'RESIGNED',
+  'Mutual Separation': 'RESIGNED',
+};
+const DEFAULT_EXIT_STATUS = 'TERMINATED';
+
+function today(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function removeLegacyStorage(): void {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && LEGACY_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {}
+}
+
+/** The update body for an employee status change, in the shape the profile screen sends. */
+function employeeStatusPayload(employee: any, employeeStatus: string, exitReason: string, exitReasonBy: string): any {
+  return {
+    id: employee.id,
+    userId: employee.userId ?? employee.user?.userId ?? null,
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    email: employee.email,
+    workEmail: employee.workEmail,
+    jobTitle: employee.jobTitle,
+    departmentId: employee.departmentId ?? employee.department?.id ?? null,
+    levelId: employee.levelId ?? employee.level?.id ?? null,
+    employmentType: employee.employmentType ?? employee.jobType?.name ?? null,
+    supervisor: employee.supervisor,
+    employeeStatus,
+    employementStartDate: employee.employementStartDate,
+    employmentEndDate: employee.employmentEndDate,
+    onProbation: employee.onProbation,
+    probationStartDate: employee.probationStartDate,
+    probationEndDate: employee.probationEndDate,
+    appraisalDueDate: employee.appraisalDueDate,
+    phone: employee.phone,
+    address: employee.address,
+    dob: employee.dob,
+    genderId: employee.genderId ?? employee.gender?.id ?? null,
+    maritalStatusId: employee.maritalStatusId ?? employee.maritalStatus?.id ?? null,
+    religionId: employee.religionId ?? employee.religion?.id ?? null,
+    bankName: employee.bankName,
+    accountNumber: employee.accountNumber,
+    nin: employee.nin,
+    bvn: employee.bvn,
+    jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null,
+    relationshipId: employee.relationshipId ?? employee.relationship?.id ?? null,
+    exitReason,
+    exitReasonBy,
+  };
+}
 
 const DEFAULT_ASSETS: AssetItem[] = [
   { type: 'Laptop',         description: '', serialNumber: '', dateIssued: '', returned: false, condition: '' },
@@ -100,8 +165,14 @@ export class EmployeeOffboardingComponent implements OnInit {
   showConfirmComplete = false;
   saved = false;
   saving = false;
+  completing = false;
+  /** Saving waits for the first load, so it can't create a record the server already has. */
+  loadState: 'loading' | 'ready' | 'error' = 'loading';
   offboardingFormLink = '';
   offboardingId: number | string | null = null;
+  /** A change made while a save was in flight; saved as soon as that one finishes. */
+  private pendingSave = false;
+  private savedTimer: ReturnType<typeof setTimeout> | undefined;
 
   exitReasons = [
     'Resignation (voluntary)',
@@ -120,11 +191,13 @@ export class EmployeeOffboardingComponent implements OnInit {
   constructor(
     private navLinks: NavigationLinksService,
     private employeeService: EmployeeService,
+    private messageService: MessageService,
+    private selectedEmployee: SelectedEmployeeStore,
   ) {}
 
   ngOnInit(): void {
-    const employee = localStorage.getItem('employeeInView');
-    this.employeeInView = employee ? JSON.parse(employee) : null;
+    removeLegacyStorage();
+    this.employeeInView = this.selectedEmployee.get();
     this.offboardingFormLink = this.navLinks.getLink('offboardingForm');
     this.loadData();
   }
@@ -165,39 +238,85 @@ export class EmployeeOffboardingComponent implements OnInit {
     return this.ob.stage === 'access_revoked' || this.ob.stage === 'completed';
   }
 
+  get exitStatus(): string {
+    return EXIT_STATUS_BY_REASON[this.ob.exitReason] ?? DEFAULT_EXIT_STATUS;
+  }
+
   // ── Stage transitions ──────────────────────────────────────────────────────
   initiateOffboarding(): void {
-    this.ob.stage = 'initiated';
-    this.ob.initiatedDate = new Date().toISOString().split('T')[0];
-    this.saveData();
+    this.changeAndSave(() => {
+      this.ob.stage = 'initiated';
+      this.ob.initiatedDate = today();
+    });
   }
 
   advanceTo(stage: OffboardingStage): void {
-    this.ob.stage = stage;
-    this.saveData();
+    this.changeAndSave(() => { this.ob.stage = stage; });
   }
 
+  /** Records the checklist as revoked. It doesn't disable the ERP login; there is no endpoint for that yet. */
   revokeAccess(): void {
-    this.ob.systemAccess.forEach(s => {
-      s.revoked = true;
-      s.revokedDate = new Date().toISOString().split('T')[0];
-    });
-    this.ob.stage = 'access_revoked';
     this.showConfirmRevoke = false;
-    this.saveData();
+    this.changeAndSave(() => {
+      this.ob.systemAccess.forEach(s => {
+        if (!s.revoked) {
+          s.revoked = true;
+          s.revokedDate = today();
+        }
+      });
+      this.ob.stage = 'access_revoked';
+    });
   }
 
+  /** Sets the employee's status on the server from the exit reason, then closes the offboarding record. */
   completeOffboarding(): void {
-    this.ob.stage = 'completed';
-    this.ob.completedDate = new Date().toISOString().split('T')[0];
-    this.showConfirmComplete = false;
-    this.saveData();
-    // Persist access-revoked flag alongside employee so other parts of the
-    // app can read it to disable module access for this employee.
-    if (this.employeeInView?.id) {
-      const key = `employee_offboarded_${this.employeeInView.id}`;
-      localStorage.setItem(key, 'true');
+    const id = this.employeeInView?.id;
+    if (!id || this.completing || !this.canSave()) return;
+    if (!this.ob.exitReason) {
+      this.showConfirmComplete = false;
+      this.activeTab = 'overview';
+      this.messageService.add({ severity: 'warn', summary: 'Exit reason needed', detail: 'Choose an exit reason on the Overview tab before completing offboarding.', key: 'tl', life: 4000 });
+      return;
     }
+
+    const status = this.exitStatus;
+    const exitReason = [this.ob.exitReason, this.ob.exitReasonDetail].filter(Boolean).join(' — ');
+    const exitReasonBy = this.ob.hrOfficer || sessionStorage.getItem('username') || localStorage.getItem('username') || '';
+    const before = this.snapshot();
+    this.completing = true;
+
+    this.employeeService.getEmployeeById(id).pipe(
+      map((res: any) => res?.data ?? res),
+      switchMap((employee: any) => this.employeeService.updateEmployee(employeeStatusPayload(employee, status, exitReason, exitReasonBy), id)),
+      tap(() => {
+        this.employeeInView = { ...this.employeeInView, employeeStatus: status };
+        this.selectedEmployee.set(this.employeeInView);
+        window.dispatchEvent(new CustomEvent('employee-status-changed', { detail: { id, employeeStatus: status } }));
+        this.ob.stage = 'completed';
+        this.ob.completedDate = today();
+      }),
+      switchMap(() => this.persist()),
+      finalize(() => { this.completing = false; }),
+    ).subscribe({
+      next: () => {
+        this.showConfirmComplete = false;
+        this.messageService.add({ severity: 'success', summary: 'Offboarding complete', detail: `Employee status set to ${status}.`, key: 'tl', life: 4000 });
+      },
+      error: (err) => {
+        const statusChanged = this.employeeInView?.employeeStatus === status;
+        this.ob = before;
+        this.showConfirmComplete = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Could not complete',
+          detail: statusChanged
+            ? `The employee status was set to ${status}, but the offboarding record could not be saved. Try again.`
+            : (err?.error?.message || 'The employee status could not be updated. Nothing was changed.'),
+          key: 'tl',
+          life: 6000,
+        });
+      },
+    });
   }
 
   addHandoverRow(): void {
@@ -209,74 +328,141 @@ export class EmployeeOffboardingComponent implements OnInit {
   }
 
   revokeSystem(sys: SystemAccess): void {
-    sys.revoked = true;
-    sys.revokedDate = new Date().toISOString().split('T')[0];
-    if (this.allAccessRevoked && this.ob.stage === 'assets') {
-      this.ob.stage = 'access_revoked';
-    }
-    this.saveData();
+    this.changeAndSave(() => {
+      sys.revoked = true;
+      sys.revokedDate = today();
+      if (this.allAccessRevoked && this.ob.stage === 'assets') {
+        this.ob.stage = 'access_revoked';
+      }
+    });
   }
 
   openOffboardingForm(): void {
     window.open(this.offboardingFormLink, '_blank');
   }
 
+  /** Saves the current data. Changes made while a save is in flight are saved right after it. */
   saveData(): void {
-    this.saving = true;
-    const payload = { ...this.ob, employeeId: this.employeeInView?.id };
-
-    const persist = (response?: any) => {
-      if (response?.id) this.offboardingId = response.id;
-      const key = this.employeeInView?.id
-        ? `${STORE_KEY}_${this.employeeInView.id}`
-        : STORE_KEY;
-      localStorage.setItem(key, JSON.stringify(this.ob));
-      this.saving = false;
-      this.saved = true;
-      setTimeout(() => { this.saved = false; }, 2000);
-    };
-
-    if (!this.employeeInView?.id) {
-      persist();
+    if (!this.canSave()) return;
+    if (this.saving) {
+      this.pendingSave = true;
       return;
     }
-
-    const save$ = this.offboardingId
-      ? this.employeeService.updateOffboarding(this.offboardingId, payload)
-      : this.employeeService.createOffboarding(payload);
-
-    save$.subscribe({
-      next: (res) => persist(res),
-      error: () => {
-        persist();
-      }
+    this.persist().subscribe({
+      next: () => this.flashSaved(),
+      error: (err) => this.showSaveError(err),
     });
   }
 
-  private loadData(): void {
-    const cacheKey = this.employeeInView?.id
-      ? `${STORE_KEY}_${this.employeeInView.id}`
-      : STORE_KEY;
+  /** Applies a stage change and saves it, undoing the change if the save fails. */
+  private changeAndSave(change: () => void): void {
+    if (!this.canSave() || this.saving) return;
+    const before = this.snapshot();
+    change();
+    this.persist().subscribe({
+      next: () => this.flashSaved(),
+      error: (err) => {
+        this.ob = before;
+        this.showSaveError(err);
+      },
+    });
+  }
 
-    // Load from localStorage immediately (no spinner shown to user)
-    const raw = localStorage.getItem(cacheKey);
-    if (raw) {
-      try { this.ob = { ...this.defaultData(), ...JSON.parse(raw) }; } catch {}
+  private canSave(): boolean {
+    if (!this.employeeInView?.id) {
+      this.messageService.add({ severity: 'error', summary: 'No employee', detail: 'Close this profile and open it again from the directory.', key: 'tl', life: 4000 });
+      return false;
+    }
+    if (this.loadState !== 'ready') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: this.loadState === 'loading' ? 'Still loading' : 'Not loaded',
+        detail: this.loadState === 'loading'
+          ? 'The offboarding record is still loading. Try again in a moment.'
+          : 'The offboarding record could not be loaded, so changes can\'t be saved. Reopen this profile to retry.',
+        key: 'tl',
+        life: 4000,
+      });
+      return false;
+    }
+    return true;
+  }
+
+  /** One save to the server. A create is followed by a lookup when the reply has no id, so it's never created twice. */
+  private persist(): Observable<void> {
+    const employeeId = this.employeeInView.id;
+    const payload = { ...this.ob, employeeId };
+    const creating = !this.offboardingId;
+    this.saving = true;
+
+    const save$ = creating
+      ? this.employeeService.createOffboarding(payload)
+      : this.employeeService.updateOffboarding(this.offboardingId!, payload);
+
+    return save$.pipe(
+      switchMap((res: any) => {
+        const id = res?.id ?? res?.data?.id;
+        if (id || !creating) return of(id);
+        return this.employeeService.getOffboarding(employeeId).pipe(map((found: any) => found?.id ?? found?.data?.id));
+      }),
+      tap((id) => { if (id) this.offboardingId = id; }),
+      map(() => undefined),
+      finalize(() => {
+        this.saving = false;
+        if (this.pendingSave) {
+          this.pendingSave = false;
+          this.saveData();
+        }
+      }),
+    );
+  }
+
+  private flashSaved(): void {
+    this.saved = true;
+    clearTimeout(this.savedTimer);
+    this.savedTimer = setTimeout(() => { this.saved = false; }, 2000);
+  }
+
+  private showSaveError(err: any): void {
+    this.saved = false;
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Not saved',
+      detail: err?.error?.message || 'Offboarding changes could not be saved. Check your connection and try again.',
+      key: 'tl',
+      life: 5000,
+    });
+  }
+
+  private snapshot(): OffboardingData {
+    return JSON.parse(JSON.stringify(this.ob));
+  }
+
+  private loadData(): void {
+    if (!this.employeeInView?.id) {
+      this.loadState = 'error';
+      return;
     }
 
-    // Silently sync from backend in the background, update if API returns data
-    if (!this.employeeInView?.id) return;
-
     this.employeeService.getOffboarding(this.employeeInView.id).subscribe({
-      next: (res) => {
-        if (res && typeof res === 'object' && res.stage) {
-          const { id, ...rest } = res;
+      next: (res: any) => {
+        const record = res?.data ?? res;
+        if (record && typeof record === 'object' && record.stage) {
+          const { id, ...rest } = record;
           if (id) this.offboardingId = id;
           this.ob = { ...this.defaultData(), ...rest };
-          localStorage.setItem(cacheKey, JSON.stringify(this.ob));
         }
+        this.loadState = 'ready';
       },
-      error: () => { /* silently ignore — localStorage data is already applied */ }
+      error: (err) => {
+        // 404 just means offboarding hasn't been started for this employee.
+        if (err?.status === 404) {
+          this.loadState = 'ready';
+          return;
+        }
+        this.loadState = 'error';
+        this.messageService.add({ severity: 'error', summary: 'Load failed', detail: 'The offboarding record could not be loaded. Reopen this profile to retry.', key: 'tl', life: 5000 });
+      },
     });
   }
 

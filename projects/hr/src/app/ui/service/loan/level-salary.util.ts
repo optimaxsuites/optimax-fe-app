@@ -24,9 +24,12 @@ function componentCount(record: LevelSalaryRecord): number {
   return (record.allowance?.length || 0) + (record.deductions?.length || 0);
 }
 
-/** Of a level's records, the most complete (most allowance/deduction lines), then the newest. */
-function pickSalaryRecordForLevel(records: LevelSalaryRecord[]): LevelSalaryRecord {
-  return [...records].sort((a, b) =>
+/**
+ * Of a level's records, the most complete (most allowance/deduction lines), then the newest.
+ * Undefined when there are none. Anything showing a level's pay should use this so it matches loans.
+ */
+export function pickSalaryRecordForLevel<T extends LevelSalaryRecord>(records: T[]): T | undefined {
+  return [...(records || [])].sort((a, b) =>
     componentCount(b) - componentCount(a) || Number(b.id || 0) - Number(a.id || 0)
   )[0];
 }
@@ -41,7 +44,7 @@ export function resolveBaseSalaryForLevel(levelId: number, salaries: LevelSalary
   if (!levelId || candidates.length === 0) {
     return 0;
   }
-  return Number(pickSalaryRecordForLevel(candidates).baseSalary || 0);
+  return Number(pickSalaryRecordForLevel(candidates)!.baseSalary || 0);
 }
 
 /**
@@ -57,7 +60,7 @@ export function resolveMonthlySalaryForLevel(levelId: number, salaries: LevelSal
     return { status: 'missing' };
   }
 
-  const record = pickSalaryRecordForLevel(candidates);
+  const record = pickSalaryRecordForLevel(candidates)!;
 
   const base = Number(record.baseSalary || 0);
   const allowances = (record.allowance || []).reduce((sum, item) => sum + Number(item?.amount || 0), 0);

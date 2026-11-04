@@ -101,6 +101,7 @@ export class ChannelSidebarComponent implements OnInit {
   @Input() totalDmUnread = 0;
   @Input() workspaceName = 'OptimaX';
   @Input() selfStats: { openIssueCount: number; openTaskCount: number; openEventCount: number } = { openIssueCount: 0, openTaskCount: 0, openEventCount: 0 };
+  @Input() typingMap: Record<number, boolean> = {};
 
   // ── Outputs ─────────────────────────────────────────
   @Output() channelSelected = new EventEmitter<string>();
@@ -290,8 +291,9 @@ export class ChannelSidebarComponent implements OnInit {
 
   // ── Template helpers ─────────────────────────────────
 
-  isUserTyping(_userId: number): boolean {
-    return false;
+  isUserTyping(userId: number): boolean {
+    const myId = Number(this.me?.userId || 0);
+    return Boolean(this.typingMap && this.typingMap[userId] && Number(userId) !== myId);
   }
 
   private normalizeIdentityText(value: string | null | undefined): string {

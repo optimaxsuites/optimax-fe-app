@@ -70,6 +70,10 @@ export class FinanceComponent implements OnInit, OnDestroy {
   rejectionReason  = '';
   rejectionError   = false;
 
+  // A failed LPO action or list load, shown at the top of the page.
+  actionError: string | null = null;
+  loadError: string | null = null;
+
   // ── Invoice side panel ────────────────────────────────────────────────────────
   showInvoicePanel  = false;
   selectedInvoice:  Invoice | null = null;
@@ -112,6 +116,10 @@ export class FinanceComponent implements OnInit, OnDestroy {
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
   ngOnInit(): void {
+    this.vendorService.loadError$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(message => this.loadError = message);
+
     this.vendorService.getLpos()
       .pipe(takeUntil(this.destroy$))
       .subscribe(list => this.lpos = list);
@@ -177,12 +185,18 @@ export class FinanceComponent implements OnInit, OnDestroy {
 
   confirmAccept(): void {
     if (!this.lpoToAccept) return;
-    this.vendorService.acceptLpo(this.lpoToAccept.id);
-    if (this.selectedLpo?.id === this.lpoToAccept.id) {
-      this.selectedLpo = { ...this.selectedLpo, status: 'accepted' };
-    }
+    const id = this.lpoToAccept.id;
+    this.actionError = null;
     this.closeAcceptModal();
-    this.refreshStats();
+    this.vendorService.acceptLpo(id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        if (this.selectedLpo?.id === id) {
+          this.selectedLpo = { ...this.selectedLpo, status: 'accepted' };
+        }
+        this.refreshStats();
+      },
+      error: (err) => { this.actionError = err.message; },
+    });
   }
 
   // Reject
@@ -203,12 +217,19 @@ export class FinanceComponent implements OnInit, OnDestroy {
   confirmReject(): void {
     if (!this.lpoToReject) return;
     if (!this.rejectionReason.trim()) { this.rejectionError = true; return; }
-    this.vendorService.rejectLpo(this.lpoToReject.id, this.rejectionReason.trim());
-    if (this.selectedLpo?.id === this.lpoToReject.id) {
-      this.selectedLpo = { ...this.selectedLpo, status: 'rejected', rejectionReason: this.rejectionReason.trim() };
-    }
+    const id = this.lpoToReject.id;
+    const reason = this.rejectionReason.trim();
+    this.actionError = null;
     this.closeRejectModal();
-    this.refreshStats();
+    this.vendorService.rejectLpo(id, reason).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        if (this.selectedLpo?.id === id) {
+          this.selectedLpo = { ...this.selectedLpo, status: 'rejected', rejectionReason: reason };
+        }
+        this.refreshStats();
+      },
+      error: (err) => { this.actionError = err.message; },
+    });
   }
 
   // How much of this LPO is left to invoice, per line item (already-invoiced
@@ -384,7 +405,22 @@ export class FinanceComponent implements OnInit, OnDestroy {
       includeSignature: this.invoiceForm.includeSignature,
     };
 
-    this.vendorService.createInvoice(invoice);
+    this.actionError = null;
+    this.vendorService.createInvoice(invoice).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => this.afterInvoiceSaved(),
+      error: (err) => {
+        if (err.savedAsDraft) {
+          // It exists now, so leaving the form open would invite a second, duplicate invoice.
+          this.actionError = err.message;
+          this.afterInvoiceSaved();
+        } else {
+          this.invoiceFormErrors['submit'] = err.message;
+        }
+      },
+    });
+  }
+
+  private afterInvoiceSaved(): void {
     this.closeInvoiceModal();
     this.closeLpoPanel();
     this.activeTable = 'invoices';

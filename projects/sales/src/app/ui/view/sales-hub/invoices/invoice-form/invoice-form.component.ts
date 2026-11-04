@@ -10,11 +10,12 @@ import { lastValueFrom } from 'rxjs';
 import { Customer, Product, Invoice, InvoiceStatus, InvoiceItem, Quote, CustomerBankDetails, InvoiceAttachments, MerchantInfo, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue, formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
-import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { TemplateTypesComponent } from '../../template-types/template-types.component';
+import { QuoteTemplate } from '../../template-types/quote-templates.config';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
-import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
+import { SalesDocumentComponent } from '../../sales-document/sales-document.component';
+import { SalesDocumentModel, invoiceDocument } from '../../../../service/sales/sales-document';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
@@ -54,7 +55,7 @@ export function dateAfterValidator(otherControlName: string): ValidatorFn {
 @Component({
   selector: 'app-invoice-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule, SendEmailModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, BackButtonComponent, TemplateTypesComponent, ToastModule, SendEmailModalComponent, SalesDocumentComponent],
   // No component-level MessageService: toasts go through the app-wide one (shown by app.html's
   // <p-toast>) so a result like "Email sent" stays visible after routing to the detail page.
   templateUrl: './invoice-form.component.html',
@@ -98,6 +99,9 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
   receivedByName = '';
   receivedDate = '';
   isSavingSignedCopy = false;
+  /** Why Continue didn't move on, shown on the upload card. */
+  signedError = '';
+  private signedFileReady: Promise<QuoteDocumentAttachment | null> | null = null;
 
   get fromDeliveryNote(): boolean {
     return !!this.deliveryNoteId;
@@ -205,6 +209,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
 
   showSendInvoiceModal = false;
   isSendingEmail = false;
+  /** Set only while a PDF is being rendered (see generateInvoicePDF). */
+  pdfDocument: SalesDocumentModel | null = null;
   pendingSendInvoiceNumber = '';
   pendingSendCustomerName = '';
   emailSubject = '';
@@ -843,41 +849,53 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     if (!file) return;
     this.signedFileName = file.name;
     this.signedFile = null;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      this.signedFile = {
-        fileName: file.name,
-        base64Content: dataUrl.split(',')[1] || '',
-        contentType: file.type || 'application/pdf',
-        uploadedAt: new Date().toISOString()
+    this.signedError = '';
+    // Continue waits on this rather than bailing out while a large scan is still being read
+    this.signedFileReady = new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        this.signedFile = {
+          fileName: file.name,
+          base64Content: dataUrl.split(',')[1] || '',
+          contentType: file.type || 'application/pdf',
+          uploadedAt: new Date().toISOString()
+        };
+        resolve(this.signedFile);
       };
-    };
-    reader.readAsDataURL(file);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 
-  /** Step 0 → Template: stores a newly chosen signed copy (and who received the goods, when) on
-   *  the delivery note; with one already on file it just moves on. */
-  submitSignedCopy(): void {
+  /** Step 0 → Template, in one click: waits for a just-picked file to finish reading, stores it
+   *  (and who received the goods, when) on the delivery note, then moves on. With a signed copy
+   *  already on file and no new one picked, it just moves on. Problems are shown on the card. */
+  async submitSignedCopy(): Promise<void> {
     if (this.isSavingSignedCopy) return;
+    this.signedError = '';
     if (!this.signedFileName) {
       if (this.signedCopyOnFile) {
         this.currentStep = 3;
         return;
       }
-      this.messageService.add({ severity: 'warn', summary: 'Signed Copy Needed', detail: 'Upload the signed delivery note to continue.' });
-      return;
-    }
-    if (!this.signedFile) {
-      this.messageService.add({ severity: 'info', summary: 'Still Reading', detail: 'The file is still loading — try again in a moment.' });
+      this.signedError = 'Choose the signed delivery note file to continue.';
       return;
     }
     if (!this.receivedByName.trim() || !this.receivedDate) {
-      this.messageService.add({ severity: 'warn', summary: 'Missing Details', detail: 'Enter who received the goods and the date received.' });
+      this.signedError = 'Enter who received the goods and the date they were received.';
       return;
     }
+
     this.isSavingSignedCopy = true;
-    this.salesService.recordSignedDeliveryNote(this.quoteId, this.signedFile, this.deliveryNote, {
+    const file = this.signedFile || await this.signedFileReady;
+    if (!file) {
+      this.isSavingSignedCopy = false;
+      this.signedError = 'That file could not be read. Please choose it again.';
+      return;
+    }
+
+    this.salesService.recordSignedDeliveryNote(this.quoteId, file, this.deliveryNote, {
       receivedByName: this.receivedByName.trim(),
       receivedAt: new Date(this.receivedDate).toISOString()
     }).pipe(takeUntil(this.destroy$)).subscribe({
@@ -887,6 +905,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         this.signedCopyOnFile = this.signedFileName;
         this.signedFileName = '';
         this.signedFile = null;
+        this.signedFileReady = null;
         if (!noteSaved) {
           this.messageService.add({ severity: 'warn', summary: 'Uploaded', detail: 'Signed copy uploaded, but who received it couldn\'t be saved on the delivery note.' });
         }
@@ -895,7 +914,7 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error uploading signed delivery note:', err);
         this.isSavingSignedCopy = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to upload the signed delivery note. Please try again.' });
+        this.signedError = 'The signed delivery note could not be uploaded. Please try again.';
       }
     });
   }
@@ -1184,6 +1203,8 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
         // finalizeInvoiceSubmit() below must NOT run yet in that case (it navigates away, which
         // would tear this component and the modal down before the seller can type a message and
         // confirm). confirmSendInvoice() calls it itself once they actually send.
+        // Remember the template so the invoice's detail page downloads the same design
+        this.salesService.saveDocumentTemplate('INVOICE', response.id, this.selectedTemplate?.id, (response as any).quoteId ?? (this.quoteId || null));
         await this.handleDeliveryAction(this.withFormTax(response), this.selectedAction);
         if (this.selectedAction === 'pdf') {
           this.finalizeInvoiceSubmit(response);
@@ -1814,32 +1835,13 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
    */
   private async downloadInvoicePdf(invoice: Invoice): Promise<Blob | null> {
     try {
-      const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
-        documentType: 'INVOICE',
-        documentId: String(invoice.id),
-        documentNumber: invoice.invoiceNumber,
-        tenantId: 'optimax',
-        data: {
-          ...invoice,
-          // Best-effort: lets a backend that understands templates render the
-          // matching layout/branding instead of always using its own default.
-          templateId: this.selectedTemplate?.id,
-          templateColorTheme: this.selectedTemplate?.colorTheme,
-          templateSections: this.selectedTemplate?.sections
-        }
-      }));
-      this.pdfGenerationService.downloadBlob(blob as any, `Invoice-${invoice.invoiceNumber}.pdf`);
-      return blob as any;
+      const blob = await this.generateInvoicePDF(invoice);
+      this.pdfGenerationService.downloadBlob(blob, `Invoice-${invoice.invoiceNumber}.pdf`);
+      return blob;
     } catch (err) {
-      console.warn('[InvoiceFormComponent] Server PDF failed, using client fallback:', err);
-      try {
-        const clientBlob = await this.generateInvoicePDF(invoice);
-        this.pdfGenerationService.downloadBlob(clientBlob, `Invoice-${invoice.invoiceNumber}.pdf`);
-        return clientBlob;
-      } catch (e) {
-        console.error('Client PDF generation failed:', e);
-        return null;
-      }
+      console.error('Invoice PDF generation failed:', err);
+      this.messageService.add({ severity: 'error', summary: 'PDF Error', detail: 'The invoice PDF could not be generated.' });
+      return null;
     }
   }
 
@@ -1914,76 +1916,32 @@ export class InvoiceFormComponent implements OnInit, OnDestroy {
     this.finalizeInvoiceSubmit(invoice);
   }
 
+  /** The invoice rendered as a real A4 page in the chosen template (SalesDocumentComponent, drawn
+   *  off-screen) — not a capture of the step-1 form preview, which came out small and blurry. */
   private async generateInvoicePDF(invoice: Invoice): Promise<Blob> {
-    this.generatedInvoiceNumber = invoice.invoiceNumber;
-
-    // The preview element lives only on step 1 — switch there if needed. Submission happens
-    // on step 4, so without this the element is never in the DOM and this always throws.
-    const prevStep = this.currentStep;
-    if (this.currentStep !== 1) {
-      this.currentStep = 1;
+    this.pdfDocument = invoiceDocument(invoice, this.documentMerchant, this.selectedCustomer);
+    this.cdr.detectChanges();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    try {
+      const element = document.getElementById('invoice-pdf-document');
+      if (!element) throw new Error('Invoice document element not found');
+      return await renderElementToPdf(element);
+    } finally {
+      this.pdfDocument = null;
       this.cdr.detectChanges();
     }
+  }
 
-    // Allow small delay for Angular to bind the new invoice number to the DOM
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const element = document.getElementById('invoice-preview-document');
-    if (!element) {
-      this.currentStep = prevStep;
-      this.generatedInvoiceNumber = '';
-      throw new Error('Preview document element not found');
-    }
-
-    // Clone into unconstrained off-screen container so html2canvas captures
-    // the full scrollable content, not just the overflow:auto visible slice.
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'fixed';
-    clone.style.top = '-99999px';
-    clone.style.left = '0';
-    clone.style.width = element.offsetWidth + 'px';
-    clone.style.height = 'auto';
-    clone.style.overflow = 'visible';
-    clone.style.maxHeight = 'none';
-    document.body.appendChild(clone);
-
-    await new Promise(resolve => setTimeout(resolve, 80));
-
-    let canvas: HTMLCanvasElement;
-    try {
-      canvas = await html2canvas(clone, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0
-      });
-    } finally {
-      document.body.removeChild(clone);
-    }
-
-    this.currentStep = prevStep;
-    this.generatedInvoiceNumber = '';
-    this.cdr.detectChanges();
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let remaining = imgHeight;
-    let yOffset = 0;
-    while (remaining > 0) {
-      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
-      remaining -= pageHeight;
-      yOffset += pageHeight;
-      if (remaining > 0) pdf.addPage();
-    }
-
-    return pdf.output('blob');
+  /** The seller's details as the document's "From" block (company, contact, bank, logo). */
+  private get documentMerchant(): any {
+    return {
+      companyName: this.billedBy.name,
+      address: this.billedBy.address,
+      email: this.billedBy.email,
+      phone: this.billedBy.phone,
+      bankDetails: { bankName: this.billedBy.bankName, accountName: this.billedBy.accountName, accountNumber: this.billedBy.accountNumber },
+      logoUrl: this.logoUrl || undefined
+    };
   }
 
   /** Emails the invoice through the shared SalesDocumentEmailService (same email as the detail

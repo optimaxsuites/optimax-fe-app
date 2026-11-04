@@ -38,7 +38,7 @@
               <div class="dp-meta">
                 <div class="dp-meta-cell dark">
                   <div class="dp-mc-lbl">DOC NO.</div>
-                  <div class="dp-mc-val">QT-2026-001</div>
+                  <div class="dp-mc-val">{{ sampleNumber }}</div>
                 </div>
                 <div class="dp-meta-cell dark">
                   <div class="dp-mc-lbl">DATE</div>
@@ -123,7 +123,7 @@
               <div class="dp-thin-rule"></div>
               <div class="dp-field"><span class="dp-field-lbl">To:</span><span class="dp-field-val">Customer Name</span></div>
               <div class="dp-field"><span class="dp-field-lbl">Date:</span><span class="dp-field-val">31 July 2026</span></div>
-              <div class="dp-field"><span class="dp-field-lbl">Valid Until:</span><span class="dp-field-val">30 Aug 2026</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">{{ documentType === 'invoice' ? 'Due Date:' : 'Valid Until:' }}</span><span class="dp-field-val">30 Aug 2026</span></div>
               <div class="dp-thin-rule"></div>
               <div class="dp-table">
                 <div class="dp-thead">
@@ -155,7 +155,7 @@
               <div class="dp-meta">
                 <div class="dp-meta-cell dark">
                   <div class="dp-mc-lbl">DOC NO.</div>
-                  <div class="dp-mc-val">QT-2026-001</div>
+                  <div class="dp-mc-val">{{ sampleNumber }}</div>
                 </div>
                 <div class="dp-meta-cell dark accent">
                   <div class="dp-mc-lbl">TOTAL</div>

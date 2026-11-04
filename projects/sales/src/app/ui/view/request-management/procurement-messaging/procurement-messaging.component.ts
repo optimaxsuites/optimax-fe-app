@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import {
   Component,
   Input,
@@ -193,7 +194,7 @@ export class ProcurementMessagingComponent implements OnInit, OnDestroy {
   }
 
   formatTime(date: Date | string): string {
-    const d = date instanceof Date ? date : new Date(date);
+    const d = date instanceof Date ? date : toApiDate(date);
     if (isNaN(d.getTime())) return '';
 
     const now = new Date();

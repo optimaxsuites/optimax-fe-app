@@ -5,8 +5,10 @@ import { Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 
-import { VendorRegistrationService, RegistrationSubmitError } from '../../../service/vendor-portal/vendor-registration.service';
+import { VendorRegistrationService, RegistrationSubmitError, hasUploadedDetails } from '../../../service/vendor-portal/vendor-registration.service';
+import { VendorStatus } from '../../../domain/vendor-management/vendor-management.dto';
 import {
+  VendorRegistration,
   BusinessType, BusinessSize, OwnershipType, SupplyCategory,
   DeliveryRegion, AccountType, Currency, DocumentUploadType,
   UploadedDocument, MajorClient, KeyPersonnel,
@@ -15,6 +17,10 @@ import {
   PAYMENT_TERMS_OPTIONS, ISO_STANDARDS_OPTIONS,
   EMPLOYEE_RANGES, TURNOVER_RANGES,
 } from '../../../domain/vendor-portal/vendor-registration.dto';
+
+// TEMPORARY: lets registration be submitted without the required documents, to test the flow
+// without them. Set back to false (or remove) to enforce them again.
+const DOCUMENTS_OPTIONAL_FOR_TESTING = true;
 
 @Component({
   selector: 'app-vendor-registration',
@@ -29,9 +35,18 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   currentStep   = 1;
   totalSteps    = 6;
   isSubmitting  = false;
-  isSubmitted   = false;
-  applicationNumber = '';
   autoSaveTimer: any;
+
+  // first-time: no details uploaded yet. saved: read-only, with an Edit button. editing: changes apply on Save.
+  viewState: 'loading' | 'no-record' | 'load-error' | 'first-time' | 'saved' | 'editing' = 'loading';
+  successMessage: string | null = null;
+  // The backend returned only a summary. Saving sends whole steps, so an edit would overwrite every
+  // answer we can't see with whatever the form holds — Edit stays off until the full details come back.
+  detailsArePartial = false;
+  private vendorId = '';
+  private vendorStatus = VendorStatus.PENDING_ONBOARDING;
+  /** What Cancel goes back to: the details as last saved. */
+  private savedSnapshot: (() => void) | null = null;
 
   // Inline, non-blocking validation banner — replaces window.alert() for the
   // handful of cross-field checks (e.g. "pick at least one category") that
@@ -70,6 +85,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   readonly BUSINESS_SIZE_LABELS    = BUSINESS_SIZE_LABELS;
   readonly OWNERSHIP_TYPE_LABELS   = OWNERSHIP_TYPE_LABELS;
   readonly SUPPLY_CATEGORY_LABELS  = SUPPLY_CATEGORY_LABELS;
+  /** Step 2's free-text columns are varchar(255) in the backend database; longer text fails the whole save. */
+  readonly STEP2_TEXT_MAX = 255;
   readonly NIGERIAN_STATES         = NIGERIAN_STATES;
   readonly NIGERIAN_BANKS          = NIGERIAN_BANKS;
   readonly PAYMENT_TERMS_OPTIONS   = PAYMENT_TERMS_OPTIONS;
@@ -143,7 +160,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   uploadingDocType: DocumentUploadType | null = null;
   uploadingDocLabel = '';
 
-  readonly requiredDocTypes: { type: DocumentUploadType; label: string; required: boolean; hint: string }[] = [
+  readonly requiredDocTypes = ([
     { type: 'cac_certificate',           label: 'CAC Certificate of Incorporation',  required: true,  hint: 'Issued by the Corporate Affairs Commission' },
     { type: 'tax_clearance',             label: 'Tax Clearance Certificate',          required: true,  hint: 'Must be current — valid for current year' },
     { type: 'vat_certificate',           label: 'VAT Registration Certificate',       required: false, hint: 'Required if VAT registered' },
@@ -153,7 +170,8 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     { type: 'annual_accounts',           label: 'Audited Annual Accounts',            required: false, hint: 'Last two years of audited accounts' },
     { type: 'company_profile',           label: 'Company Profile',                    required: false, hint: 'Detailed company overview document' },
     { type: 'bank_reference_letter',     label: 'Bank Reference Letter',              required: false, hint: 'Reference letter from your primary bank' },
-  ];
+  ] as { type: DocumentUploadType; label: string; required: boolean; hint: string }[])
+    .map(d => ({ ...d, required: d.required && !DOCUMENTS_OPTIONAL_FOR_TESTING }));
 
   constructor(
     private fb: FormBuilder,
@@ -163,8 +181,56 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.buildForms();
-    this.loadDraft();
     this.watchConditionalFields();
+    this.loadDetails();
+  }
+
+  get showForm(): boolean { return this.isFirstTime || this.isReadOnly || this.isEditing; }
+  get isFirstTime(): boolean { return this.viewState === 'first-time'; }
+  get isReadOnly(): boolean { return this.viewState === 'saved'; }
+  get isEditing(): boolean { return this.viewState === 'editing'; }
+  get hasRequiredDocs(): boolean { return this.requiredDocTypes.some(d => d.required); }
+
+  /** Once details exist, every step is already filled in, so any of them can be opened directly. */
+  get canJumpToAnyStep(): boolean { return this.isReadOnly || this.isEditing; }
+
+  loadDetails(): void {
+    this.viewState = 'loading';
+    this.regService.loadOwnVendor().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (record) => {
+        if (!record) {
+          this.viewState = 'no-record';
+          return;
+        }
+        this.vendorId = record.vendorId;
+        this.vendorStatus = record.status;
+        if (hasUploadedDetails(record.registration)) {
+          this.detailsArePartial = record.isPartial;
+          // Without this, the form's defaults (year 2000, not blacklisted…) would read as the vendor's answers.
+          if (record.isPartial) this.allForms.forEach(f => f.reset());
+          this.applyRegistration(record.registration!);
+          this.rememberSavedDetails();
+          this.viewState = 'saved';
+        } else {
+          const draft = this.regService.getDraft();
+          if (draft) this.applyRegistration(draft);
+          this.viewState = 'first-time';
+        }
+      },
+      error: () => { this.viewState = 'load-error'; },
+    });
+  }
+
+  startEditing(): void {
+    if (this.detailsArePartial) return;
+    this.successMessage = null;
+    this.viewState = 'editing';
+  }
+
+  cancelEditing(): void {
+    this.savedSnapshot?.();
+    this.stepError = null;
+    this.viewState = 'saved';
   }
 
   ngOnDestroy(): void {
@@ -205,7 +271,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       sonCertificationNumber:  [''],
       pencomNumber:            [''],
       nscNumber:               [''],
-      otherLicences:           [''],
+      otherLicences:           ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasPublicLiabilityInsurance: [false],
       publicLiabilityInsurer:  [''],
       publicLiabilityPolicyNo: [''],
@@ -214,13 +280,13 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       professionalIndemnityInsurer:  [''],
       professionalIndemnityPolicyNo: [''],
       professionalIndemnityExpiry:   [''],
-      otherCertifications:     [''],
+      otherCertifications:     ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasBeenBlacklisted:      [false],
-      blacklistedDetails:      [''],
+      blacklistedDetails:      ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasLitigationPending:    [false],
-      litigationDetails:       [''],
+      litigationDetails:       ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
       hasCriminalConviction:   [false],
-      criminalDetails:         [''],
+      criminalDetails:         ['', Validators.maxLength(this.STEP2_TEXT_MAX)],
     });
 
     this.form3 = this.fb.group({
@@ -342,15 +408,19 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
    * itself is reset to null alongside the validators.
    */
   private wireToggle(form: FormGroup, toggleField: string, dependentFields: string[], requiredValidators: Record<string, any> = {}): void {
+    // A field's own validators (e.g. step 2's 255-character limit) stay through every toggle; only
+    // the toggle's "required" ones come and go.
+    const base = new Map(dependentFields.map(field => [field, form.get(field)?.validator ?? null]));
     form.get(toggleField)?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(on => {
       dependentFields.forEach(field => {
         const c = form.get(field);
         if (!c) return;
+        const own = base.get(field) ? [base.get(field)!] : [];
         if (!on) {
           c.reset(null);
-          c.clearValidators();
+          c.setValidators(own);
         } else if (requiredValidators[field]) {
-          c.setValidators(requiredValidators[field]);
+          c.setValidators([...own, ...[].concat(requiredValidators[field])]);
         }
         c.updateValueAndValidity();
       });
@@ -391,37 +461,57 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     this.wireToggle(this.form4, 'annualAuditedAccounts', ['auditFirmName', 'lastAuditYear']);
   }
 
-  private loadDraft(): void {
-    const draft = this.regService.getDraft();
-    if (!draft) return;
+  // The lists are copied because they're edited in place, which must not change `reg` itself.
+  private applyRegistration(reg: VendorRegistration): void {
     try {
-      if (draft.step1) this.form1.patchValue(draft.step1);
-      if (draft.step2) {
-        this.form2.patchValue(draft.step2);
-        this.selectedIsoStandards = draft.step2.isoStandards ?? [];
+      if (reg.step1) this.form1.patchValue(reg.step1);
+      if (reg.step2) {
+        this.form2.patchValue(reg.step2);
+        this.selectedIsoStandards = [...(reg.step2.isoStandards ?? [])];
       }
-      if (draft.step3) {
-        this.form3.patchValue(draft.step3);
-        this.selectedRegions = draft.step3.deliveryRegions ?? [];
+      if (reg.step3) {
+        this.form3.patchValue(reg.step3);
+        this.selectedRegions = [...(reg.step3.deliveryRegions ?? [])];
       }
-      if (draft.step4) this.form4.patchValue(draft.step4);
-      if (draft.step5) {
-        this.form5.patchValue(draft.step5);
-        this.selectedCategories = draft.step5.supplyCategories ?? [];
-        this.majorClients       = draft.step5.majorClients ?? [];
-        this.keyPersonnel       = draft.step5.keyPersonnelList ?? [];
+      if (reg.step4) this.form4.patchValue(reg.step4);
+      if (reg.step5) {
+        this.form5.patchValue(reg.step5);
+        this.selectedCategories = [...(reg.step5.supplyCategories ?? [])];
+        this.majorClients       = (reg.step5.majorClients ?? []).map(c => ({ ...c }));
+        this.keyPersonnel       = (reg.step5.keyPersonnelList ?? []).map(p => ({ ...p }));
       }
-      if (draft.step6) {
-        this.form6.patchValue(draft.step6);
-        this.uploadedDocuments = draft.step6.uploadedDocuments ?? [];
+      if (reg.step6) {
+        this.form6.patchValue(reg.step6);
+        this.uploadedDocuments = [...(reg.step6.uploadedDocuments ?? [])];
       }
     } catch { /* ignore patch errors */ }
   }
 
+  /** Captures the current values so Cancel can put them back, including the lists kept outside the forms. */
+  private rememberSavedDetails(): void {
+    const forms = this.allForms;
+    const values = forms.map(f => f.getRawValue());
+    const iso = [...this.selectedIsoStandards];
+    const regions = [...this.selectedRegions];
+    const categories = [...this.selectedCategories];
+    const clients = this.majorClients.map(c => ({ ...c }));
+    const personnel = this.keyPersonnel.map(p => ({ ...p }));
+    const docs = [...this.uploadedDocuments];
+    this.savedSnapshot = () => {
+      forms.forEach((f, i) => f.reset(values[i]));
+      this.selectedIsoStandards = [...iso];
+      this.selectedRegions = [...regions];
+      this.selectedCategories = [...categories];
+      this.majorClients = clients.map(c => ({ ...c }));
+      this.keyPersonnel = personnel.map(p => ({ ...p }));
+      this.uploadedDocuments = [...docs];
+    };
+  }
+
   // ── Navigation ────────────────────────────────────────────────────────────
   nextStep(): void {
-    const form = this.currentFormGroup;
-    if (!this.validateStep(form)) return;
+    // Edits are validated together on Save, so a vendor can walk through the steps freely.
+    if (this.isFirstTime && !this.validateStep(this.currentFormGroup)) return;
     this.stepError = null;
     this.autoSaveStep();
     if (this.currentStep < this.totalSteps) {
@@ -440,12 +530,16 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
   }
 
   goToStep(n: number): void {
-    if (n < this.currentStep) {
+    if (n < this.currentStep || this.canJumpToAnyStep) {
       this.stepError = null;
       this.autoSaveStep();
       this.currentStep = n;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  }
+
+  private get allForms(): FormGroup[] {
+    return [this.form1, this.form2, this.form3, this.form4, this.form5, this.form6];
   }
 
   get currentFormGroup(): FormGroup {
@@ -487,7 +581,18 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     }, 50);
   }
 
+  /** The first step with something to fix: edits can reach Save without passing through every step. */
+  private firstInvalidStep(): number | null {
+    const index = this.allForms.findIndex((form, i) =>
+      form.invalid ||
+      (i === 2 && this.selectedRegions.length === 0) ||
+      (i === 4 && this.selectedCategories.length === 0));
+    return index === -1 ? null : index + 1;
+  }
+
   private autoSaveStep(): void {
+    // The draft only exists to survive tab switches before the first upload; edits apply on Save.
+    if (!this.isFirstTime) return;
     switch (this.currentStep) {
       case 1: this.regService.saveStep1({ ...this.form1.value }); break;
       case 2: this.regService.saveStep2({ ...this.form2.value, isoStandards: this.selectedIsoStandards }); break;
@@ -515,8 +620,12 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   onSubmit(): void {
-    this.form6.markAllAsTouched();
-    if (this.form6.invalid) return;
+    const invalidStep = this.firstInvalidStep();
+    if (invalidStep) {
+      this.currentStep = invalidStep;
+      this.validateStep(this.currentFormGroup);
+      return;
+    }
 
     const requiredMissing = this.requiredDocTypes
       .filter(d => d.required && !this.uploadedDocuments.find(u => u.type === d.type));
@@ -531,6 +640,7 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
     this.autoSaveStep();
 
     const fullReg = {
+      id: this.vendorId,
       status: 'submitted' as const,
       step1: this.form1.value,
       step2: { ...this.form2.value, isoStandards: this.selectedIsoStandards },
@@ -540,18 +650,25 @@ export class VendorRegistrationComponent implements OnInit, OnDestroy {
       step6: { ...this.form6.value, uploadedDocuments: this.uploadedDocuments },
     };
 
-    this.regService.submit(fullReg as any).pipe(take(1)).subscribe({
-      next: (res) => {
-        this.isSubmitting    = false;
-        this.isSubmitted     = true;
-        this.applicationNumber = res.applicationNumber;
+    this.regService.submit(fullReg as any, this.vendorStatus).pipe(take(1)).subscribe({
+      next: () => {
+        this.successMessage = this.isFirstTime
+          ? 'Your details have been sent to the vendor management team.'
+          : 'Your changes have been saved.';
+        this.isSubmitting = false;
+        if (this.vendorStatus === VendorStatus.PENDING_ONBOARDING) this.vendorStatus = VendorStatus.UNDER_REVIEW;
+        // Uploaded now: keeping the File would upload it again on the next edit.
+        this.uploadedDocuments = this.uploadedDocuments.map(({ file, ...doc }) => doc as UploadedDocument);
+        this.rememberSavedDetails();
+        this.viewState = 'saved';
+        this.currentStep = 1;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       error: (err) => {
         this.isSubmitting = false;
-        // The service reports which stage failed (creating the record, saving details, uploading
-        // documents, or the final submit) — say so instead of a generic message. Nothing has been
-        // sent to the reviewers yet, and pressing Submit again continues the same application.
+        // The service reports which stage failed (saving details, uploading documents, or sending
+        // for review) — say so instead of a generic message. Pressing Submit again is safe: it
+        // updates the same record.
         this.showStepError(
           err instanceof RegistrationSubmitError
             ? err.message

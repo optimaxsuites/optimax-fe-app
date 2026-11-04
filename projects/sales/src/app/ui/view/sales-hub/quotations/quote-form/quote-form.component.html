@@ -384,6 +384,7 @@
   <!-- ══ STEP 2: TEMPLATE ══════════════════════════════════════════════ -->
   <div class="qf-body qf-body--centered" *ngIf="currentStep === 2">
     <app-template-types
+      documentType="quote"
       [quoteData]="quoteDataForTemplate"
       (templateSelected)="selectedTemplate = $event">
     </app-template-types>
@@ -650,4 +651,9 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- Off-screen A4 render of the quote in the chosen template — only present while a PDF is made -->
+<div class="qf-pdf-host" *ngIf="pdfDocument" aria-hidden="true">
+  <app-sales-document elementId="quote-pdf-document" [doc]="pdfDocument" [template]="selectedTemplate"></app-sales-document>
 </div>

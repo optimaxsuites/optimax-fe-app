@@ -155,7 +155,7 @@
 
             <td class="il-td-num">{{ getQuoteNumber(tx) }}</td>
 
-            <td class="il-td-amount">{{ formatCurrency(tx.totalAmount, tx.currency) }}</td>
+            <td class="il-td-amount">{{ formatCurrency(amountOf(tx), currencyOf(tx)) }}</td>
 
             <td>
               <div class="il-payment-split">

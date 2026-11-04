@@ -8,6 +8,10 @@
     <p class="text-sm text-[#5a7380] mt-0.5">Manage purchase orders, raise invoices and track payments</p>
   </div>
 
+  <div *ngIf="actionError || loadError" role="alert" class="mb-5 px-4 py-3 rounded-xl text-sm bg-red-50 text-red-700 border border-red-200">
+    {{ actionError || loadError }}
+  </div>
+
   <!-- ── Stats cards ─────────────────────────────────────── -->
   <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="lpoStats && financeStats">
 
@@ -697,6 +701,7 @@
             <span class="text-lg text-[#224957]">{{ fmtCurrency(invoiceForm.total || 0, invoiceForm.currency || 'NGN') }}</span>
           </div>
         </div>
+        <p *ngIf="invoiceFormErrors['submit']" role="alert" class="text-xs text-red-500 px-6 pt-3">{{ invoiceFormErrors['submit'] }}</p>
         <div class="flex items-center gap-2">
           <button (click)="closeInvoiceModal()" class="px-3 py-2 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
           <button (click)="submitInvoice()" class="px-5 py-2 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">Create Invoice</button>

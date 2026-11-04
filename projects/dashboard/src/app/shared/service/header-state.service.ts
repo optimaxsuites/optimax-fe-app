@@ -108,22 +108,27 @@ export class HeaderStateService {
   pushNotification(
     item: Omit<HeaderNotificationItem, 'id' | 'createdAt' | 'read'>,
   ): void {
+    if (this.isInternalSignalPayload(item?.body) || this.isInternalSignalPayload(item?.title)) {
+      return;
+    }
+    const cleanBody = this.cleanHumanNotificationText(item?.body, 'A new module event is available.');
+    if (!cleanBody || this.isInternalSignalPayload(cleanBody)) {
+      return;
+    }
+    const cleanTitle = this.cleanHumanNotificationText(item?.title, 'New update');
     const isSuppressed = Date.now() < this.suppressPushUntil;
     const nextItem: HeaderNotificationItem = {
       id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       createdAt: Date.now(),
       read: isSuppressed,
       ...item,
-      title: this.stringifyNotificationField(item.title, 'New update'),
-      body: this.stringifyNotificationField(
-        item.body,
-        'A new module event is available.',
-      ),
+      title: cleanTitle,
+      body: cleanBody,
       contextLabel: item.contextLabel
         ? this.stringifyNotificationField(item.contextLabel, '')
         : item.contextLabel,
     };
-    const notifications = [nextItem, ...this.state$.value.notifications].slice(
+    const notifications = [nextItem, ...this.state$.value.notifications.filter(n => !this.isInternalSignalPayload(n.body) && !this.isInternalSignalPayload(n.title))].slice(
       0,
       25,
     );
@@ -137,13 +142,21 @@ export class HeaderStateService {
   pushMessagePreview(
     item: Omit<HeaderMessagePreviewItem, 'id' | 'read'>,
   ): void {
+    if (this.isInternalSignalPayload(item?.body) || this.isInternalSignalPayload(item?.title)) {
+      return;
+    }
+    const cleanBody = this.cleanHumanNotificationText(item?.body, 'A new message arrived.');
+    if (!cleanBody || this.isInternalSignalPayload(cleanBody)) {
+      return;
+    }
+    const cleanTitle = this.cleanHumanNotificationText(item?.title, 'New message');
     const nextItem: HeaderMessagePreviewItem = {
       ...item,
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       createdAt: Number(item.createdAt || Date.now()),
       read: false,
-      title: this.stringifyNotificationField(item.title, 'New message'),
-      body: this.stringifyNotificationField(item.body, 'A new message arrived.'),
+      title: cleanTitle,
+      body: cleanBody,
       contextLabel: item.contextLabel
         ? this.stringifyNotificationField(item.contextLabel, '')
         : item.contextLabel,
@@ -296,6 +309,11 @@ export class HeaderStateService {
     }
     try {
       const parsed = JSON.parse(event.newValue) as HeaderState;
+      if (parsed && Array.isArray(parsed.notifications)) {
+        parsed.notifications = parsed.notifications
+          .map((n) => this.sanitizeStoredNotification(n))
+          .filter((n) => !this.isInternalSignalPayload(n.body) && !this.isInternalSignalPayload(n.title));
+      }
       this.ngZone.run(() => {
         this.state$.next(parsed);
         this.refreshTitle(parsed);
@@ -347,6 +365,80 @@ export class HeaderStateService {
     return fallback;
   }
 
+  private isInternalSignalPayload(val: unknown): boolean {
+    if (!val) return false;
+    let obj: any = val;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+        return false;
+      }
+      try {
+        obj = JSON.parse(trimmed);
+      } catch (_) {
+        return false;
+      }
+    }
+    if (typeof obj === 'object' && obj !== null) {
+      const type = (obj.type || obj.actionType || obj.eventType || '').toString().toUpperCase();
+      const signalTypes = [
+        'CALL_SIGNAL', 'CALL', 'VIDEO_CALL', 'CALL_STATUS', 'SEEN', 'READ',
+        'PLAYED', 'TYPING', 'PRESENCE', 'OFFER', 'ANSWER', 'CANDIDATE',
+        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG'
+      ];
+      if (signalTypes.includes(type)) return true;
+      if (obj.callStatus || obj.__signal || obj.__optimaxReadReceipt) return true;
+      if (obj.payload && typeof obj.payload === 'object') {
+        const pType = (obj.payload.type || obj.payload.callType || obj.payload.callStatus || '').toString().toUpperCase();
+        if (signalTypes.includes(pType) || obj.payload.callStatus) return true;
+      }
+    }
+    return false;
+  }
+
+  private cleanHumanNotificationText(val: unknown, fallback: string): string {
+    if (val == null) return fallback;
+    let raw = typeof val === 'string' ? val.trim() : this.stringifyNotificationField(val, fallback);
+    if (!raw) return fallback;
+
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (this.isInternalSignalPayload(parsed)) {
+          return '';
+        }
+        if (parsed.__callSummary) {
+          const isMissed = parsed.duration == null || parsed.duration < 0;
+          const isVideo = parsed.callType === 'VIDEO_CALL';
+          return isMissed ? `${isVideo ? 'Video' : 'Voice'} call - missed` : `${isVideo ? 'Video' : 'Voice'} call`;
+        }
+        if (parsed.content) {
+          raw = String(parsed.content);
+        } else if (parsed.text) {
+          raw = String(parsed.text);
+        } else if (parsed.title) {
+          raw = String(parsed.title);
+        } else if (parsed.message) {
+          raw = String(parsed.message);
+        } else {
+          return '';
+        }
+      } catch (_) {}
+    }
+
+    const cleaned = raw
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+      return '';
+    }
+
+    return cleaned || fallback;
+  }
+
   private sanitizeStoredNotification(
     entry: Partial<HeaderNotificationItem> | null | undefined,
   ): HeaderNotificationItem {
@@ -354,8 +446,8 @@ export class HeaderStateService {
       id:
         this.stringifyNotificationField(entry?.id, '').trim() ||
         `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      title: this.stringifyNotificationField(entry?.title, 'New update'),
-      body: this.stringifyNotificationField(
+      title: this.cleanHumanNotificationText(entry?.title, 'New update'),
+      body: this.cleanHumanNotificationText(
         entry?.body,
         'A new module event is available.',
       ),
@@ -385,8 +477,8 @@ export class HeaderStateService {
       id:
         this.stringifyNotificationField(entry?.id, '').trim() ||
         `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      title: this.stringifyNotificationField(entry?.title, 'New message'),
-      body: this.stringifyNotificationField(
+      title: this.cleanHumanNotificationText(entry?.title, 'New message'),
+      body: this.cleanHumanNotificationText(
         entry?.body,
         'A new message arrived.',
       ),

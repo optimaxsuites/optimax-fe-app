@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -314,7 +315,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
 
   formatDate(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -323,7 +324,7 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
 
   formatDateTime(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return toApiDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -400,13 +401,13 @@ export class QuotationDetailComponent implements OnInit, OnDestroy {
   getDaysRemaining(): number {
     if (!this.quotation?.expiresAt) return 0;
     const now = new Date();
-    const expiry = new Date(this.quotation.expiresAt);
+    const expiry = toApiDate(this.quotation.expiresAt);
     const diff = expiry.getTime() - now.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
   isExpired(): boolean {
     if (!this.quotation?.expiresAt) return false;
-    return new Date(this.quotation.expiresAt) < new Date();
+    return toApiDate(this.quotation.expiresAt) < new Date();
   }
 }

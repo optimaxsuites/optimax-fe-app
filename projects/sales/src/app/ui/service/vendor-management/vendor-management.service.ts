@@ -45,6 +45,7 @@ import {
   AlertSeverity
 } from '../../domain/vendor-management/vendor-management.dto';
 import { VendorRegistration } from '../../domain/vendor-portal/vendor-registration.dto';
+import { registrationFromApi } from '../vendor-portal/registration-api-mapping.util';
 import { environment } from '../../shared-component/service/environments/environment';
 
 const API_BASE = environment.apiBaseUrl;
@@ -262,7 +263,7 @@ export class VendorService {
       // other response shape silently dropped the entire tab and every field
       // in it — VAT status, delivery regions, secondary bank, key personnel,
       // the declaration, etc. — even though the vendor had genuinely submitted it).
-      registration: this.buildRegistration(raw, s1, s2, s3, s4, s5, s6),
+      registration: registrationFromApi(this.buildRegistration(raw, s1, s2, s3, s4, s5, s6)),
     } as Vendor;
   }
 

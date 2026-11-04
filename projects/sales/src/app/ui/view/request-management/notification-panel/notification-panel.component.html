@@ -104,13 +104,13 @@
           <!-- Timestamps -->
           <div class="np-timestamps">
             <span *ngIf="n.sentAt" class="ts-item">
-              <i class="fas fa-paper-plane"></i> Sent {{ n.sentAt | date:'d MMM yyyy, HH:mm' }}
+              <i class="fas fa-paper-plane"></i> Sent {{ toApiDate(n.sentAt) | date:'d MMM yyyy, HH:mm' }}
             </span>
             <span *ngIf="n.deliveredAt" class="ts-item delivered">
-              <i class="fas fa-check-double"></i> Delivered {{ n.deliveredAt | date:'d MMM yyyy, HH:mm' }}
+              <i class="fas fa-check-double"></i> Delivered {{ toApiDate(n.deliveredAt) | date:'d MMM yyyy, HH:mm' }}
             </span>
             <span *ngIf="!n.sentAt" class="ts-item muted">
-              <i class="fas fa-clock"></i> Created {{ n.createdAt | date:'d MMM yyyy, HH:mm' }}
+              <i class="fas fa-clock"></i> Created {{ toApiDate(n.createdAt) | date:'d MMM yyyy, HH:mm' }}
             </span>
           </div>
 

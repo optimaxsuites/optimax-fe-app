@@ -2,26 +2,29 @@
 
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, takeUntil, lastValueFrom } from 'rxjs';
+import { Subject, takeUntil, lastValueFrom, forkJoin } from 'rxjs';
 import { SalesService } from '../../../../service/sales/sales.service';
-import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions } from '../../../../domain/sales/sales.dto';
+import { Invoice, InvoiceStatus, PaymentMethod, SaleLifecycleStatus, SalesandTransactions, SalesDeliveryNote, QuoteDocumentAttachment } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
+import { SalesDocumentComponent } from '../../sales-document/sales-document.component';
+import { SalesDocumentModel, invoiceDocument } from '../../../../service/sales/sales-document';
+import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
+import { DocumentViewerComponent } from '../../document-viewer/document-viewer.component';
+import { ViewableDocument, downloadDocument, hasDocumentContent } from '../../../../service/sales/document-file.util';
 import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { SharedOverlayModule } from '../../../../../shared-overlay.module';
 import { PaymentReceiptComponent } from '../../payment-receipt/payment-receipt.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-invoice-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent],
+  imports: [CommonModule, FormsModule, BackButtonComponent, SharedOverlayModule, PaymentReceiptComponent, SendEmailModalComponent, DocumentViewerComponent, SalesDocumentComponent],
   templateUrl: './invoice-detail.component.html',
   styleUrls: ['./invoice-detail.component.scss']
 })
@@ -32,6 +35,8 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   @Output() edit = new EventEmitter<string>();
 
   invoice: any = null;
+  /** The invoice's customer, looked up by id when the invoice doesn't embed it — see SalesService.documentCustomer. */
+  customer: any = null;
   isLoading = true;
   showPaymentModal = false;
   paymentAmount = 0;
@@ -97,13 +102,82 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   /** Order number linking this invoice to its quote / delivery note / transaction. */
   orderNumber = '';
 
+  // ── Signed delivery note (invoices that came through Quote → LPO → Delivery Note) ──
+  deliveryNote: SalesDeliveryNote | null = null;
+  private signedFile: QuoteDocumentAttachment | null = null;
+  signedLookupDone = false;
+  showSignedViewer = false;
+
+  /** Whether this invoice came through the quote / delivery flow (a standalone one didn't). */
+  get fromDeliveryFlow(): boolean {
+    return !!this.invoice?.quoteId || !!this.deliveryNote;
+  }
+
+  /** The signed copy: the backend's stored file once it has one, else the file kept on the quote. */
+  get signedDocument(): ViewableDocument | null {
+    if (this.deliveryNote?.signedDocumentUrl) {
+      return { fileName: `Signed-${this.deliveryNote.deliveryNumber || 'DeliveryNote'}`, url: this.deliveryNote.signedDocumentUrl };
+    }
+    if (this.signedFile?.base64Content) {
+      return { fileName: this.signedFile.fileName || 'Signed delivery note', contentType: this.signedFile.contentType,
+        base64Content: this.signedFile.base64Content, uploadedAt: this.signedFile.uploadedAt };
+    }
+    return null;
+  }
+
+  get canViewSigned(): boolean {
+    return hasDocumentContent(this.signedDocument);
+  }
+
+  /** Finds the invoice's delivery note and the signed copy uploaded for it. */
+  private loadSignedDeliveryNote(invoice: Invoice): void {
+    this.deliveryNote = null;
+    this.signedFile = null;
+    this.signedLookupDone = false;
+    const quoteId = invoice.quoteId;
+    if (quoteId == null || quoteId === '') {
+      this.signedLookupDone = true;
+      return;
+    }
+    forkJoin({
+      quote: this.salesService.getQuoteById(quoteId),
+      notes: this.salesService.getDeliveryNotes({ quoteId, size: 1000 })
+    }).pipe(takeUntil(this.destroy$)).subscribe(({ quote, notes }) => {
+      this.templateQuote = quote;
+      this.signedFile = this.salesService.getQuoteSignedDeliveryNote(quote);
+      this.deliveryNote = notes.data.find(n => String(n.invoiceId) === String(invoice.id))
+        || notes.data.find(n => String(n.quoteId) === String(quoteId))
+        || null;
+      this.signedLookupDone = true;
+    });
+  }
+
+  viewSignedDeliveryNote(): void {
+    if (this.canViewSigned) this.showSignedViewer = true;
+  }
+
+  downloadSignedDeliveryNote(): void {
+    const doc = this.signedDocument;
+    if (!doc || !downloadDocument(doc)) {
+      this.messageService.add({ severity: 'warn', summary: 'Not Available', detail: 'No signed delivery note file is available for this invoice.' });
+    }
+  }
+
+  openDeliveryNote(): void {
+    if (this.deliveryNote?.id == null) return;
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    this.router.navigate(uuid ? ['/admin/sales/delivery-notes', this.deliveryNote.id, uuid] : ['/admin/sales/delivery-notes', this.deliveryNote.id]);
+  }
+
   loadInvoice(id: string): void {
     this.isLoading = true;
     this.salesService.getInvoiceById(id).subscribe({
       next: (invoice: Invoice | null) => {
         this.invoice = invoice;
         if (invoice) {
+          this.salesService.documentCustomer(invoice).pipe(takeUntil(this.destroy$)).subscribe(c => this.customer = c);
           this.loadPaymentsForInvoice(invoice.id);
+          this.loadSignedDeliveryNote(invoice);
           this.salesService.getOrderIdLookup().pipe(takeUntil(this.destroy$)).subscribe(lookup => {
             this.orderNumber = this.salesService.orderNumberForInvoice(invoice, lookup);
           });
@@ -328,13 +402,14 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   }
 
   getCustomerAddressStr(): string {
-    const c = (this.invoice?.customerId || this.invoice?.customerName) as any;
+    const c = (this.customer || this.invoice?.customerId || this.invoice?.customerName) as any;
     const addr = c?.address;
     if (!addr) return '';
     return Array.isArray(addr) ? addr.filter(Boolean).join(', ') : String(addr);
   }
 
   getInvoiceCustomerName(): string {
+    if (this.customer?.name) return this.customer.name;
     const inv = this.invoice as any;
     const cName = inv?.customerName;
     if (!cName) return 'Customer';
@@ -366,14 +441,14 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   isSendingEmail = false;
 
   private get invoiceCustomerName(): string {
-    return (this.invoice?.customerName as any)?.name || (typeof this.invoice?.customerName === 'string' ? this.invoice.customerName : '') || 'Customer';
+    return this.customer?.name || (this.invoice?.customerName as any)?.name || (typeof this.invoice?.customerName === 'string' ? this.invoice.customerName : '') || 'Customer';
   }
 
   /** The customer's email from the nested customer on the invoice, or — when the record doesn't
    *  carry it — from the customer list. */
   private async resolveCustomerEmail(invoice: any): Promise<string> {
     const nested = invoice.customerName || invoice.customerId;
-    const direct = nested?.email || invoice.customerId?.email;
+    const direct = this.customer?.email || nested?.email || invoice.customerId?.email;
     if (direct || nested?.id == null) return direct || '';
     try {
       const res = await lastValueFrom(this.salesService.getCustomers({ page: 0, size: 200 }));
@@ -506,48 +581,52 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  downloadPDF(): void {
+  // ── The document: the invoice in the template the seller picked ──
+  /** The seller's company profile (logo, address, bank) for the document's "From" block. */
+  private merchant: any = null;
+  private merchantRequested = false;
+  private docCache: { key: unknown[]; doc: SalesDocumentModel } | null = null;
+  private templateQuote: any = null;
+
+  get document(): SalesDocumentModel {
+    if (!this.merchantRequested) {
+      this.merchantRequested = true;
+      this.salesService.getMyMerchantInfo().pipe(takeUntil(this.destroy$)).subscribe(m => this.merchant = m);
+    }
+    const key = [this.invoice, this.merchant, this.orderNumber, this.customer];
+    if (!this.docCache || this.docCache.key.some((v, i) => v !== key[i])) {
+      const merchant = this.merchant ? { ...this.invoice?.merchantDetails, ...this.merchant } : this.invoice?.merchantDetails;
+      this.docCache = { key, doc: invoiceDocument(this.invoice, merchant, this.customer || undefined, this.orderNumber || undefined) };
+    }
+    return this.docCache.doc;
+  }
+
+  /** The template chosen when the invoice was created (see SalesService.saveDocumentTemplate). */
+  get documentTemplate(): QuoteTemplate | null {
+    const id = this.salesService.getDocumentTemplateId('INVOICE', this.invoice?.id, this.templateQuote);
+    return QUOTE_TEMPLATES.find(t => t.id === id) || null;
+  }
+
+  async downloadPDF(): Promise<void> {
     const element = document.getElementById('invoice-detail-sheet');
-    if (!element) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find element to export.' });
+    if (!element || this.isDownloading) {
+      if (!element) this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not find the document to export.' });
       return;
     }
     this.isDownloading = true;
-    element.classList.add('pdf-printing-active');
-
-    setTimeout(() => {
-      html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(canvas => {
-        element.classList.remove('pdf-printing-active');
-        const imgData = canvas.toDataURL('image/png');
-        const pageW = 210;
-        const pageH = 297;
-        const imgW = pageW;
-        const imgH = (canvas.height * imgW) / canvas.width;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        if (imgH <= pageH) {
-          pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
-        } else {
-          let heightLeft = imgH;
-          let position = 0;
-          pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-          heightLeft -= pageH;
-          while (heightLeft > 0) {
-            position = heightLeft - imgH;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH);
-            heightLeft -= pageH;
-          }
-        }
-
-        pdf.save(`Invoice-${this.invoice?.invoiceNumber || 'Detail'}.pdf`);
-        this.isDownloading = false;
-      }).catch(err => {
-        element.classList.remove('pdf-printing-active');
-        console.error('Error generating PDF:', err);
-        this.isDownloading = false;
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF.' });
-      });
-    }, 300);
+    try {
+      const blob = await renderElementToPdf(element);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${this.invoice?.invoiceNumber || 'Detail'}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate PDF.' });
+    } finally {
+      this.isDownloading = false;
+    }
   }
 }

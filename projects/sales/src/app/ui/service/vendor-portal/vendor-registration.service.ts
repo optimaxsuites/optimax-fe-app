@@ -6,9 +6,61 @@ import {
   VendorRegistration, RegistrationStatus,
   BusinessIdentity, LegalCompliance, ContactLocation,
   BankingFinance, CapabilitiesExperience, DocumentsDeclaration,
-  UploadedDocument, DocumentUploadType,
+  UploadedDocument, DocumentUploadType, SUPPLY_CATEGORY_LABELS,
 } from '../../domain/vendor-portal/vendor-registration.dto';
+import { Vendor, VendorStatus } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
+import { VendorService as VendorManagementService } from '../vendor-management/vendor-management.service';
+import { registrationFromApi, registrationStepToApi } from './registration-api-mapping.util';
+
+/** The logged-in vendor's own record, as Vendor Management holds it. */
+export interface OwnVendorRecord {
+  vendorId: string;
+  status: VendorStatus;
+  registration?: VendorRegistration;
+  /** The backend only returned its summary of the details, so `registration` is missing most fields. */
+  isPartial: boolean;
+}
+
+/**
+ * Whether a record holds details uploaded through the portal. Signup only captures the company name
+ * and email, so step 1 can't tell; these are required fields no signup record has.
+ */
+export function hasUploadedDetails(reg?: Partial<VendorRegistration> | null): boolean {
+  return !!(reg?.step2?.cacRegistrationNumber || reg?.step3?.primaryContactName || reg?.step4?.primaryBankName);
+}
+
+/** Only the values present, so patching a form with the result leaves every other field alone. */
+const present = (fields: Record<string, unknown>): any => Object.fromEntries(
+  Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== '' && value !== 'Pending'));
+
+/**
+ * What can be recovered from Vendor Management's summary of a vendor, for when the backend doesn't return
+ * the 6 steps themselves. Each summary field is the form field it was saved from.
+ */
+export function registrationFromVendorSummary(v: Vendor): VendorRegistration {
+  const contact = v.contacts?.find(c => c.isPrimary) ?? v.contacts?.[0];
+  return {
+    step1: present({ businessName: v.companyName, websiteUrl: v.website, businessDescription: v.description }),
+    step2: present({ cacRegistrationNumber: v.registrationNumber, tinNumber: v.taxId }),
+    step3: present({
+      primaryContactName: contact?.name, primaryContactTitle: contact?.role,
+      primaryContactEmail: contact?.email || v.email, primaryContactPhone: contact?.phone || v.phone,
+      registeredAddressLine1: v.address?.street, registeredCity: v.address?.city, registeredState: v.address?.state,
+      registeredCountry: v.address?.country, registeredPostalCode: v.address?.postalCode,
+    }),
+    step4: present({
+      primaryBankName: v.bankDetails?.bankName, primaryAccountName: v.bankDetails?.accountName,
+      primaryAccountNumber: v.bankDetails?.accountNumber, primarySwiftCode: v.bankDetails?.swiftCode,
+      preferredPaymentTerms: v.paymentTerms,
+    }),
+    step5: {
+      supplyCategories: (v.categories ?? [])
+        .map(c => String(c).trim().toLowerCase().replace(/[\s-]+/g, '_'))
+        .filter(c => c in SUPPLY_CATEGORY_LABELS),
+    },
+  } as unknown as VendorRegistration;
+}
 
 /**
  * Thrown by submit() with a message that is safe to show the vendor. `failedDocuments` lists the labels
@@ -21,11 +73,30 @@ export class RegistrationSubmitError extends Error {
   }
 }
 
+/** Plain wording for the backend's bean-validation codes. */
+const FIELD_ERROR_TEXT: Record<string, string> = {
+  NotNull: 'is required', NotBlank: 'is required', NotEmpty: 'is required',
+  Email: 'must be a valid email address', Size: 'has the wrong length', Pattern: 'is in the wrong format',
+};
+
+/** How each registration step is named in the form, for error messages. */
+const STEP_NAMES: Record<number, string> = {
+  1: 'Business Identity', 2: 'Legal & Compliance', 3: 'Contact & Location',
+  4: 'Banking & Finance', 5: 'Capabilities & Experience', 6: 'Documents & Declaration',
+};
+
 @Injectable({ providedIn: 'root' })
 export class VendorRegistrationService {
 
   /** Client ids of documents already uploaded to the backend, so a retry doesn't upload them twice. */
   private uploadedDocIds = new Set<string>();
+
+  /**
+   * What this session last saved. No endpoint returns the 6 steps, so without this a vendor's details
+   * disappear as soon as they leave the tab. Memory only, because it holds bank and tax details: a refresh
+   * still loses it, until the backend returns the steps (which then take priority over this).
+   */
+  private lastSaved: VendorRegistration | null = null;
 
   private readonly baseUrl = environment.apiBaseUrl + '/x/api/v2/commerce';
 
@@ -33,11 +104,34 @@ export class VendorRegistrationService {
 
   readonly registration$ = this.registration$$.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private vendorManagement: VendorManagementService) { }
 
-  private get tenantId(): string {
-    const h = window.location.hostname;
-    return (h.includes('localhost') || h.includes('127.0.0.1')) ? 'optimax' : h.split('.')[0] || 'optimax';
+  // ── The logged-in vendor's record ─────────────────────────────────────────
+  /**
+   * Finds the record created at signup, or null if this login has no vendor (a 404). Login only gives
+   * us a user id, which is not a vendor id — fetching `vendors/{userid}` could load and then overwrite
+   * another vendor — so it is converted first.
+   */
+  loadOwnVendor(): Observable<OwnVendorRecord | null> {
+    const userId = sessionStorage.getItem('userid');
+    if (!userId) return of(null);
+    return this.http.get<any>(`${this.baseUrl}/vendors/by-user/${userId}`).pipe(
+      catchError(err => err?.status === 404 ? of(null) : throwError(() => err)),
+      switchMap(vendor => vendor?.id
+        ? this.vendorManagement.getVendorById(String(vendor.id)).pipe(
+            map(v => {
+              const vendorId = String(v.id);
+              const saved = this.lastSaved?.id === vendorId ? this.lastSaved : null;
+              const hasSteps = hasUploadedDetails(v.registration);
+              return {
+                vendorId,
+                status: v.status,
+                registration: hasSteps ? v.registration : saved ?? registrationFromVendorSummary(v),
+                isPartial: !hasSteps && !saved,
+              };
+            }))
+        : of(null))
+    );
   }
 
   // ── Draft persistence ─────────────────────────────────────────────────────
@@ -65,7 +159,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step1: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step1`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step1`, registrationStepToApi(1, data)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep1 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -75,7 +169,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step2: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step2`, this.stepBody(2, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep2 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -85,7 +179,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step3: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step3`, this.stepBody(3, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep3 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -95,7 +189,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step4: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step4`, this.stepBody(4, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep4 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -105,7 +199,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step5: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step5`, this.stepBody(5, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep5 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -115,7 +209,7 @@ export class VendorRegistrationService {
     this.saveDraft({ step6: data });
     const id = this.registration$$.getValue()?.id;
     if (id) {
-      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, data).pipe(
+      this.http.put(`${this.baseUrl}/vendors/${id}/step6`, this.stepBody(6, data, id)).pipe(
         catchError((err) => { console.error('[VendorRegistrationService] saveStep6 failed:', err); return of(null); }),
       ).subscribe();
     }
@@ -123,11 +217,14 @@ export class VendorRegistrationService {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   /**
-   * Submits the finished registration: create the vendor record (once), save every step, upload the
-   * documents, then mark the application submitted. Every stage reports failure to the caller — nothing
-   * is swallowed and there is no offline/"pretend it worked" fallback.
+   * Saves the vendor's details onto their existing record (`reg.id`): save every step, upload the
+   * documents, then send a not-yet-approved vendor for review. Used for the first upload and every
+   * later edit. Every stage reports failure to the caller — nothing is swallowed and there is no
+   * offline/"pretend it worked" fallback.
    *
    * What this replaces, and why:
+   *  - Vendors have a record from signup, and this used to POST a second one, so their details never
+   *    reached the record Vendor Management shows. It never creates a vendor now.
    *  - A failed POST /vendors used to be converted into a fake `APP-<timestamp>` record in localStorage
    *    plus a success screen ("received and under review… confirmation email sent"). The admin never
    *    saw those applications, and the vendor was told they were in.
@@ -136,93 +233,124 @@ export class VendorRegistrationService {
    *    reported as success.
    *  - The documents were never sent at all: only a `blob:` URL (meaningless outside this tab) and an
    *    unserialisable `File` (which JSON turns into `{}`) went into the step-6 payload.
-   *  - Every submit POSTed a new vendor, because the draft's id was never reused, so retrying after any
-   *    failure created duplicates.
    *  - The full registration, including bank account and tax numbers, was written to localStorage in
    *    plaintext and never removed.
    *
-   * The created vendor's id is remembered in the draft, so retrying after a failure continues the same
-   * record instead of creating another. On success the draft is cleared.
+   * On success the draft is cleared.
    */
-  submit(reg: VendorRegistration): Observable<{ applicationNumber: string }> {
-    const existingId = reg.id ?? this.registration$$.getValue()?.id;
+  submit(reg: VendorRegistration, vendorStatus: VendorStatus): Observable<void> {
+    if (!reg.id) {
+      return throwError(() => new RegistrationSubmitError('We could not find your vendor record, so your details were not saved.'));
+    }
+    const id = String(reg.id);
     const docs = reg.step6?.uploadedDocuments ?? [];
 
-    const ensureVendor$: Observable<string> = existingId
-      ? of(String(existingId))
-      : this.http.post<any>(`${this.baseUrl}/vendors`, { ...(reg.step1 ?? {}), tenantId: this.tenantId }).pipe(
-          map(res => {
-            const id = this.extractId(res);
-            if (!id) {
-              throw new RegistrationSubmitError('The server did not return an application reference. Please try again.');
-            }
-            return id;
-          }),
-          tap(id => {
-            const current = this.registration$$.getValue() ?? this.blankRegistration();
-            this.registration$$.next({ ...current, ...reg, id } as VendorRegistration);
-          }),
-          catchError(err => throwError(() => err instanceof RegistrationSubmitError
-            ? err
-            : new RegistrationSubmitError('We could not create your application. Please check your connection and try again.')))
-        );
-
-    const saveSteps = (id: string): Observable<unknown> => {
-      const puts: Observable<unknown>[] = [];
-      const put = (n: number, body: unknown) => puts.push(this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, body));
-      // A brand-new vendor already has step 1 (it was the POST body); a retried one may have edits.
-      if (existingId && reg.step1) put(1, reg.step1);
+    // Every step is saved even if one fails (no cancelling the others), so a single attempt reports
+    // every step the server rejected instead of revealing them one retry at a time.
+    const saveSteps = (): Observable<unknown> => {
+      const puts: Observable<{ step: number; err: any } | null>[] = [];
+      const put = (n: number, body: unknown) => puts.push(
+        this.http.put(`${this.baseUrl}/vendors/${id}/step${n}`, this.stepBody(n, body, id)).pipe(
+          map(() => null),
+          catchError(err => of({ step: n, err }))
+        ));
+      if (reg.step1) put(1, reg.step1);
       if (reg.step2) put(2, reg.step2);
       if (reg.step3) put(3, reg.step3);
       if (reg.step4) put(4, reg.step4);
       if (reg.step5) put(5, reg.step5);
       if (reg.step6) put(6, this.serializableStep6(reg.step6));
       return (puts.length ? forkJoin(puts) : of([])).pipe(
-        catchError(() => throwError(() => new RegistrationSubmitError('Some of your details could not be saved. Please try again.')))
+        switchMap(results => {
+          const failed = results.filter((r): r is { step: number; err: any } => !!r);
+          if (!failed.length) return of(null);
+          if (failed.every(f => f.err?.status === 0)) {
+            return throwError(() => new RegistrationSubmitError('Some of your details could not be saved. Please check your connection and try again.'));
+          }
+          const lines = failed.map(f => `${STEP_NAMES[f.step] || `Step ${f.step}`}: ${this.serverReason(f.err) || 'could not be saved'}`);
+          return throwError(() => new RegistrationSubmitError(`Some of your details could not be saved. ${lines.join(' | ')}`));
+        })
       );
     };
 
-    const uploadDocuments = (id: string): Observable<unknown> => {
+    const uploadDocuments = (): Observable<unknown> => {
       const pending = docs.filter(d => d.file && !this.uploadedDocIds.has(d.id));
       if (!pending.length) return of(null);
       return forkJoin(pending.map(doc =>
         this.uploadRegistrationDocument(id, doc, reg.step2).pipe(
           tap(() => this.uploadedDocIds.add(doc.id)),
-          map(() => null as string | null),
-          catchError(() => of(doc.label || doc.fileName || 'a document'))
+          map(() => null as { name: string; reason: string } | null),
+          // Keep the server's reason: without it a rejected field (an enum spelling, a missing date)
+          // is indistinguishable from a network failure.
+          catchError(err => of({
+            name: doc.label || doc.fileName || 'a document',
+            reason: err?.status === 0 ? 'connection problem' : this.serverReason(err),
+          }))
         )
       )).pipe(
         switchMap(results => {
-          const failed = results.filter((r): r is string => !!r);
-          return failed.length
-            ? throwError(() => new RegistrationSubmitError(`These documents could not be uploaded: ${failed.join(', ')}. Please try again.`, failed))
-            : of(null);
+          const failed = results.filter((r): r is { name: string; reason: string } => !!r);
+          if (!failed.length) return of(null);
+          const lines = failed.map(f => f.reason ? `${f.name} (${f.reason})` : f.name);
+          return throwError(() => new RegistrationSubmitError(
+            `These documents could not be uploaded: ${lines.join(', ')}. Please try again.`,
+            failed.map(f => f.name)));
         })
       );
     };
 
-    const markSubmitted = (id: string): Observable<{ applicationNumber: string }> =>
-      this.http.patch<any>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
-        map(res => ({ applicationNumber: String(res?.applicationNumber || id) })),
-        catchError(() => throwError(() => new RegistrationSubmitError('Your details were saved, but the application could not be submitted. Please try again.')))
-      );
+    // Only a vendor still awaiting review is sent for it: this must never put an approved vendor back
+    // in the queue, and their edits apply straight away.
+    const sendForReview = (): Observable<unknown> => vendorStatus !== VendorStatus.PENDING_ONBOARDING
+      ? of(null)
+      : this.http.patch<any>(`${this.baseUrl}/vendors/${id}/submit`, {}).pipe(
+          catchError(err => throwError(() => new RegistrationSubmitError(this.failureMessage(err, 'Your details were saved, but could not be sent for review.'))))
+        );
 
-    return ensureVendor$.pipe(
-      switchMap(id => saveSteps(id).pipe(
-        switchMap(() => uploadDocuments(id)),
-        switchMap(() => markSubmitted(id))
-      )),
+    return saveSteps().pipe(
+      switchMap(() => uploadDocuments()),
+      switchMap(() => sendForReview()),
+      map(() => undefined),
       tap(() => {
         this.uploadedDocIds.clear();
         this.clearDraft();
+        // Without its File, or a later edit would upload every document again.
+        const uploadedDocuments = docs.map(({ file, ...doc }) => doc as UploadedDocument);
+        this.lastSaved = { ...reg, step6: reg.step6 && { ...reg.step6, uploadedDocuments } };
       })
     );
   }
 
-  /** Vendor id from a create response — either `{ id }` / `{ vendorId }` or a bare id — or '' if absent. */
-  private extractId(res: any): string {
-    const raw = res?.id ?? res?.vendorId ?? (typeof res === 'string' || typeof res === 'number' ? res : null);
-    return raw != null && typeof raw !== 'object' && String(raw).trim() !== '' ? String(raw) : '';
+  /**
+   * What went wrong, in a sentence the vendor can act on: a real connection problem (status 0) says so;
+   * otherwise the server's own reason is shown instead of blaming the vendor's connection.
+   */
+  private failureMessage(err: any, what: string): string {
+    if (err?.status === 0) return `${what} Please check your connection and try again.`;
+    const reason = this.serverReason(err);
+    return reason ? `${what} The server said: ${reason}` : `${what} Please try again.`;
+  }
+
+  /**
+   * The backend's own message, kept long enough to include the full list of accepted values it names.
+   * Validation errors come with `message: null` and the detail in `fieldErrors`, so those are spelled out.
+   */
+  private serverReason(err: any): string {
+    const body = err?.error;
+    const fields = Array.isArray(body?.fieldErrors)
+      ? body.fieldErrors.map((f: any) => `${f?.field || 'a field'} ${FIELD_ERROR_TEXT[f?.errorCode] || `is invalid (${f?.errorCode || 'unknown'})`}`).join(', ')
+      : '';
+    const reason = String((typeof body === 'string' ? body : (body?.message || fields || body?.error || '')) || '').trim();
+    return reason.length > 1000 ? reason.slice(0, 1000) + '…' : reason;
+  }
+
+  /** A step's request body: backend enum spellings, plus the `vendorId` the step endpoints require in
+   *  the body (they reject it as NotNull even though the id is already in the URL). Step 1 doesn't need it. */
+  private stepBody(n: number, data: unknown, vendorId: string | number): unknown {
+    const body = registrationStepToApi(n, data);
+    if (n === 1) return body;
+    const numeric = Number(vendorId);
+    return { ...body, vendorId: isNaN(numeric) ? vendorId : numeric };
   }
 
   /** Step 6 minus each document's `File` and `blob:` URL — neither can be sent as JSON (a File becomes `{}`). */
@@ -292,6 +420,7 @@ export class VendorRegistrationService {
   // ── Fetch existing registration ───────────────────────────────────────────
   loadRegistration(vendorId: string): Observable<VendorRegistration> {
     return this.http.get<VendorRegistration>(`${this.baseUrl}/vendors/${vendorId}`).pipe(
+      map(reg => registrationFromApi(reg)),
       tap((reg) => this.registration$$.next(reg)),
       catchError((err) => {
         console.error('[VendorRegistrationService] loadRegistration failed:', err);

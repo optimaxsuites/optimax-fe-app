@@ -4,6 +4,12 @@ import { ApprovalService } from '../../../service/approval-inbox/approval.servic
 import { WorkflowInstance, WorkflowStage, WorkflowAction } from '../../../domain/approval-inbox/approval-request.dto';
 import { ProcurementRequest } from '../../../domain/procurement-request/procurement.dto';
 import { MessageService } from 'primeng/api';
+import { formatApiDate, toApiDate } from '../../../service/sales/date.util';
+
+// Created and approval times are real moments, so they show the time, in the viewer's timezone. Deadlines
+// are stored as midnight UTC with no real time, so they show the date alone, in UTC so it can't shift a day.
+const DATE_AND_TIME: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+const DATE_ONLY_UTC: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' };
 
 @Component({
   selector: 'app-approval-inbox',
@@ -24,6 +30,9 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   searchTerm = '';
   filterType: 'ALL' | 'PRODUCT' | 'SERVICE' = 'ALL';
 
+  currentPage = 0;
+  pageSize = 10;
+
   showApproveModal = false;
   showRejectModal = false;
   approveComment = '';
@@ -32,6 +41,29 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   get pendingCount(): number { return this.requests.length; }
+
+  get totalPages(): number { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); }
+
+  get pagedRequests(): ProcurementRequest[] {
+    const start = this.currentPage * this.pageSize;
+    return this.filtered.slice(start, start + this.pageSize);
+  }
+
+  get pageRangeEnd(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.filtered.length);
+  }
+
+  getPageNumbers(): number[] {
+    const maxVisible = 5;
+    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
+    const end = Math.min(this.totalPages, start + maxVisible);
+
+    if (end - start < maxVisible) {
+      start = Math.max(0, end - maxVisible);
+    }
+
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
 
   constructor(
     private approvalService: ApprovalService,
@@ -47,12 +79,13 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
 
   load(): void {
     this.isLoading = true;
-    this.approvalService.getPendingProcurementRequests(0, 100)
+    // Everything, because the backend returns these in no useful order: the newest could be past any cutoff.
+    this.approvalService.getPendingProcurementRequests(0, 1000)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
           this.requests = res.data;
-          this.applyFilters();
+          this.refreshList();
           this.isLoading = false;
           if (this.selected) {
             const refreshed = this.requests.find(r => r.id === this.selected!.id);
@@ -73,7 +106,14 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** A new search or filter starts from the first page of its results. */
   applyFilters(): void {
+    this.currentPage = 0;
+    this.refreshList();
+  }
+
+  /** Reloading after an approval keeps the reviewer's place, unless that page no longer exists. */
+  private refreshList(): void {
     let list = [...this.requests];
     if (this.filterType !== 'ALL') {
       list = list.filter(r => r.procurementType === this.filterType);
@@ -85,7 +125,8 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
         String(r.id).includes(q)
       );
     }
-    this.filtered = list;
+    this.filtered = list.sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime());
+    this.currentPage = Math.min(this.currentPage, this.totalPages - 1);
   }
 
   select(req: ProcurementRequest): void {
@@ -270,14 +311,14 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   getStageActionAt(stage: WorkflowStage): string {
     const action = this.wfActions
       .filter(a => a.stageOrderIndex === stage.orderIndex && (a.action === 'APPROVED' || a.action === 'REJECTED'))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      .sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime())[0];
     return action ? this.formatDate(action.createdAt) : '';
   }
 
   getStageComment(stage: WorkflowStage): string {
     const action = this.wfActions
       .filter(a => a.stageOrderIndex === stage.orderIndex)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      .sort((a, b) => toApiDate(b.createdAt).getTime() - toApiDate(a.createdAt).getTime())[0];
     return action?.comment || '';
   }
 
@@ -297,8 +338,11 @@ export class ApprovalInboxComponent implements OnInit, OnDestroy {
   }
 
   formatDate(d: any): string {
-    if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return formatApiDate(d, DATE_AND_TIME, 'en-NG', '—');
+  }
+
+  formatDeadline(d: any): string {
+    return formatApiDate(d, DATE_ONLY_UTC, 'en-NG', '—');
   }
 
   urgencyClass(req: ProcurementRequest): { [key: string]: boolean } {

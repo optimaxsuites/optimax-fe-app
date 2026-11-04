@@ -1,50 +1,48 @@
-<!-- SUCCESS STATE -->
-<div *ngIf="isSubmitted" class="vr-success">
-  <div class="vr-success-card">
-    <div class="vr-success-icon">
-      <svg
-        width="24"
-        height="24"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        stroke-width="2"
-      >
-        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    </div>
-    <h1>Application Submitted</h1>
-    <p>
-      Your vendor registration has been received and is under review. Our team will contact you
-      within <strong>3–5 business days</strong>.
-    </p>
-    <div class="vr-app-num">
-      <label>Application Reference Number</label>
-      <strong>{{ applicationNumber }}</strong>
-    </div>
-    <p style="font-size: 11px; color: #94a3b8; margin-bottom: 24px">
-      Keep this reference number for tracking.
-    </p>
-    <a
-      routerLink="/vendor-portal"
-      class="vr-btn vr-btn-primary"
-      style="text-decoration: none; display: inline-flex"
-      >Go to Vendor Portal</a
-    >
+<!-- LOADING / NO RECORD STATES -->
+<div *ngIf="!showForm" class="vr-state">
+  <div class="vr-state-card">
+    <ng-container *ngIf="viewState === 'loading'">
+      <p>Loading your details…</p>
+    </ng-container>
+    <ng-container *ngIf="viewState === 'no-record'">
+      <h1>We couldn't find your vendor record</h1>
+      <p>
+        Your details can't be saved until this login is linked to one vendor record. Please contact
+        the vendor management team.
+      </p>
+      <button type="button" class="vr-btn vr-btn-primary" (click)="loadDetails()">Try Again</button>
+    </ng-container>
+    <ng-container *ngIf="viewState === 'load-error'">
+      <h1>We couldn't load your details</h1>
+      <p>Nothing has been changed. Please try again.</p>
+      <button type="button" class="vr-btn vr-btn-primary" (click)="loadDetails()">Try Again</button>
+    </ng-container>
   </div>
 </div>
 
 <!-- MAIN FORM -->
-<div *ngIf="!isSubmitted" class="vr-shell">
+<div *ngIf="showForm" class="vr-shell">
   <!-- Top bar -->
   <header class="vr-topbar">
     <div class="vr-topbar-brand">
-      <span class="vr-topbar-title">Vendor Registration</span>
+      <span class="vr-topbar-title">Upload Your Details</span>
       <div class="vr-topbar-sep"></div>
       <span class="vr-topbar-sub">{{ steps[currentStep - 1].label }}</span>
     </div>
     <div class="vr-topbar-right">
-      <div class="vr-progress-wrap">
+      <button *ngIf="isReadOnly && !detailsArePartial" type="button" class="vr-btn vr-btn-primary" (click)="startEditing()">
+        Edit Details
+      </button>
+      <button
+        *ngIf="isEditing"
+        type="button"
+        class="vr-btn vr-btn-secondary"
+        (click)="cancelEditing()"
+        [disabled]="isSubmitting"
+      >
+        Cancel
+      </button>
+      <div *ngIf="isFirstTime" class="vr-progress-wrap">
         <div class="vr-progress-bar">
           <div class="vr-progress-fill" [style.width.%]="(currentStep / totalSteps) * 100"></div>
         </div>
@@ -52,7 +50,7 @@
           >{{ (currentStep / totalSteps) * 100 | number: '1.0-0' }}%</span
         >
       </div>
-      <div class="vr-autosave" [class.is-saving]="saveState === 'saving'" [class.is-saved]="saveState === 'saved'">
+      <div *ngIf="isFirstTime" class="vr-autosave" [class.is-saving]="saveState === 'saving'" [class.is-saved]="saveState === 'saved'">
         <span class="vr-autosave__spinner" *ngIf="saveState === 'saving'"></span>
         <svg *ngIf="saveState === 'saved'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
         <span class="dot" *ngIf="saveState === 'idle'"></span>
@@ -70,20 +68,33 @@
     </button>
   </div>
 
+  <div class="vr-banner vr-banner--info" *ngIf="isReadOnly && detailsArePartial" role="status">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <span>Only some of your saved details can be shown here, and editing isn't available yet. To change anything, please contact the vendor management team.</span>
+  </div>
+
+  <div class="vr-banner vr-banner--success" *ngIf="successMessage" role="status">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span>{{ successMessage }}</span>
+    <button type="button" class="vr-banner__close" (click)="successMessage = null" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
   <!-- Body -->
   <div class="vr-body">
     <!-- Sidebar -->
     <aside class="vr-sidebar">
       <div class="vr-sidebar-section">
-        <div class="vr-sidebar-label">Registration Steps</div>
+        <div class="vr-sidebar-label">Your Details</div>
         <div class="vr-step-rail">
         <div
           *ngFor="let step of steps"
           class="vr-step-item"
           [class.vr-step-item--active]="currentStep === step.n"
           [class.vr-step-item--done]="currentStep > step.n"
-          [class.vr-step-item--future]="currentStep < step.n"
-          [class.vr-step-item--clickable]="currentStep > step.n"
+          [class.vr-step-item--future]="currentStep < step.n && !canJumpToAnyStep"
+          [class.vr-step-item--clickable]="currentStep > step.n || canJumpToAnyStep"
           (click)="goToStep(step.n)"
         >
           <div class="vr-step-num">
@@ -103,13 +114,13 @@
           </div>
           <div class="vr-step-info">
             <div class="vr-step-name">{{ step.label }}</div>
-            <div class="vr-step-sub" *ngIf="currentStep === step.n">In progress</div>
-            <div class="vr-step-sub" *ngIf="currentStep > step.n">Completed</div>
+            <div class="vr-step-sub" *ngIf="isFirstTime && currentStep === step.n">In progress</div>
+            <div class="vr-step-sub" *ngIf="isFirstTime && currentStep > step.n">Completed</div>
           </div>
         </div>
         </div>
       </div>
-      <div class="vr-sidebar-footer">
+      <div *ngIf="isFirstTime" class="vr-sidebar-footer">
         <button class="vr-save-btn" type="button" (click)="saveDraft()" title="Your progress is kept while this tab stays open">
           <svg
             width="12"
@@ -129,6 +140,8 @@
 
     <!-- Main content -->
     <main class="vr-main">
+      <!-- Disabling this greys out every field without disabling the controls themselves, so validation still works. -->
+      <fieldset class="vr-fieldset" [disabled]="isReadOnly">
       <!-- ═══════════════════ STEP 1 — BUSINESS IDENTITY ═══════════════════ -->
       <div *ngIf="currentStep === 1" [formGroup]="form1">
         <div class="vr-step-header">
@@ -160,7 +173,7 @@
               </div>
               <div class="vr-logo-info">
                 <p>Company Logo</p>
-                <span>Preview only — the logo is not submitted with this application yet.</span>
+                <span>Preview only — the logo is not submitted with your details yet.</span>
               </div>
               <input
                 type="file"
@@ -522,7 +535,7 @@
                 <label class="vr-label">Other Licences</label
                 ><input
                   type="text"
-                  formControlName="otherLicences"
+                  formControlName="otherLicences" [attr.maxlength]="STEP2_TEXT_MAX"
                   class="vr-input"
                   placeholder="Any other licence numbers"
                 />
@@ -689,7 +702,7 @@
               >
               <input
                 type="text"
-                formControlName="otherCertifications"
+                formControlName="otherCertifications" [attr.maxlength]="STEP2_TEXT_MAX"
                 class="vr-input"
                 placeholder="e.g. COREN, MDCN, NIA — list any other professional certifications"
               />
@@ -774,11 +787,13 @@
                     [formControlName]="decl.detailCtrl"
                     rows="3"
                     class="vr-textarea"
+                    [attr.maxlength]="STEP2_TEXT_MAX"
                     [class.err]="isInvalid(form2, decl.detailCtrl)"
                     [placeholder]="decl.placeholder"
                   ></textarea>
+                  <span class="vr-hint">{{ (form2.get(decl.detailCtrl)?.value || '').length }}/{{ STEP2_TEXT_MAX }} characters</span>
                   <span *ngIf="isInvalid(form2, decl.detailCtrl)" class="vr-err"
-                    >Details are required</span
+                    >{{ form2.get(decl.detailCtrl)?.hasError('maxlength') ? 'Keep this under ' + STEP2_TEXT_MAX + ' characters' : 'Details are required' }}</span
                   >
                 </div>
               </div>
@@ -2045,7 +2060,7 @@
         <div class="vr-step-header">
           <div class="vr-step-tag">Step 6 of 6</div>
           <h2>Documents & Declaration</h2>
-          <p>Upload compliance documents, complete the declaration and submit your application</p>
+          <p>Upload compliance documents, complete the declaration and submit your details</p>
         </div>
 
         <input
@@ -2072,7 +2087,7 @@
         <div class="vr-section">
           <div class="vr-section-head">
             <h3>Document Uploads</h3>
-            <p>Required documents must be uploaded before you can submit</p>
+            <p>{{ hasRequiredDocs ? 'Required documents must be uploaded before you can submit' : 'Optional — add any documents you have ready' }}</p>
           </div>
           <div class="vr-section-body">
             <div
@@ -2185,7 +2200,7 @@
               "
             >
               I, the undersigned, being duly authorised to sign on behalf of the company named in
-              this application, hereby certify that all information provided is true, accurate and
+              these details, hereby certify that all information provided is true, accurate and
               complete to the best of my knowledge. I understand that any misrepresentation may
               result in disqualification and legal action.
             </div>
@@ -2272,7 +2287,7 @@
                   },
                   {
                     ctrl: 'confirmedAccuracy',
-                    text: 'I confirm all information in this application is accurate, complete and not misleading',
+                    text: 'I confirm all information I have provided is accurate, complete and not misleading',
                   },
                 ]
               "
@@ -2305,6 +2320,8 @@
           </div>
         </div>
       </div>
+
+      </fieldset>
 
       <!-- NAV BAR -->
       <div class="vr-nav">
@@ -2359,7 +2376,17 @@
             </svg>
           </button>
           <button
-            *ngIf="currentStep === totalSteps"
+            *ngIf="isEditing"
+            type="button"
+            class="vr-btn vr-btn-success"
+            (click)="onSubmit()"
+            [disabled]="isSubmitting"
+          >
+            <div *ngIf="isSubmitting" class="vr-spinner"></div>
+            {{ isSubmitting ? 'Saving…' : 'Save Changes' }}
+          </button>
+          <button
+            *ngIf="isFirstTime && currentStep === totalSteps"
             type="button"
             class="vr-btn vr-btn-success"
             (click)="onSubmit()"
@@ -2378,7 +2405,7 @@
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
-            {{ isSubmitting ? 'Submitting…' : 'Submit Application' }}
+            {{ isSubmitting ? 'Submitting…' : 'Submit Details' }}
           </button>
         </div>
       </div>

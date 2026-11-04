@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { VendorRegistrationService, RegistrationSubmitError } from './vendor-registration.service';
+import { VendorRegistrationService, RegistrationSubmitError, hasUploadedDetails } from './vendor-registration.service';
+import { VendorStatus } from '../../domain/vendor-management/vendor-management.dto';
 import { environment } from '../../shared-component/service/environments/environment';
 
 const BASE = environment.apiBaseUrl + '/x/api/v2/commerce';
+const VENDORS_LIST = `${BASE}/vendor-management/vendors`;
 
 describe('VendorRegistrationService.submit', () => {
   let service: VendorRegistrationService;
@@ -23,6 +25,7 @@ describe('VendorRegistrationService.submit', () => {
   });
 
   const makeReg = (): any => ({
+    id: '42',
     status: 'submitted',
     step1: { businessName: 'Acme Ltd', businessType: 'limited_liability' },
     step2: { cacRegistrationNumber: 'RC1', tinNumber: 'T1', taxClearanceExpiryDate: '2027-03-01' },
@@ -52,21 +55,17 @@ describe('VendorRegistrationService.submit', () => {
     localStorage.clear();
   });
 
-  const run = (reg: any) => {
-    const out: { result?: any; error?: any } = {};
-    service.submit(reg).subscribe({ next: r => (out.result = r), error: e => (out.error = e) });
+  const run = (reg: any, status = VendorStatus.PENDING_ONBOARDING) => {
+    const out: { done?: boolean; error?: any } = {};
+    service.submit(reg, status).subscribe({ complete: () => (out.done = true), error: e => (out.error = e) });
     return out;
   };
 
-  it('creates the vendor, saves every step, uploads the real files, then submits', () => {
+  it('updates the existing vendor: saves every step, uploads the real files, then sends for review', () => {
     const out = run(makeReg());
 
-    const create = http.expectOne(`${BASE}/vendors`);
-    expect(create.request.method).toBe('POST');
-    expect(create.request.body.businessName).toBe('Acme Ltd');
-    create.flush({ id: 42 });
+    expect(http.match(`${BASE}/vendors`).length).toBe(0);   // never creates a second vendor
 
-    // Steps 2-6 (step 1 was the POST body for a new vendor)
     const step6 = http.expectOne(`${BASE}/vendors/42/step6`);
     const sentDocs = step6.request.body.uploadedDocuments;
     expect(sentDocs.length).toBe(2);
@@ -76,7 +75,7 @@ describe('VendorRegistrationService.submit', () => {
       expect(d.label).toBeTruthy();
     }
     step6.flush({});
-    flushSteps('42', [2, 3, 4, 5]);
+    flushSteps('42', [1, 2, 3, 4, 5]);
 
     // Documents: multipart, real File, real expiry only where the vendor entered one
     const uploads = http.match(`${BASE}/vendors/42/documents`);
@@ -93,59 +92,110 @@ describe('VendorRegistrationService.submit', () => {
 
     const submit = http.expectOne(`${BASE}/vendors/42/submit`);
     expect(submit.request.method).toBe('PATCH');
-    submit.flush({ applicationNumber: 'APP-2026-9' });
+    submit.flush({});
 
-    expect(out.result).toEqual({ applicationNumber: 'APP-2026-9' });
+    expect(out.done).toBeTrue();
     expect(out.error).toBeUndefined();
     expect(service.getDraft()).toBeNull();         // draft cleared after success
     expect(localStorage.length).toBe(0);           // nothing written locally
   });
 
-  it('falls back to the vendor id as the reference when the submit response has none', () => {
+  it('an approved vendor is not sent back for review: their edits just apply', () => {
+    const reg = makeReg();
+    reg.step6.uploadedDocuments = [];
+    const out = run(reg, VendorStatus.ACTIVE);
+    flushSteps('42', [1, 2, 3, 4, 5, 6]);
+
+    expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
+    expect(out.done).toBeTrue();
+  });
+
+  it('with no vendor record it is an error and nothing is sent — no vendor is created', () => {
+    const reg = makeReg();
+    delete reg.id;
+    const out = run(reg);
+
+    expect(out.error instanceof RegistrationSubmitError).toBeTrue();
+    expect(out.error.message).toContain('vendor record');
+    // http.verify() (afterEach) proves no requests were issued
+  });
+
+  it('sends enum fields in the backend\'s spelling (LIMITED_LIABILITY, not limited_liability)', () => {
+    const reg = makeReg();
+    reg.step1.businessType = 'government_entity';
+    reg.step6.uploadedDocuments = [];
+    run(reg);
+    const step1 = http.expectOne(`${BASE}/vendors/42/step1`);
+    expect(step1.request.body.businessType).toBe('GOVERNMENT');
+    step1.flush({});
+    const step5 = http.expectOne(`${BASE}/vendors/42/step5`);
+    expect(step5.request.body.supplyCategories).toEqual(['IT']);
+    step5.flush({});
+    flushSteps('42', [2, 3, 4, 6]);
+    http.expectOne(`${BASE}/vendors/42/submit`).flush({});
+  });
+
+  it('shows the server\'s reason instead of blaming the connection', () => {
     const reg = makeReg();
     reg.step6.uploadedDocuments = [];
     const out = run(reg);
-    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
+    http.expectOne(`${BASE}/vendors/42/step1`).flush(
+      { httpStatus: 500, message: 'JSON parse error: bad BusinessType' }, { status: 500, statusText: 'Server Error' });
     flushSteps('42', [2, 3, 4, 5, 6]);
-    http.expectOne(`${BASE}/vendors/42/submit`).flush(null);
-    expect(out.result).toEqual({ applicationNumber: '42' });
+    expect(out.error.message).toContain('bad BusinessType');
+    expect(out.error.message).not.toContain('connection');
   });
 
-  it('a failed POST /vendors is an error — no fake APP- record, no local store, nothing else is sent', () => {
-    const out = run(makeReg());
-    http.expectOne(`${BASE}/vendors`).flush('down', { status: 500, statusText: 'Server Error' });
-
-    expect(out.result).toBeUndefined();
-    expect(out.error instanceof RegistrationSubmitError).toBeTrue();
-    expect(localStorage.length).toBe(0);
-    // http.verify() (afterEach) proves no PUT/PATCH/document requests were issued
+  it('only mentions the connection when the request never reached the server', () => {
+    const reg = makeReg();
+    reg.step6.uploadedDocuments = [];
+    const out = run(reg);
+    [1, 2, 3, 4, 5, 6].forEach(n =>
+      http.expectOne(`${BASE}/vendors/42/step${n}`).error(new ProgressEvent('error'), { status: 0 }));
+    expect(out.error.message).toContain('check your connection');
   });
 
-  it('rejects a create response with no id', () => {
-    const out = run(makeReg());
-    http.expectOne(`${BASE}/vendors`).flush({});
-    expect(out.error instanceof RegistrationSubmitError).toBeTrue();
-    expect(out.error.message).toContain('reference');
+  it('includes vendorId in the step 2-6 bodies (the backend requires it there too)', () => {
+    const reg = makeReg();
+    reg.id = '15';
+    reg.step6.uploadedDocuments = [];
+    run(reg);
+    flushSteps('15', [1]);
+    [2, 3, 4, 5, 6].forEach(n => {
+      const req = http.expectOne(`${BASE}/vendors/15/step${n}`);
+      expect(req.request.body.vendorId).toBe(15);
+      req.flush({});
+    });
+    http.expectOne(`${BASE}/vendors/15/submit`).flush({});
   });
 
-  it('a failed step save stops the submit — the application is NOT marked submitted', () => {
+  it('spells out validation errors that only come as fieldErrors', () => {
     const out = run(makeReg());
-    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
-    http.expectOne(`${BASE}/vendors/42/step4`).flush('bad', { status: 400, statusText: 'Bad Request' });
+    http.expectOne(`${BASE}/vendors/42/step3`).flush(
+      { httpStatus: 400, message: null, fieldErrors: [{ field: 'vendorId', errorCode: 'NotNull' }] }, { status: 400, statusText: 'Bad Request' });
+    flushSteps('42', [1, 2, 4, 5, 6]);
+    expect(out.error.message).toContain('Contact & Location: vendorId is required');
+  });
 
-    expect(out.result).toBeUndefined();
+  it('a failed step save stops the submit — the vendor is NOT sent for review', () => {
+    const out = run(makeReg());
+    http.expectOne(`${BASE}/vendors/42/step4`).flush({ message: 'bad account type' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne(`${BASE}/vendors/42/step5`).flush({ message: 'bad SupplyCategory' }, { status: 500, statusText: 'Server Error' });
+    flushSteps('42', [1, 2, 3, 6]);
+
+    expect(out.done).toBeUndefined();
     expect(out.error instanceof RegistrationSubmitError).toBeTrue();
+    // Every failing step is named, with the server's reason — not just the first one.
     expect(out.error.message).toContain('could not be saved');
-    // The other in-flight step saves were cancelled rather than left running.
-    expect(http.match(`${BASE}/vendors/42/step2`).every(r => r.cancelled)).toBeTrue();
-    expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
+    expect(out.error.message).toContain('Banking & Finance: bad account type');
+    expect(out.error.message).toContain('Capabilities & Experience: bad SupplyCategory');
     expect(http.match(`${BASE}/vendors/42/documents`).length).toBe(0);
+    expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
   });
 
   it('a failed document upload names the document and blocks the submit', () => {
     const out = run(makeReg());
-    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
-    flushSteps('42', [2, 3, 4, 5, 6]);
+    flushSteps('42', [1, 2, 3, 4, 5, 6]);
 
     const uploads = http.match(`${BASE}/vendors/42/documents`);
     const tax = uploads.find(u => (u.request.body as FormData).get('label') === 'Tax Clearance')!;
@@ -153,18 +203,17 @@ describe('VendorRegistrationService.submit', () => {
     cac.flush({});
     tax.flush('nope', { status: 415, statusText: 'Unsupported Media Type' });
 
-    expect(out.result).toBeUndefined();
+    expect(out.done).toBeUndefined();
     expect(out.error instanceof RegistrationSubmitError).toBeTrue();
     expect(out.error.failedDocuments).toEqual(['Tax Clearance']);
     expect(out.error.message).toContain('Tax Clearance');
     expect(http.match(`${BASE}/vendors/42/submit`).length).toBe(0);
   });
 
-  it('retrying after a failure continues the SAME vendor and only re-uploads what failed', () => {
+  it('retrying after a failure updates the SAME vendor and only re-uploads what failed', () => {
     const reg = makeReg();
     const first = run(reg);
-    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
-    flushSteps('42', [2, 3, 4, 5, 6]);
+    flushSteps('42', [1, 2, 3, 4, 5, 6]);
     const uploads = http.match(`${BASE}/vendors/42/documents`);
     uploads.find(u => (u.request.body as FormData).get('label') === 'CAC Certificate')!.flush({});
     uploads.find(u => (u.request.body as FormData).get('label') === 'Tax Clearance')!.flush('x', { status: 500, statusText: 'e' });
@@ -173,28 +222,27 @@ describe('VendorRegistrationService.submit', () => {
     // Second attempt
     const second = run(reg);
     expect(http.match(`${BASE}/vendors`).length).toBe(0);            // no duplicate vendor
-    flushSteps('42', [1, 2, 3, 4, 5, 6]);                            // step 1 now saved via PUT too
+    flushSteps('42', [1, 2, 3, 4, 5, 6]);
     const retried = http.match(`${BASE}/vendors/42/documents`);
     expect(retried.length).toBe(1);                                  // the CAC certificate is not uploaded twice
     expect((retried[0].request.body as FormData).get('label')).toBe('Tax Clearance');
     retried[0].flush({});
-    http.expectOne(`${BASE}/vendors/42/submit`).flush({ applicationNumber: 'APP-1' });
+    http.expectOne(`${BASE}/vendors/42/submit`).flush({});
 
-    expect(second.result).toEqual({ applicationNumber: 'APP-1' });
+    expect(second.done).toBeTrue();
     expect(service.getDraft()).toBeNull();
   });
 
-  it('a failed final submit is an error, not a success', () => {
+  it('a failed send for review is an error, not a success', () => {
     const reg = makeReg();
     reg.step6.uploadedDocuments = [];
     const out = run(reg);
-    http.expectOne(`${BASE}/vendors`).flush({ id: 42 });
-    flushSteps('42', [2, 3, 4, 5, 6]);
+    flushSteps('42', [1, 2, 3, 4, 5, 6]);
     http.expectOne(`${BASE}/vendors/42/submit`).flush('x', { status: 500, statusText: 'e' });
 
-    expect(out.result).toBeUndefined();
+    expect(out.done).toBeUndefined();
     expect(out.error instanceof RegistrationSubmitError).toBeTrue();
-    expect(out.error.message).toContain('could not be submitted');
+    expect(out.error.message).toContain('could not be sent for review');
     expect(localStorage.length).toBe(0);
   });
 
@@ -206,5 +254,163 @@ describe('VendorRegistrationService.submit', () => {
     http.expectOne(`${BASE}/vendors/42`).flush('x', { status: 500, statusText: 'e' });
     expect(statusErr).toBeTruthy();
     expect(loadErr).toBeTruthy();
+  });
+});
+
+describe('VendorRegistrationService.loadOwnVendor', () => {
+  let service: VendorRegistrationService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    sessionStorage.setItem('userid', '65');
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    service = TestBed.inject(VendorRegistrationService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    http.verify();
+    sessionStorage.removeItem('userid');
+  });
+
+  const load = () => {
+    const out: { record?: any; error?: any } = {};
+    service.loadOwnVendor().subscribe({ next: r => (out.record = r), error: e => (out.error = e) });
+    return out;
+  };
+  const byUser = () => http.expectOne(`${BASE}/vendors/by-user/65`);
+
+  it('converts the login\'s user id to its vendor id, and reads the record by vendor id — never by user id', () => {
+    const out = load();
+    byUser().flush({ id: 7, userAccountId: 65, status: 'ACTIVE' });
+    http.expectOne(`${VENDORS_LIST}/7`).flush({
+      id: 7, email: 'sales@acme.example', status: 'ACTIVE',
+      step2: { cacRegistrationNumber: 'RC1' },
+    });
+
+    expect(http.match(`${VENDORS_LIST}/65`).length).toBe(0);
+    expect(out.record.vendorId).toBe('7');
+    expect(out.record.status).toBe(VendorStatus.ACTIVE);
+    expect(out.record.registration.step2.cacRegistrationNumber).toBe('RC1');
+    expect(out.record.isPartial).toBeFalse();
+  });
+
+  it('with only the vendor summary, recovers what it can and says the details are partial', () => {
+    const out = load();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush({
+      id: 7, companyName: 'Acme Ltd', registrationNumber: 'RC1', taxId: 'T1', email: 'sales@acme.example',
+      status: 'ACTIVE',
+      address: { street: '1 Road', city: 'Ikeja', state: 'Lagos', country: 'Nigeria', postalCode: '' },
+      categories: ['IT Equipment', 'FUEL_LUBRICANTS', 'not a category'],
+      bankDetails: { bankName: 'GTB', accountName: 'Acme', accountNumber: '0123456789', verified: false },
+      contacts: [{ id: 1, name: 'Ada', role: 'MD', email: 'ada@acme.example', phone: '080', isPrimary: true }],
+    });
+
+    const reg = out.record.registration;
+    expect(out.record.isPartial).toBeTrue();
+    expect(hasUploadedDetails(reg)).toBeTrue();
+    expect(reg.step1.businessName).toBe('Acme Ltd');
+    expect(reg.step2).toEqual({ cacRegistrationNumber: 'RC1', tinNumber: 'T1' });
+    expect(reg.step3.primaryContactName).toBe('Ada');
+    expect(reg.step3.registeredCity).toBe('Ikeja');
+    expect('registeredPostalCode' in reg.step3).toBeFalse();   // blank values mustn't clear form fields
+    expect(reg.step4.primaryAccountNumber).toBe('0123456789');
+    expect(reg.step5.supplyCategories).toEqual(['it_equipment', 'fuel_lubricants']);
+  });
+
+  it('a signup-only record doesn\'t count as uploaded details, and "Pending" placeholders aren\'t values', () => {
+    const out = load();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, companyName: 'Test Vendor', email: 'sales@acme.example', status: 'ACTIVE' });
+
+    expect(hasUploadedDetails(out.record.registration)).toBeFalse();
+    expect(out.record.registration.step2).toEqual({});
+    expect('primaryContactPhone' in out.record.registration.step3).toBeFalse();
+  });
+
+  describe('after saving, when the backend returns no steps', () => {
+    const save = (id = '7') => {
+      const reg: any = {
+        id, status: 'submitted',
+        step2: { cacRegistrationNumber: 'RC1' },
+        step6: { uploadedDocuments: [{ id: 'd1', type: 'tax_clearance', label: 'Tax', fileName: 'a.pdf', fileUrl: 'blob:x' }] },
+      };
+      service.submit(reg, VendorStatus.ACTIVE).subscribe();
+      http.expectOne(`${BASE}/vendors/${id}/step2`).flush({});
+      http.expectOne(`${BASE}/vendors/${id}/step6`).flush({});
+      reg.step6.uploadedDocuments[0].file = new File(['x'], 'a.pdf');
+    };
+    const reload = () => {
+      const out = load();
+      byUser().flush({ id: 7 });
+      http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, companyName: 'Test Vendor', status: 'ACTIVE' });
+      return out;
+    };
+
+    it('switching tabs still shows what was saved, and it can still be edited', () => {
+      save();
+      const out = reload();
+      expect(out.record.registration.step2.cacRegistrationNumber).toBe('RC1');
+      expect(out.record.isPartial).toBeFalse();
+    });
+
+    it('a later edit won\'t upload the documents again', () => {
+      save();
+      const out = reload();
+      expect('file' in out.record.registration.step6.uploadedDocuments[0]).toBeFalse();
+    });
+
+    it('never shows one vendor what another login saved', () => {
+      save('8');
+      const out = reload();
+      expect(hasUploadedDetails(out.record.registration)).toBeFalse();
+    });
+
+    it('prefers the backend\'s steps once it returns them', () => {
+      save();
+      const out = load();
+      byUser().flush({ id: 7 });
+      http.expectOne(`${VENDORS_LIST}/7`).flush({ id: 7, status: 'ACTIVE', step2: { cacRegistrationNumber: 'FROM-SERVER' } });
+      expect(out.record.registration.step2.cacRegistrationNumber).toBe('FROM-SERVER');
+    });
+  });
+
+  it('a login with no vendor (404) is "no record", not an error', () => {
+    const out = load();
+    byUser().flush('x', { status: 404, statusText: 'Not Found' });
+    expect(out.record).toBeNull();
+    expect(out.error).toBeUndefined();
+  });
+
+  it('asks for nothing when there is no logged-in user', () => {
+    sessionStorage.removeItem('userid');
+    const out = load();
+    expect(out.record).toBeNull();
+  });
+
+  it('a failed lookup is an error, not "no record"', () => {
+    const out = load();
+    byUser().flush('x', { status: 403, statusText: 'Forbidden' });
+    expect(out.error).toBeTruthy();
+    expect(out.record).toBeUndefined();
+  });
+
+  it('a failure reading the vendor itself is an error too', () => {
+    const out = load();
+    byUser().flush({ id: 7 });
+    http.expectOne(`${VENDORS_LIST}/7`).flush('x', { status: 500, statusText: 'Server Error' });
+    expect(out.error).toBeTruthy();
+  });
+});
+
+describe('hasUploadedDetails', () => {
+  it('is false for a signup record, which only has a business name', () => {
+    expect(hasUploadedDetails(undefined)).toBeFalse();
+    expect(hasUploadedDetails({ step1: { businessName: 'Test Vendor' } as any })).toBeFalse();
+  });
+
+  it('is true once any later step has its required details', () => {
+    expect(hasUploadedDetails({ step3: { primaryContactName: 'Ada' } as any })).toBeTrue();
   });
 });

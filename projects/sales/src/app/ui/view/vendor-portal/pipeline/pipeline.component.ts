@@ -56,6 +56,9 @@ export class PipelineComponent implements OnInit, OnDestroy {
   rfqSearchTerm = '';
   rfqFilter: 'all' | 'unread' | 'expiring' | 'converted' = 'all';
   submitting = false;
+  submitError: string | null = null;
+  draftError: string | null = null;
+  loadError: string | null = null;
   expandedRfqId: string | null = null;
   validityDays = 14;
   quotationNotes = '';
@@ -76,7 +79,7 @@ export class PipelineComponent implements OnInit, OnDestroy {
   //  LIFECYCLE
   // ════════════════════════════════════════════════════════════════════════════
   ngOnInit(): void {
-    this.vendorService.loadRfqs();
+    this.vendorService.loadError$.pipe(takeUntil(this.destroy$)).subscribe((message) => (this.loadError = message));
 
     this.vendorService.getRfqs().pipe(takeUntil(this.destroy$)).subscribe((list) => {
       this.rfqs = list;
@@ -97,7 +100,9 @@ export class PipelineComponent implements OnInit, OnDestroy {
           if (this.rightPanelView !== 'quotation-editor') {
             this.activeQuotation = JSON.parse(JSON.stringify(fresh));
           }
-        } else {
+        } else if (this.rightPanelView !== 'quotation-editor') {
+          // In the editor, a missing id just means a new draft was saved and got its real id, which
+          // the save hands back. Clearing it here would wipe what the vendor is typing.
           this.activeQuotation = null;
         }
       }
@@ -321,8 +326,14 @@ export class PipelineComponent implements OnInit, OnDestroy {
   saveDraft(): void {
     if (!this.activeQuotation) return;
     this.activeQuotation.notes = this.quotationNotes;
-    this.vendorService.updateQuotation(this.activeQuotation);
-    this.refreshStats();
+    this.draftError = null;
+    this.vendorService.updateQuotation(this.activeQuotation).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (saved) => {
+        this.activeQuotation = JSON.parse(JSON.stringify(saved));
+        this.refreshStats();
+      },
+      error: (err) => { this.draftError = err.message; },
+    });
   }
 
   /** Show the submit confirmation modal. */
@@ -336,32 +347,31 @@ export class PipelineComponent implements OnInit, OnDestroy {
   confirmSubmit(): void {
     if (!this.activeQuotation || !this.canSubmit()) return;
     this.submitting = true;
+    this.submitError = null;
 
-    // Persist any unsaved notes
+    // Any unsaved notes go in the same request, so they can't arrive after the submit.
     this.activeQuotation.notes = this.quotationNotes;
-    this.vendorService.updateQuotation(this.activeQuotation);
+    const submit$ = this.isResubmitFlow
+      ? this.vendorService.resubmitQuotation(this.activeQuotation)
+      : this.vendorService.sendQuotation(this.activeQuotation);
 
-    if (this.isResubmitFlow) {
-      this.onResubmit();
-    } else {
-      this.vendorService.sendQuotation(this.activeQuotation.id);
-    }
-
-    this.showSubmitConfirm = false;
-    this.submitting = false;
-    this.refreshStats();
-    this.backToRfqDetail();
-    // Re-fetch the now-sent quotation so the detail view reflects 'sent' status
-    const fresh = this.quotations.find((q) => q.id === this.activeQuotation?.id) ?? null;
-    if (fresh) { this.activeQuotation = JSON.parse(JSON.stringify(fresh)); }
+    submit$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (saved) => {
+        this.submitting = false;
+        this.showSubmitConfirm = false;
+        this.activeQuotation = JSON.parse(JSON.stringify(saved));
+        this.refreshStats();
+        this.backToRfqDetail();
+      },
+      error: (err) => {
+        // The modal stays open with the vendor's work intact, so they can try again.
+        this.submitting = false;
+        this.submitError = err.message;
+      },
+    });
   }
 
   /** Resubmit after a revision request. */
-  onResubmit(): void {
-    if (!this.activeQuotation) return;
-    this.vendorService.resubmitQuotation(this.activeQuotation);
-  }
-
   // ════════════════════════════════════════════════════════════════════════════
   //  FORMATTING & HELPERS
   // ════════════════════════════════════════════════════════════════════════════

@@ -2,13 +2,11 @@
 # OptimaX Frontend — GitLab CI/CD
 # test branch → build + publish dist + docker build/push + deploy to test server (Docker, manual)
 # prod branch → build + publish dist + docker build/push + deploy to prod     (Kubernetes, manual)
-# mod branch  → satellite-sync jobs push changed module subtrees to their repos
 # ─────────────────────────────────────────────────────────────────────────────
 
 stages:
   - build
   - publish
-  - sync
   - deploy
 
 default:
@@ -112,31 +110,3 @@ deploy-prod:
     - if: '$CI_COMMIT_BRANCH == "prod"'
       when: manual
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Satellite sync — fires on mod when a module subdirectory changes.
-# Uses HTTPS + Project Access Token (no SSH keys required).
-#
-# Per-satellite CI variables (Settings → CI/CD → Variables, type: Variable):
-#   ERPDASH_TOKEN — Project Access Token for erp-dashboard with write_repository scope
-#                   GitLab → erp-dashboard → Settings → Access Tokens → create token
-# ─────────────────────────────────────────────────────────────────────────────
-
-.satellite-sync-base: &satellite_sync_base
-  stage: sync
-  image: alpine:3.19
-  before_script:
-    - apk add --no-cache git bash
-    - git config --global user.email "ci@optimaxsuites.com"
-    - git config --global user.name "OptimaX CI"
-    - git fetch --unshallow 2>/dev/null || true
-    - git checkout -B "$CI_COMMIT_BRANCH" 2>/dev/null || true
-
-sync-dashboard-satellite:
-  <<: *satellite_sync_base
-  script:
-    - REMOTE="https://oauth2:${ERPDASH_TOKEN}@gitlab.com/j2yemi/erp-dashboard.git"
-    - bash scripts/satellite-push.sh dashboard "$REMOTE" mod dashboard_fe
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "mod" && $CI_COMMIT_MESSAGE !~ /\[skip satellite\]/'
-      changes:
-        - projects/dashboard/**/*

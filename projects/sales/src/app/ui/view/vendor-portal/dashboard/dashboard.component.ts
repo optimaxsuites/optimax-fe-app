@@ -432,7 +432,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ── Save / Send / Resubmit ────────────────────────────────────────────────────
   saveDraft(): void {
     if (!this.editingQuotation) return;
-    this.vendorService.updateQuotation(this.editingQuotation);
+    this.vendorService.updateQuotation(this.editingQuotation).subscribe({ error: () => {} });
     if (this.selectedQuotation?.id === this.editingQuotation.id) {
       this.selectedQuotation = JSON.parse(JSON.stringify(this.editingQuotation));
     }
@@ -455,7 +455,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   requestSendFromModal(): void {
     if (this.editingQuotation && this.editingComplete) {
-      this.vendorService.updateQuotation(this.editingQuotation);
+      this.vendorService.updateQuotation(this.editingQuotation).subscribe({ error: () => {} });
       this.openSendConfirm(this.editingQuotation);
     }
   }
@@ -463,9 +463,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   executeSend(): void {
     if (!this.quotationToSend) return;
     if (this.quotationToSend.status === 'revision_requested') {
-      this.vendorService.resubmitQuotation(this.quotationToSend);
+      this.vendorService.resubmitQuotation(this.quotationToSend).subscribe({ error: () => {} });
     } else {
-      this.vendorService.sendQuotation(this.quotationToSend.id);
+      this.vendorService.sendQuotation(this.quotationToSend).subscribe({ error: () => {} });
     }
     this.showSendConfirm = false;
     this.quotationToSend = null;

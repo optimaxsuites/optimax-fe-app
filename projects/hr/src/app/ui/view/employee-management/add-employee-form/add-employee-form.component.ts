@@ -1,13 +1,13 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
-import { v4 as uuidV4 } from "uuid"
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { environment } from '../../../shared-component/environments/environment';
 // // import { CompanyProfileService }
 
@@ -51,9 +51,9 @@ interface Employee {
   selector: 'app-add-employee-form',
   templateUrl: './add-employee-form.component.html',
   styleUrl: './add-employee-form.component.scss',
-  providers: [MessageService]
+  providers: [MessageService, ConfirmationService]
 })
-export class AddEmployeeFormComponent {
+export class AddEmployeeFormComponent implements OnDestroy {
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
@@ -72,6 +72,8 @@ export class AddEmployeeFormComponent {
   loading = false
   draftLoading = false;
   imageURL: string =''
+  /** Object URL behind `imageURL` when the photo came from the server; released when replaced or on destroy. */
+  private photoObjectUrl: string | null = null;
   salaryStructure: any = [];
   departments = [
     "Human Resources",
@@ -134,8 +136,14 @@ export class AddEmployeeFormComponent {
   ];
   nextOfKinRelationships: any[] = [
   ];
+  // Entries carry `__id` (the server record, once saved) and `__saved` (the server has this version).
   nextOfKinList: any[] = []
   guarantorList: any[] = []
+  /** Index of the entry loaded into the form for editing; Add then updates it instead of adding one. */
+  editingNokIndex: number | null = null;
+  editingGuarantorIndex: number | null = null;
+  /** True once the onboarding has been submitted; the form is replaced by a confirmation. */
+  submitted = false;
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
@@ -150,7 +158,7 @@ export class AddEmployeeFormComponent {
     private employeeService: EmployeeService,
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService,
-    private router: Router,
+    private confirmationService: ConfirmationService,
     private http: HttpClient
   ) {  }
 
@@ -188,7 +196,7 @@ export class AddEmployeeFormComponent {
       maritalStatus: [null, [Validators.required, Validators.min(1)]],
       religion: [null, [Validators.required,  Validators.min(1)]],
       address: [null, [Validators.required,  Validators.min(1)]],
-      profilePhoto: [null, Validators.required]
+      profilePhoto: [null, [Validators.required, this.imageFileValidator()]]
     });
 
     this.employeeForm = this.fb.group({
@@ -244,8 +252,28 @@ export class AddEmployeeFormComponent {
           const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
           if (userId) this.loadCompanyBranding(userId);
         }
+      },
+      error: (err) => {
+        const detail = this.errorMessageService.getUserMessage(
+          err,
+          'Could not load your onboarding details. Please reload the page or contact HR.'
+        );
+        this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 6000 });
       }
     });
+  }
+
+  /** The employee record has to be loaded first: the saved payload is built on top of it. */
+  private ensureEmployeeLoaded(): boolean {
+    if (this.employeeId && this.employeeData) return true;
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Your onboarding details have not loaded yet. Please reload the page and try again.',
+      key: 'tl',
+      life: 5000
+    });
+    return false;
   }
 
   private loadCompanyBranding(userId: number): void {
@@ -306,6 +334,7 @@ export class AddEmployeeFormComponent {
         relationship: this.resolveId(nok.relationshipId ?? nok.relationship),
         DOB: this.toDateInputValue(nok.dob ?? nok.DOB),
         emergencyContact: nok.emergencyContact,
+        __id: nok.id,
         __saved: true
       }));
     }
@@ -316,6 +345,7 @@ export class AddEmployeeFormComponent {
         fullName: guarantor.fullName,
         email: guarantor.email,
         phone: guarantor.phone,
+        __id: guarantor.id,
         __saved: true
       }));
     }
@@ -334,11 +364,24 @@ export class AddEmployeeFormComponent {
     return formatDate(parsed, 'yyyy-MM-dd', 'en-US');
   }
 
+  ngOnDestroy(): void {
+    this.releasePhotoObjectUrl();
+  }
+
+  private releasePhotoObjectUrl(): void {
+    if (this.photoObjectUrl) {
+      URL.revokeObjectURL(this.photoObjectUrl);
+      this.photoObjectUrl = null;
+    }
+  }
+
   private loadProfilePhoto(mediaNo: string): void {
     this.employeeService.getEmployeeImage(mediaNo).subscribe({
       next: (response) => {
         const blob = new Blob([response], { type: 'image/png' });
-        this.imageURL = URL.createObjectURL(blob);
+        this.releasePhotoObjectUrl();
+        this.photoObjectUrl = URL.createObjectURL(blob);
+        this.imageURL = this.photoObjectUrl;
       },
       error: (err) => {
         console.error('Failed to load profile photo:', err);
@@ -379,9 +422,6 @@ export class AddEmployeeFormComponent {
   if(this.currentTab == 1){
     this.basicForm.markAllAsTouched()
     if(this.basicForm.invalid) return
-console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
-
-
   }
   if(this.currentTab == 2){
     this.employeeForm.markAllAsTouched()
@@ -402,16 +442,9 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
   private saveNextOfKinEntries(onComplete?: (hadError: boolean) => void) {
-    const unsaved = this.nextOfKinList.filter((nok) => !nok.__saved);
-    if (unsaved.length === 0) {
-      onComplete?.(false);
-      return;
-    }
-    let pending = unsaved.length;
-    let hadError = false;
-
-    unsaved.forEach((nok) => {
-      const nokData = {
+    this.saveEntries(
+      this.nextOfKinList,
+      (nok) => ({
         fullName: nok.fullName,
         email: nok.email,
         phone: nok.phone,
@@ -419,35 +452,85 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
         relationshipId: nok.relationship,
         dob: this.toLocalDateTime(nok.DOB),
         emergencyContact: nok.emergencyContact,
-        employeeId:  Number(this.employeeId)
-      } 
+        employeeId: Number(this.employeeId)
+      }),
+      (data) => {
+        const formData = new FormData();
+        formData.append('nextOfKinDTO', JSON.stringify(data));
+        return this.employeeService.addNOK(formData);
+      },
+      (id, data) => this.employeeService.updateNOK(id, data),
+      () => this.employeeService.getNOKByEmployeeId(this.employeeId),
+      'Failed to save next of kin details. Please try again.',
+      onComplete
+    );
+  }
 
-      const formData = new FormData();
-      formData.append('nextOfKinDTO', JSON.stringify(nokData));
+  /**
+   * Sends every entry the server doesn't have yet: an update (PUT) when it already has a server id,
+   * otherwise a create. Creates whose reply has no id get it from the employee's saved list, so a
+   * later edit updates that record instead of creating a duplicate.
+   */
+  private saveEntries(
+    list: any[],
+    toPayload: (entry: any) => any,
+    create: (data: any) => Observable<any>,
+    update: (id: number, data: any) => Observable<any>,
+    loadSaved: () => Observable<any>,
+    errorMessage: string,
+    onComplete?: (hadError: boolean) => void
+  ): void {
+    const unsaved = list.filter((entry) => !entry.__saved);
+    if (unsaved.length === 0) {
+      onComplete?.(false);
+      return;
+    }
 
-      this.employeeService.addNOK(formData).subscribe({
-        next: () => {
-          nok.__saved = true;
-          pending -= 1;
-          if (pending === 0) onComplete?.(hadError);
-        },
-        error: (err) => {
-          hadError = true;
-          const detail = this.errorMessageService.getUserMessage(
-            err,
-            'Failed to save next of kin details. Please try again.'
-          );
+    const requests = unsaved.map((entry) => {
+      const data = toPayload(entry);
+      const request$ = entry.__id ? update(entry.__id, data) : create(data);
+      return request$.pipe(
+        map((res: any) => {
+          entry.__id = entry.__id ?? res?.id ?? res?.data?.id;
+          entry.__saved = true;
+          return true;
+        }),
+        catchError((err) => {
+          const detail = this.errorMessageService.getUserMessage(err, errorMessage);
           this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-          pending -= 1;
-          if (pending === 0) onComplete?.(hadError);
-        }
-      })
+          return of(false);
+        })
+      );
+    });
+
+    forkJoin(requests).subscribe((results) => {
+      const hadError = results.some((ok) => !ok);
+      if (list.some((entry) => entry.__saved && !entry.__id)) {
+        loadSaved().pipe(catchError(() => of(null))).subscribe((saved) => {
+          this.fillMissingIds(list, saved);
+          onComplete?.(hadError);
+        });
+        return;
+      }
+      onComplete?.(hadError);
     });
   }
-  nextTabFromGuarantor(){
-    console.log(this.guarantorForm.value)
 
-    
+  /** Copies server ids onto saved entries that lack one, matching by name, phone and email. */
+  private fillMissingIds(list: any[], saved: any): void {
+    const records: any[] = Array.isArray(saved) ? saved : (saved?.content ?? saved?.data ?? []);
+    const key = (item: any) => [item?.fullName, item?.phone, item?.email].map((v) => String(v ?? '').trim().toLowerCase()).join('|');
+    const taken = new Set(list.map((entry) => entry.__id).filter(Boolean));
+    list.filter((entry) => entry.__saved && !entry.__id).forEach((entry) => {
+      const match = records.find((record) => record?.id && !taken.has(record.id) && key(record) === key(entry));
+      if (match) {
+        entry.__id = match.id;
+        taken.add(match.id);
+      }
+    });
+  }
+
+  nextTabFromGuarantor(){
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.valid) {
     this.addGuarantor()
@@ -457,42 +540,24 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
   private saveGuarantorEntries(onComplete?: (hadError: boolean) => void) {
-    const unsaved = this.guarantorList.filter((guarantor) => !guarantor.__saved);
-    if (unsaved.length === 0) {
-      onComplete?.(false);
-      return;
-    }
-    let pending = unsaved.length;
-    let hadError = false;
-
-    unsaved.forEach((guarantor) => {
-      const guarantorData = {
+    this.saveEntries(
+      this.guarantorList,
+      (guarantor) => ({
         fullName: guarantor.fullName,
         email: guarantor.email,
         phone: guarantor.phone,
-        employeeId:  Number(this.employeeId),
-      } 
-
-      const formData = new FormData();
-      formData.append('guarantor', JSON.stringify(guarantorData));
-      this.employeeService.addGuarantor(formData).subscribe({
-        next: () => {
-          guarantor.__saved = true;
-          pending -= 1;
-          if (pending === 0) onComplete?.(hadError);
-        },
-        error: (err) => {
-          hadError = true;
-          const detail = this.errorMessageService.getUserMessage(
-            err,
-            'Failed to save guarantor details. Please try again.'
-          );
-          // this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-          pending -= 1;
-          if (pending === 0) onComplete?.(hadError);
-        }
-      })
-    });
+        employeeId: Number(this.employeeId),
+      }),
+      (data) => {
+        const formData = new FormData();
+        formData.append('guarantor', JSON.stringify(data));
+        return this.employeeService.addGuarantor(formData);
+      },
+      (id, data) => this.employeeService.updateGuarantor(id, data),
+      () => this.employeeService.getGuarantor(this.employeeId),
+      'Failed to save guarantor details. Please try again.',
+      onComplete
+    );
   }
 
   previousTab() {
@@ -502,12 +567,14 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
   onSubmit() {
-  this.loading = true;
-  this.addNewEmployee()
+    if (this.loading || !this.ensureEmployeeLoaded()) return;
+    this.loading = true;
+    // Entries are saved when leaving their tab; retry any that failed so the submission is complete.
+    this.saveNextOfKinEntries(() => this.saveGuarantorEntries(() => this.addNewEmployee()));
   }
 
   saveDraft() {
-    if (this.draftLoading || this.loading) return;
+    if (this.draftLoading || this.loading || !this.ensureEmployeeLoaded()) return;
 
     const isValid = this.validateCurrentSectionForDraft();
     if (!isValid) return;
@@ -534,8 +601,7 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
       return;
     }
 
-    const formData = this.buildEmployeeFormData();
-    this.employeeService.addEmployee(formData).subscribe({
+    this.saveEmployee().subscribe({
       next: () => {
         this.draftLoading = false;
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Draft saved successfully!', key: 'tl', life: 3000 });
@@ -584,38 +650,23 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
   }
 
 addNewEmployee(){
-  const formData = this.buildEmployeeFormData();
-      const vettingPayload = this.buildEmployeePayload();
-
-  this.employeeService.addEmployee(formData).subscribe({
+  this.saveEmployee().subscribe({
     next: (data: any) => {
       const vettingPayload = this.buildEmployeePayload();
-      if (data?.id) {
-        vettingPayload.employee.id = data.id;
-        vettingPayload.employeeId = data.id;
-      }
       this.employeeService.sendOnboardingVetting(vettingPayload, data).subscribe({
         error: (err) => {
           const detail = this.errorMessageService.getUserMessage(
             err,
             'Vetting request could not be sent. Please contact support.'
-          );``
+          );
           this.messageService.add({ severity: 'warn', summary: 'Notice', detail, key: 'tl', life: 4000 });
         }
       });
 
-      console.log(data)
       this.loading = false;
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
-      this.basicForm.reset()
-      this.guarantorForm.reset()
-      this.employeeForm.reset()
-      // this.currentTab = 1
-      this.router.navigate([`/admin/hr/me/`+uuidV4()]);
-
-      // if (shouldRedirect) {
-        // this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
-      // }
+      // The new hire isn't signed in, so they stay here and see a confirmation rather than an admin page.
+      this.submitted = true;
+      sessionStorage.removeItem(`onboarding_photo_${this.employeeId}`);
     },
     error: (err) => {
       this.loading = false;
@@ -623,8 +674,7 @@ addNewEmployee(){
         err,
         'Failed to submit onboarding details. Please try again.'
       );
-      console.log("vettingPayload:", vettingPayload)
-      // this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+      this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
     }
   })
 }
@@ -635,31 +685,30 @@ private buildEmployeePayload(): {
   nextOfKin: any[];
   guarantors: any[];
 } {
-  const employeeMediaId = this.employeeData?.employeeMedia?.id;
-  const storedUserId = sessionStorage.getItem('userid') || localStorage.getItem('userid');
+  const employee = this.employeeData || {};
+  const employeeMediaId = employee.employeeMedia?.id;
   const newEmployee: any = {
- 
-
-   id: this.employeeId,
-    userId: this.employeeData?.userId ?? this.employeeData?.user?.userId ?? storedUserId ?? null,
-    firstName:  this.employeeData.firstName,
-    lastName:  this.employeeData.lastName,
-    email:  this.employeeData.email,
-    workEmail: this.employeeData.workEmail,
-    jobTitle: this.employeeData.jobTitle,
-    // departmentId: this.employeeData.departmentId,
-    levelId: this.employeeData.level.id,
-    employmentType:  this.employeeData.employmentType,
-    supervisor: this.employeeData.supervisor,
+    id: this.employeeId,
+    // Only the employee's own account. Never the signed-in user's: when HR opens this form, that
+    // would attach HR's account to the new hire.
+    userId: employee.userId ?? employee.user?.userId ?? null,
+    firstName: employee.firstName,
+    lastName: employee.lastName,
+    email: employee.email,
+    workEmail: employee.workEmail,
+    jobTitle: employee.jobTitle,
+    levelId: employee.levelId ?? employee.level?.id ?? null,
+    employmentType: employee.employmentType,
+    supervisor: employee.supervisor,
 
     // Employment Information
-    employeeStatus: this.employeeData.employeeStatus,
-    employementStartDate: this.employeeData.employementStartDate,
-    employmentEndDate: this.employeeData.employmentEndDate,
-    onProbation: this.employeeData.onProbation,
-    probationStartDate: this.employeeData.probationStartDate,
-    probationEndDate: this.employeeData.probationEndDate,
-    appraisalDueDate: this.employeeData.appraisalDueDate,
+    employeeStatus: employee.employeeStatus,
+    employementStartDate: employee.employementStartDate,
+    employmentEndDate: employee.employmentEndDate,
+    onProbation: employee.onProbation,
+    probationStartDate: employee.probationStartDate,
+    probationEndDate: employee.probationEndDate,
+    appraisalDueDate: employee.appraisalDueDate,
 
 
     phone: this.basicForm.get('phone')?.value,
@@ -672,19 +721,16 @@ private buildEmployeePayload(): {
     accountNumber: this.employeeForm.get('accountNumber')?.value,
     nin: this.employeeForm.get('nin')?.value,
     bvn: this.employeeForm.get('bvn')?.value,
-  
-
-    // levelId: this.employeeData.levelId,
-    departmentId: this.employeeData.department.id,
-    jobTypeId: this.employeeData.jobType.id
-
-  
+    departmentId: employee.departmentId ?? employee.department?.id ?? null,
+    jobTypeId: employee.jobTypeId ?? employee.jobType?.id ?? null
   };
   if (employeeMediaId) {
     newEmployee.employeeMediaId = employeeMediaId;
   }
 
-  const nextOfKin = this.nextOfKinList.map((nok) => ({
+  // Only entries the server has, with their ids, so the vetting step can tell they already exist.
+  const nextOfKin = this.nextOfKinList.filter((nok) => nok.__saved).map((nok) => ({
+    id: nok.__id ?? null,
     fullName: nok.fullName,
     email: nok.email,
     phone: nok.phone,
@@ -695,7 +741,8 @@ private buildEmployeePayload(): {
     employeeId: Number(this.employeeId)
   }));
 
-  const guarantors = this.guarantorList.map((guarantor) => ({
+  const guarantors = this.guarantorList.filter((guarantor) => guarantor.__saved).map((guarantor) => ({
+    id: guarantor.__id ?? null,
     fullName: guarantor.fullName,
     email: guarantor.email,
     phone: guarantor.phone,
@@ -710,67 +757,135 @@ private buildEmployeePayload(): {
   };
 }
 
-private buildEmployeeFormData(): FormData {
-  const payload = this.buildEmployeePayload();
-  const employee = payload.employee || {};
-  const formData = new FormData();
-  formData.append('employee', JSON.stringify(employee));
-
+/**
+ * Updates the employee HR already created (PUT /employees/{id}), then uploads a newly picked
+ * photo. This used to POST to the create endpoint with the id set, which could add another
+ * employee on every submit or draft save.
+ */
+private saveEmployee(): Observable<any> {
+  const { employee } = this.buildEmployeePayload();
   const profilePhoto = this.basicForm.get('profilePhoto')?.value;
-  if (profilePhoto instanceof File) {
-    formData.append('file', profilePhoto, profilePhoto.name);
-  }
-
-  return formData;
+  return this.employeeService.updateEmployee(employee, this.employeeId).pipe(
+    switchMap((saved: any) => profilePhoto instanceof File
+      ? this.employeeService.uploadEmployeePhoto({ id: this.employeeId }, profilePhoto).pipe(map(() => saved))
+      : of(saved))
+  );
 }
 
 
  
+  /** Adds the form as a new next of kin, or applies it to the one being edited. */
   addNextOfKin() {
-    if (this.NOKForm.valid) {
-      this.nextOfKinList.push({ ...this.NOKForm.value, __saved: false });
-      this.NOKForm.reset(); 
-    } else {
-    }
+    if (!this.NOKForm.valid) return;
+    this.applyFormEntry(this.nextOfKinList, this.editingNokIndex, this.NOKForm.value);
+    this.editingNokIndex = null;
+    this.NOKForm.reset();
   }
 
   editNextOfKin(index: number) {
-    const kin = this.nextOfKinList[index];
-    this.NOKForm.patchValue(kin); 
-    this.nextOfKinList.splice(index, 1);
+    this.editingNokIndex = index;
+    this.NOKForm.patchValue(this.nextOfKinList[index]);
+  }
+
+  cancelNextOfKinEdit() {
+    this.editingNokIndex = null;
+    this.NOKForm.reset();
   }
 
   deleteNextOfKin(index: number) {
-    // if (confirm('Are you sure you want to remove this next of kin?')) {
-    // }
-    this.nextOfKinList.splice(index, 1); 
+    this.confirmAndDelete(
+      this.nextOfKinList, index, 'next of kin',
+      (id) => this.employeeService.deleteNOK(id),
+      () => { this.editingNokIndex = this.indexAfterRemoval(this.editingNokIndex, index, this.NOKForm); }
+    );
+  }
 
-  }
+  /** Adds the form as a new guarantor, or applies it to the one being edited. */
   addGuarantor() {
-    if (this.guarantorForm.valid) {
-      const guarantor = { ...this.guarantorForm.value, __saved: false };
-      // Push to the guarantorList
-      this.guarantorList.push(guarantor);
-  
-      // Reset the form
-      this.guarantorForm.reset();
-    }
+    if (!this.guarantorForm.valid) return;
+    this.applyFormEntry(this.guarantorList, this.editingGuarantorIndex, this.guarantorForm.value);
+    this.editingGuarantorIndex = null;
+    this.guarantorForm.reset();
   }
-  
+
   editGuarantor(index: number) {
     const guarantor = this.guarantorList[index];
+    this.editingGuarantorIndex = index;
     this.guarantorForm.patchValue({
       fullName: guarantor.fullName,
       email: guarantor.email,
       phone: guarantor.phone,
     });
-    this.guarantorList.splice(index, 1);
+  }
+
+  cancelGuarantorEdit() {
+    this.editingGuarantorIndex = null;
+    this.guarantorForm.reset();
   }
 
   deleteGuarantor(index: number) {
-    if (confirm('Are you sure you want to remove this guarantor?')) {
-      this.guarantorList.splice(index, 1); 
+    this.confirmAndDelete(
+      this.guarantorList, index, 'guarantor',
+      (id) => this.employeeService.deleteGuarantor(id),
+      () => { this.editingGuarantorIndex = this.indexAfterRemoval(this.editingGuarantorIndex, index, this.guarantorForm); }
+    );
+  }
+
+  /** Puts form values into the list: replacing the edited entry (keeping its server id) or appending. */
+  private applyFormEntry(list: any[], editingIndex: number | null, values: any): void {
+    if (editingIndex !== null && list[editingIndex]) {
+      list[editingIndex] = { ...list[editingIndex], ...values, __saved: false };
+    } else {
+      list.push({ ...values, __saved: false });
     }
+  }
+
+  /** Asks first, then removes the entry, deleting the server record when there is one. */
+  private confirmAndDelete(
+    list: any[],
+    index: number,
+    label: string,
+    deleteOnServer: (id: number) => Observable<any>,
+    afterRemove: () => void
+  ): void {
+    const entry = list[index];
+    if (!entry) return;
+    this.confirmationService.confirm({
+      header: `Remove ${label}`,
+      message: `Remove ${entry.fullName || `this ${label}`}?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Remove',
+      rejectLabel: 'Cancel',
+      accept: () => {
+        const remove = () => {
+          const current = list.indexOf(entry);
+          if (current === -1) return;
+          list.splice(current, 1);
+          afterRemove();
+        };
+        if (!entry.__id) {
+          remove();
+          return;
+        }
+        deleteOnServer(entry.__id).subscribe({
+          next: () => remove(),
+          error: (err) => {
+            const detail = this.errorMessageService.getUserMessage(err, `Failed to remove ${label}. Please try again.`);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
+          }
+        });
+      }
+    });
+  }
+
+  /** The edit index once entry `removed` is gone: cleared (with the form) if it was the one being edited. */
+  private indexAfterRemoval(editingIndex: number | null, removed: number, form: FormGroup): number | null {
+    if (editingIndex === null) return null;
+    if (editingIndex === removed) {
+      form.reset();
+      return null;
+    }
+    return editingIndex > removed ? editingIndex - 1 : editingIndex;
   }
 
   onProfilePhotoChange(event: Event) {
@@ -778,7 +893,8 @@ private buildEmployeeFormData(): FormData {
     if (input.files && input.files.length) {
       const file = input.files[0];
       const profilePhotoControl = this.basicForm.get('profilePhoto');
-      profilePhotoControl?.setValue(file);
+      // Don't write the File back into the <input type="file">; browsers reject that.
+      profilePhotoControl?.setValue(file, { emitModelToViewChange: false });
       profilePhotoControl?.markAsTouched();
       profilePhotoControl?.updateValueAndValidity();
 
@@ -800,7 +916,7 @@ private buildEmployeeFormData(): FormData {
     }));
   }
   getKeys(obj: any): string[] {
-    return Object.keys(obj).filter(key => key !== '__saved');
+    return Object.keys(obj).filter(key => !key.startsWith('__'));
   }
   toTitleCaseWithSpace(key: string): string {
     return key
@@ -812,6 +928,7 @@ private buildEmployeeFormData(): FormData {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event: any) => {
+        this.releasePhotoObjectUrl();
         this.imageURL = event.target.result;
         if (this.employeeId) {
           sessionStorage.setItem(`onboarding_photo_${this.employeeId}`, event.target.result);

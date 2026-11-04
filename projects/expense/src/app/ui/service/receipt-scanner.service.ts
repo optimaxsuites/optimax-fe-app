@@ -64,6 +64,8 @@ export class ReceiptScannerService {
   // ── Map AI response → ScannedReceiptData ──────────────────────────────────
 
   private mapResult(r: any, filename?: string): ScannedReceiptData {
+    if (r?.error) throw new Error(r.error);
+
     const warnings: string[] = [];
 
     const merchantName    = this.str(r?.merchantName);

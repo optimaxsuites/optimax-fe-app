@@ -1,0 +1,142 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # e.g. v2026.11.02
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v2026.11.02)'
+        required: true
+
+permissions:
+  contents: write   # needed to create GitHub releases and upload assets
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: universal-apple-darwin
+            args: '--target universal-apple-darwin'
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ''
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            pkg-config
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Angular (Tauri configuration)
+        run: npx ng build ERP-FE --configuration tauri --base-href ./
+
+      - name: Build Tauri desktop app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS notarization (optional — set these secrets to enable)
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows code signing (optional)
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'OptimaXERP ${{ github.ref_name }}'
+          releaseBody: |
+            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          tauriScript: npx tauri
+          # Skip the Angular build step inside tauri-action — we built it above
+          beforeBuildCommand: ''
+
+  publish-update-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate updater manifest
+        run: |
+          VERSION="${{ github.ref_name }}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          cat > update-manifest.json << EOF
+          {
+            "version": "${VERSION#v}",
+            "notes": "See release notes at https://github.com/${{ github.repository }}/releases/tag/${VERSION}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/OptimaXERP_${VERSION#v}_aarch64.dmg",
+                "signature": ""
+              },
+              "darwin-x86_64": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/OptimaXERP_${VERSION#v}_x64.dmg",
+                "signature": ""
+              },
+              "linux-x86_64": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/OptimaXERP_${VERSION#v}_amd64.AppImage",
+                "signature": ""
+              },
+              "windows-x86_64": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/${VERSION}/OptimaXERP_${VERSION#v}_x64-setup.exe",
+                "signature": ""
+              }
+            }
+          }
+          EOF
+          echo "Generated manifest:"
+          cat update-manifest.json
+
+      - name: Upload manifest to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: update-manifest.json
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

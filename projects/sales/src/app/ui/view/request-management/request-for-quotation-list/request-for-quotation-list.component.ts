@@ -9,6 +9,12 @@ import { ProcurementRequestService } from '../../../service/procurement/procurem
 import { ProcurementRequest, RequestFilters, RequestStatus, PaginatedResponse } from '../../../domain/procurement-request/procurement.dto';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { MessageService } from 'primeng/api';
+import { formatApiDate, parseApiDate } from '../../../service/sales/date.util';
+
+// Created and approval times are real moments, so they show the time, in the viewer's timezone. Deadlines
+// are stored as midnight UTC with no real time, so they show the date alone, in UTC so it can't shift a day.
+const DATE_AND_TIME: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+const DATE_ONLY_UTC: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' };
 
 
 // Extended interface to handle _rowType property
@@ -35,6 +41,9 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   tableActions: TableAction<any>[] = [];
   selectedRequests: ProcurementRequest[] = [];
   allRows: ExtendedProcurementRequest[] = [];
+  // The backend ignores sort parameters and returns requests in no useful order, so sorting one of its
+  // pages left the newest requests stranded on later pages. Everything is fetched and paged here instead.
+  private fetchedRequests: ProcurementRequest[] = [];
   isSubmittingCancel = false;
 
   sortField = 'createdAt';
@@ -93,9 +102,10 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
     return this.sortAsc ? 'fa-sort-up' : 'fa-sort-down';
   }
 
+  /** Sorts every request, not just the visible page, then shows the current page of the result. */
   sortAllRows(): void {
     if (!this.sortField) return;
-    this.allRows.sort((a, b) => {
+    (this.fetchedRequests as ExtendedProcurementRequest[]).sort((a, b) => {
       let valA: any = a[this.sortField as keyof ExtendedProcurementRequest];
       let valB: any = b[this.sortField as keyof ExtendedProcurementRequest];
 
@@ -112,6 +122,20 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       if (valA > valB) return this.sortAsc ? 1 : -1;
       return 0;
     });
+    this.showCurrentPage();
+  }
+
+  private showCurrentPage(): void {
+    this.totalElements = this.fetchedRequests.length;
+    this.totalPages = Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+    this.currentPage = Math.min(this.currentPage, this.totalPages - 1);
+    const start = this.currentPage * this.pageSize;
+    this.requests = this.fetchedRequests.slice(start, start + this.pageSize);
+    this.selectedRequests = this.selectedRequests.filter((selected) =>
+      this.requests.some((request) => request.id === selected.id)
+    );
+    this.allRows = [...this.requests] as ExtendedProcurementRequest[];
+    this.loadDashboardData();
   }
 
   get showCancelModal(): boolean {
@@ -136,8 +160,8 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   };
 
   isDeadlineSoon(deadline: Date | string | undefined): boolean {
-    if (!deadline) return false;
-    const deadlineDate = new Date(deadline);
+    const deadlineDate = parseApiDate(deadline);
+    if (!deadlineDate) return false;
     const now = new Date();
     const diff = deadlineDate.getTime() - now.getTime();
     // 3 days in ms
@@ -257,7 +281,7 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
         header: 'Deadline',
         sortable: true,
         sortField: 'deliveryDeadline',
-        formatter: (row) => this.formatDate(row.deliveryDeadline),
+        formatter: (row) => this.formatDeadline(row.deliveryDeadline),
         className: 'col-deadline'
       },
       {
@@ -346,25 +370,17 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
       searchTerm: this.filterForm.get('searchTerm')?.value,
       dateFrom: this.filterForm.get('dateFrom')?.value ? new Date(this.filterForm.get('dateFrom')?.value) : undefined,
       dateTo: this.filterForm.get('dateTo')?.value ? new Date(this.filterForm.get('dateTo')?.value) : undefined,
-      page: this.currentPage,
-      size: this.pageSize
+      page: 0,
+      size: 1000
     };
 
     this.procurementRequestService.getRequests(filters)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (page) => {
-          this.requests = page.data;
-          this.totalElements = page.totalElements;
-          this.totalPages = page.totalPages;
-          this.selectedRequests = this.selectedRequests.filter((selected) =>
-            this.requests.some((request) => request.id === selected.id)
-          );
-          this.allRows = [...this.requests] as ExtendedProcurementRequest[];
+          this.fetchedRequests = page.data;
           this.sortAllRows();
           this.isLoading = false;
-          // Update dashboard data after loading
-          this.loadDashboardData();
         },
         error: (error: any) => {
           console.error('Error loading requests:', error);
@@ -376,13 +392,13 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
 
   onPageChange(page: number): void {
     this.currentPage = page;
-    this.loadRequests();
+    this.showCurrentPage();
   }
 
   onPageSizeChange(size: number): void {
     this.pageSize = size;
     this.currentPage = 0;
-    this.loadRequests();
+    this.showCurrentPage();
   }
 
   get selectedRequestIds(): number[] {
@@ -559,12 +575,11 @@ export class RequestForQuotationListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(value: string | Date | undefined): string {
-    if (!value) return '-';
-    return new Date(value).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return formatApiDate(value, DATE_AND_TIME, 'en-NG', '-');
+  }
+
+  formatDeadline(value: string | Date | undefined): string {
+    return formatApiDate(value, DATE_ONLY_UTC, 'en-NG', '-');
   }
 
   getPageNumbers(): number[] {

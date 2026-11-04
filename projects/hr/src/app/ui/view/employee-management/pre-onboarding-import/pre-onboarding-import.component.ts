@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, EventEmitter, inject, OnDestroy, Output } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
 
@@ -46,7 +46,7 @@ export interface ImportedEmployeeData {
   templateUrl: './pre-onboarding-import.component.html',
   styleUrl: './pre-onboarding-import.component.scss'
 })
-export class PreOnboardingImportComponent {
+export class PreOnboardingImportComponent implements OnDestroy {
   @Output() importComplete = new EventEmitter<ImportedEmployeeData>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -79,6 +79,8 @@ export class PreOnboardingImportComponent {
   }
 
   // ── Extraction pipeline ─────────────────────────────────────────────────────
+  // PDF-to-image conversion is handled server-side (PdfImageUtil / PDFBox).
+  // The frontend sends the raw file for all types — no client-side pdfjs needed.
   async handleFile(file: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowed.includes(file.type)) {
@@ -89,33 +91,29 @@ export class PreOnboardingImportComponent {
     this.error = '';
     this.state = 'processing';
     this.progress = 10;
-    this.previewUrl = null;
+    this.setPreviewUrl(null);
 
     try {
-      let imageFile: File;
-
-      if (file.type === 'application/pdf') {
-        this.progressLabel = 'Rendering PDF page...';
-        this.progress = 20;
-        const blob = await this.pdfFirstPageToBlob(file);
-        this.previewUrl = URL.createObjectURL(blob);
-        imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
-      } else {
-        imageFile = file;
-        this.previewUrl = URL.createObjectURL(file);
+      // Images get an inline preview; PDFs are rendered server-side so no preview here.
+      if (file.type !== 'application/pdf') {
+        this.setPreviewUrl(URL.createObjectURL(file));
       }
 
       this.progressLabel = 'Reading form with AI...';
-      this.progress = 50;
+      this.progress = 30;
 
       const form = new FormData();
-      form.append('file', imageFile);
+      form.append('file', file);
 
       let result: any;
       try {
         result = await firstValueFrom(this.http.post<any>(this.extractUrl, form));
       } catch (httpErr: any) {
-        const msg = httpErr?.error?.message ?? httpErr?.error ?? httpErr?.message ?? String(httpErr);
+        const isNetwork = httpErr?.status === 0 || httpErr?.error instanceof ProgressEvent;
+        const msg = httpErr?.error?.message
+          ?? (typeof httpErr?.error === 'string' ? httpErr.error : null)
+          ?? httpErr?.message
+          ?? (isNetwork ? `Could not reach the server. Please check your connection.` : `HTTP ${httpErr?.status ?? '?'}`);
         this.error = `Extraction request failed: ${msg}`;
         this.state = 'upload';
         console.error('extract-form HTTP error', httpErr);
@@ -141,32 +139,6 @@ export class PreOnboardingImportComponent {
     }
   }
 
-  // ── PDF → PNG ───────────────────────────────────────────────────────────────
-  private async pdfFirstPageToBlob(file: File): Promise<Blob> {
-    const arrayBuffer = await file.arrayBuffer();
-
-    const pdfjs: any = (window as any).pdfjsLib;
-    if (!pdfjs) throw new Error('PDF library not available. Please ensure pdf.js is loaded.');
-
-    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-      const v: string = pdfjs.version || '4.8.69';
-      pdfjs.GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${v}/pdf.worker.min.js`;
-    }
-
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.5 });
-
-    const canvas = document.createElement('canvas');
-    canvas.width  = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise;
-
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
-    });
-  }
 
   // ── Map AI response → ImportedEmployeeData ─────────────────────────────────
   private mapResult(r: any): ImportedEmployeeData {
@@ -210,13 +182,23 @@ export class PreOnboardingImportComponent {
     };
   }
 
+  ngOnDestroy(): void {
+    this.setPreviewUrl(null);
+  }
+
+  /** Replaces the preview, releasing the previous object URL. */
+  private setPreviewUrl(url: string | null): void {
+    if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+    this.previewUrl = url;
+  }
+
   // ── Actions ─────────────────────────────────────────────────────────────────
   createEmployee() { this.importComplete.emit({ ...this.data }); }
 
   reset() {
     this.state = 'upload';
     this.data = {};
-    this.previewUrl = null;
+    this.setPreviewUrl(null);
     this.error = '';
     this.progress = 0;
     this.progressLabel = 'Initialising...';

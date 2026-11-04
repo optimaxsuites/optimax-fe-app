@@ -35,7 +35,20 @@
   </div>
 </div>
 
-<div *ngIf="!isExpired" class="table-item">
+<p-toast position="top-right" key="tl"></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div *ngIf="submitted" class="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center px-6">
+  <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  </div>
+  <h2 class="text-2xl font-bold text-gray-800">Onboarding details submitted</h2>
+  <p class="text-gray-500 max-w-md">Thank you. HR will review your details and contact you if anything else is needed. You can close this page.</p>
+</div>
+
+<div *ngIf="!isExpired && !submitted" class="table-item">
 
 
   <div class="flex justify-between gap-5 items-center relative">
@@ -237,7 +250,7 @@
 
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div *ngIf="nextOfKinList.length > 0" class="my-4  w-full text-customBlue">
-        <div *ngFor="let kin of nextOfKinList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between">
+        <div *ngFor="let kin of nextOfKinList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between" [class.ring-2]="editingNokIndex === i" [class.ring-customGreen]="editingNokIndex === i">
           <div class="flex gap-3 items-center">
             <p class="font-bold text-[15px]">{{i+1}}.</p>
             <div>
@@ -247,8 +260,8 @@
           </div>
 
           <div class="flex gap-2 items-center">
-            <button (click)="editNextOfKin(i)"  class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
-            <button (click)="deleteNextOfKin(i)"  class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
+            <button type="button" (click)="editNextOfKin(i)" title="Edit" class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
+            <button type="button" (click)="deleteNextOfKin(i)" title="Remove" class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
           </div>
         </div>
       </div>
@@ -312,7 +325,10 @@
           <input type="checkbox" formControlName="emergencyContact" id="emergencyContact" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
           <label for="emergencyContact" class="block text-[13px] font-medium cursor-pointer">Emergency contact</label>
         </div> 
-        <button type="button" (click)="addNextOfKin()" [disabled]="!NOKForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px]" > + Add new next of kin</button>
+        <div class="flex items-center gap-3">
+          <button *ngIf="editingNokIndex !== null" type="button" (click)="cancelNextOfKinEdit()" class="text-gray-500 text-nowrap text-[12px]">Cancel edit</button>
+          <button type="button" (click)="addNextOfKin()" [disabled]="!NOKForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px]" >{{ editingNokIndex !== null ? 'Update next of kin' : '+ Add new next of kin' }}</button>
+        </div>
       </div>
 
       <div class="text-right">
@@ -334,7 +350,7 @@
   <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div *ngIf="guarantorList.length > 0" class="my-4  w-full text-customBlue">
-        <div *ngFor="let guarant of guarantorList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between">
+        <div *ngFor="let guarant of guarantorList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between" [class.ring-2]="editingGuarantorIndex === i" [class.ring-customGreen]="editingGuarantorIndex === i">
           <div class="flex gap-3 items-center">
             <p class="font-bold text-[15px]">{{i+1}}.</p>
             <div>
@@ -345,8 +361,8 @@
       
           </div>
           <div class="flex gap-2 items-center">
-            <button (click)="editGuarantor(i)"  class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
-            <button (click)="deleteGuarantor(i)"  class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
+            <button type="button" (click)="editGuarantor(i)" title="Edit" class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
+            <button type="button" (click)="deleteGuarantor(i)" title="Remove" class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
           </div>
         </div>
       </div>
@@ -377,7 +393,10 @@
 
       <div class="flex flex-end justify-between items-center mb-4 w-full text-end"> 
         <span></span>
-        <button type="button" (click)="addGuarantor()" [disabled]="!guarantorForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px] flex-end" > + Add new guarantor</button>
+        <div class="flex items-center gap-3">
+          <button *ngIf="editingGuarantorIndex !== null" type="button" (click)="cancelGuarantorEdit()" class="text-gray-500 text-nowrap text-[12px]">Cancel edit</button>
+          <button type="button" (click)="addGuarantor()" [disabled]="!guarantorForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px] flex-end" >{{ editingGuarantorIndex !== null ? 'Update guarantor' : '+ Add new guarantor' }}</button>
+        </div>
       </div>
 
       <div class="text-right">

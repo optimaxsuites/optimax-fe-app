@@ -32,11 +32,15 @@ export class AuthInterceptor implements HttpInterceptor {
 
     const host = window.location.hostname;
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-    let tenantId = 'optimax'; 
+    let tenantId = 'optimax';
 
     if (!isLocalhost) {
       const parts = host.split('.');
       tenantId = parts[0] || 'optimax';
+    } else {
+      // Desktop app: use the workspace ID entered at login if available
+      const stored = sessionStorage.getItem('workspaceId') || localStorage.getItem('workspaceId');
+      if (stored) tenantId = stored;
     }
 
     const defaultTenantEndpoints = ['admin/login'];

@@ -19,7 +19,7 @@ export class VendorPortalComponent {
   tabsConfig: TabConfig[] = [
 
     {
-      name: 'Register',
+      name: 'Upload Your Details',
       component: VendorRegistrationComponent,
       icon: 'fa-solid fa-table-columns',
     },
@@ -33,18 +33,18 @@ export class VendorPortalComponent {
       component: PipelineComponent,
       icon: 'fa-solid fa-file-invoice-dollar',
     },
-    // Merged into "Pipeline" above (RFQ → Quotation → LPO → Invoice, one
-    // component, one KPI rail, one 4-way switch) — kept here, unreferenced,
+    // Pipeline only covers RFQs and quotations, so LPOs and invoices live here.
+    {
+      name: 'LPOs & Invoices',
+      component: FinanceComponent,
+      icon: 'fa-solid fa-file-contract',
+    },
+    // Merged into "Pipeline" and "LPOs & Invoices" above — kept here, unreferenced,
     // rather than deleted outright, in case anything else still imports them.
     // {
     //   name: 'RFQ',
     //   component: DashboardComponent,
     //   icon: 'fa-solid fa-table-columns',
-    // },
-    // {
-    //   name: 'Finance',
-    //   component: FinanceComponent,
-    //   icon: 'fa-solid fa-file-invoice-dollar',
     // },
     // {
     //   name: 'LPO',

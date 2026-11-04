@@ -63,6 +63,7 @@
       [showSearch]="showSearch"
       [searchResults]="searchResults"
       [totalDmUnread]="totalDmUnread"
+      [typingMap]="typingMap"
       [selfStats]="selfStats"
       (channelSelected)="onSidebarChannelSelected($event)"
       (dmSelected)="onSidebarDmSelected($event)"
@@ -1152,8 +1153,32 @@
               <ng-container *ngIf="activeView === 'threads'">All threads</ng-container>
             </h2>
             <span class="chat-subtitle">
-              <ng-container *ngIf="activeView === 'channel'">{{ activeChannel?.description }}</ng-container>
-              <ng-container *ngIf="activeView === 'dm'">{{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}</ng-container>
+              <ng-container *ngIf="activeView === 'channel'">
+                <span *ngIf="typingUsersLabel" class="text-emerald-600 font-medium inline-flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:200ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:400ms]"></span>
+                  </span>
+                  <span class="italic">{{ typingUsersLabel }}</span>
+                </span>
+                <ng-container *ngIf="!typingUsersLabel">
+                  {{ activeChannel?.description }}
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="activeView === 'dm'">
+                <span *ngIf="isUserTyping(activeDmContact?.userId || 0)" class="text-emerald-600 font-medium inline-flex items-center gap-1.5">
+                  <span class="inline-flex items-center gap-0.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:200ms]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse [animation-delay:400ms]"></span>
+                  </span>
+                  <span class="italic">typing…</span>
+                </span>
+                <ng-container *ngIf="!isUserTyping(activeDmContact?.userId || 0)">
+                  {{ activeDmContact?.jobTitle || activeDmContact?.lastMessagePreview }}
+                </ng-container>
+              </ng-container>
               <ng-container *ngIf="activeView === 'threads'">Grouped replies from channels and direct conversations in one searchable inbox.</ng-container>
             </span>
             </div>
@@ -1633,31 +1658,6 @@
             </div>
           </button>
         </section>
-        <!-- ── Reminders in thread aside ─────────────────────────────── -->
-        <section class="right-panel-birthday-card" *ngIf="scheduledReminders.length && !rightPanelOpen">
-          <div class="rail-card-header">
-            <div>
-              <p class="rail-label">Reminders</p>
-              <h3>Scheduled alerts</h3>
-            </div>
-          </div>
-          <button
-            type="button"
-            *ngFor="let r of scheduledReminders | slice:0:5"
-            class="right-panel-birthday-item"
-            (click)="dismissCollabReminder(r.taskId, r.source)"
-          >
-            <div class="rail-highlight-topline">
-              <span class="rail-highlight-pill">{{ r.fired ? 'Fired' : 'Pending' }}</span>
-              <time>{{ r.dueDate }}</time>
-            </div>
-            <div class="rail-highlight-meta">
-              <strong>{{ r.taskTitle }}</strong>
-              <span>{{ r.sprint || (r.source === 'issue' ? 'Bug Tracker' : 'Work Task') }}</span>
-            </div>
-          </button>
-        </section>
-
         <app-thread-panel
           *ngIf="rightPanelOpen"
           [mode]="rightPanelMode"
@@ -1772,40 +1772,6 @@
               }}
             </p>
           </button>
-        </section>
-
-        <!-- ── Reminders card ─────────────────────────────────────────── -->
-        <section class="rail-card" *ngIf="scheduledReminders.length">
-          <div class="rail-card-header">
-            <div>
-              <p class="rail-label">Reminders</p>
-              <h3>Scheduled alerts</h3>
-            </div>
-          </div>
-          <div
-            *ngFor="let r of scheduledReminders | slice:0:6"
-            class="rail-highlight"
-            [ngClass]="r.fired ? 'tone-success' : (r.source === 'issue' ? 'tone-focus' : 'tone-info')"
-          >
-            <div class="rail-highlight-topline">
-              <span class="rail-highlight-pill">
-                {{ r.fired ? 'Fired' : 'Pending' }}
-                <ng-container *ngIf="r.source === 'issue'"> · Issue</ng-container>
-              </span>
-              <time>{{ r.dueDate }}</time>
-            </div>
-            <div class="rail-highlight-meta">
-              <strong>{{ r.taskTitle }}</strong>
-              <span>{{ r.sprint || (r.source === 'issue' ? 'Bug Tracker' : 'Work Task') }}</span>
-            </div>
-            <p *ngIf="r.note">{{ r.note }}</p>
-            <p *ngIf="!r.note">Reminder: {{ r.reminderAt | date:'MMM d · h:mm a' }}</p>
-            <button
-              type="button"
-              (click)="dismissCollabReminder(r.taskId, r.source)"
-              style="margin-top:4px;font-size:11px;color:#6b7280;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline"
-            >Dismiss</button>
-          </div>
         </section>
 
         <section class="rail-card" *ngIf="taskRoutineTodos.length">

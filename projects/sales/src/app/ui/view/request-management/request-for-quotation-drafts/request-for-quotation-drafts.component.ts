@@ -1,3 +1,4 @@
+import { toApiDate } from '../../../service/sales/date.util';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -82,7 +83,7 @@ export class RequestForQuotationDraftsComponent implements OnInit, OnDestroy {
 
   formatDate(value: string | Date | undefined): string {
     if (!value) return '-';
-    return new Date(value).toLocaleDateString('en-US', {
+    return toApiDate(value).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'

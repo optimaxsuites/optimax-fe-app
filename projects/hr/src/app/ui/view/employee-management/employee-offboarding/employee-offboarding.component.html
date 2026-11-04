@@ -6,6 +6,12 @@
     <span><strong>HR Managed Workflow</strong> — HR completes this section to track and close the exit process. The printable Exit Form (Documents tab) is given to the employee to sign during the exit interview.</span>
   </div>
 
+  <div *ngIf="loadState !== 'ready'" class="ob-context-note">
+    <i class="fas" [ngClass]="loadState === 'loading' ? 'fa-spinner fa-spin' : 'fa-exclamation-triangle'"></i>
+    <span *ngIf="loadState === 'loading'">Loading the offboarding record…</span>
+    <span *ngIf="loadState === 'error'"><strong>Not loaded.</strong> The offboarding record could not be loaded, so changes can't be saved. Reopen this profile to retry.</span>
+  </div>
+
   <!-- ── Stage progress bar ───────────────────────────────────────────────── -->
   <div class="ob-pipeline">
     <ng-container *ngFor="let s of stages; let i = index; let last = last">
@@ -352,7 +358,7 @@
     <div class="ob-confirm" (click)="$event.stopPropagation()">
       <i class="fas fa-exclamation-triangle confirm-icon warn"></i>
       <h3>Revoke All System Access?</h3>
-      <p>This will mark all systems as revoked and move the workflow to <strong>Access Revoked</strong> stage. The employee will lose all application access. This action should only be done on or after the last working day.</p>
+      <p>This records every system on the checklist as revoked and moves the workflow to the <strong>Access Revoked</strong> stage. It does not switch anything off: remove access in each system yourself. The ERP login is not disabled automatically either, so ask an administrator to disable it. Do this on or after the last working day.</p>
       <div class="confirm-actions">
         <button class="btn-ghost" (click)="showConfirmRevoke=false">Cancel</button>
         <button class="btn-revoke" (click)="revokeAccess()"><i class="fas fa-user-slash"></i> Confirm Revocation</button>
@@ -365,10 +371,10 @@
     <div class="ob-confirm" (click)="$event.stopPropagation()">
       <i class="fas fa-check-circle confirm-icon success"></i>
       <h3>Mark Offboarding as Complete?</h3>
-      <p>This closes the offboarding record for <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong>. All access has been revoked and assets recorded. This action cannot be undone.</p>
+      <p>This closes the offboarding record for <strong>{{ employeeInView?.firstName }} {{ employeeInView?.lastName }}</strong> and changes their employee status to <strong>{{ exitStatus }}</strong> (from the exit reason<span *ngIf="!ob.exitReason">, which still needs to be chosen</span>). This action cannot be undone.</p>
       <div class="confirm-actions">
         <button class="btn-ghost" (click)="showConfirmComplete=false">Cancel</button>
-        <button class="btn-complete" (click)="completeOffboarding()"><i class="fas fa-check-circle"></i> Complete Offboarding</button>
+        <button class="btn-complete" [disabled]="completing" (click)="completeOffboarding()"><i class="fas" [ngClass]="completing ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i> {{ completing ? 'Completing…' : 'Complete Offboarding' }}</button>
       </div>
     </div>
   </div>

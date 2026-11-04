@@ -27,7 +27,7 @@ import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { MatRippleModule } from '@angular/material/core';
 import { CalendarModule } from 'primeng/calendar';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { AngularEditorModule } from '@kolkov/angular-editor';
+import { AngularEditorModule } from '../shims/kolkov-angular-editor';
 
 ////primeng
 import { ButtonModule } from 'primeng/button';

@@ -3,18 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Observable, Subject, forkJoin, of, takeUntil, lastValueFrom } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { Customer, SalesDeliveryNote, SalesLpo, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
-import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { TemplateTypesComponent } from '../../template-types/template-types.component';
+import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/quote-templates.config';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
-import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -26,8 +25,7 @@ import { ToastModule } from 'primeng/toast';
  * Step 1 — upload the LPO the customer sent back. Receiving it is the gate: nothing below is
  * created until it's uploaded, since generating a delivery note without a customer's purchase
  * order isn't supposed to be possible under this flow. It's recorded as a SalesLpo
- * (/commerce/sales-lpos); the scanned file itself stays on the quote's additionalOptions because
- * there's no upload endpoint yet.
+ * (/commerce/sales-lpos), and the scanned file is uploaded to it via /{id}/upload-document.
  *
  * Step 2 — once the LPO is in, the delivery note itself is created/derived (via
  * getOrCreateDeliveryNoteForQuote(), the same item/customer/address derivation
@@ -62,13 +60,13 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
 
   // Step 1 — LPO upload
   lpoFileName = '';
+  /** Legacy LPO file kept on the quote, from before /sales-lpos/{id}/upload-document existed. */
   private lpoFile: QuoteDocumentAttachment | null = null;
+  private lpoFileRaw: File | null = null;
   private lpoFileSize?: number;
-  /** Whether lpoFile was picked in this visit (vs. restored from the quote) — an unchanged
+  /** The file picked in this visit, not uploaded yet — cleared once it is, so an unchanged
    *  file isn't uploaded again. */
-  private lpoFileChanged = false;
-  /** True while a picked file is still being read — Continue waits for it. */
-  isReadingLpo = false;
+  private lpoUpload: File | null = null;
   poNumberInput = '';
   /** The quote's SalesLpo record, once one exists. */
   lpo: SalesLpo | null = null;
@@ -144,6 +142,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         this.lpoFile = savedFile;
         this.lpoFileName = savedFile.fileName;
       }
+      if (lpo?.document?.fileUrl) this.lpoFileName = lpo.document.fileName || 'LPO';
       this.attention = existingNote?.attention || meta.attention || this.selectedCustomer?.name || '';
       this.contactPerson = existingNote?.contactPerson || meta.contactPerson || merchant?.name || merchant?.companyName || '';
 
@@ -226,57 +225,56 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   // ============================================================
 
   onLpoFileSelected(event: any): void {
-    const file = event.target.files?.[0];
+    const file: File | undefined = event.target.files?.[0];
     if (!file) return;
     this.lpoFileName = file.name;
     this.lpoFileSize = file.size;
-    this.lpoFileChanged = true;
-    this.isReadingLpo = true;
-    const reader = new FileReader();
-    reader.onerror = () => {
-      this.isReadingLpo = false;
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not read that file. Please choose it again.' });
+    this.lpoFileRaw = file;
+    this.lpoUpload = file;
+    this.lpoFile = {
+      fileName: file.name,
+      base64Content: '',
+      contentType: file.type || 'application/pdf',
+      uploadedAt: new Date()
     };
-    reader.onload = () => {
-      this.isReadingLpo = false;
-      const dataUrl = reader.result as string;
-      this.lpoFile = {
-        fileName: file.name,
-        base64Content: dataUrl.split(',')[1] || '',
-        contentType: file.type || 'application/pdf',
-        uploadedAt: new Date()
-      };
-    };
-    reader.readAsDataURL(file);
   }
 
-  /** Stores the file on the quote (when it's new) and creates/updates the quote's SalesLpo —
-   *  shared by Continue and Save Draft on step 1. */
+  /** Creates/updates the quote's SalesLpo, then uploads a newly picked file to the dedicated
+   *  endpoint — avoids embedding base64 in the quote PUT which causes ERR_CONNECTION_CLOSED on
+   *  large PDFs. The record is kept before the upload, so a failed upload retries against the
+   *  same LPO instead of creating another. Shared by Continue and Save Draft on step 1. */
   private saveLpo(): Observable<SalesLpo | null> {
-    const file = this.lpoFile;
-    const saveFile$ = file && this.lpoFileChanged
-      ? this.salesService.saveQuoteLpoDocument(this.quoteId!, file).pipe(map(quote => { this.quote = quote; this.lpoFileChanged = false; return true; }))
-      : of(false);
-    return saveFile$.pipe(
-      switchMap(fileSaved => {
-        if (this.lpo?.id) {
-          const unchanged = !fileSaved && (this.lpo.lpoNumber || '') === this.poNumberInput;
-          return unchanged ? of(this.lpo) : this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, ...this.buildLpo(this.poNumberInput, file, this.lpoFileSize), status: this.lpo.status });
-        }
-        return this.salesService.createSalesLpo(this.buildLpo(this.poNumberInput, file, this.lpoFileSize));
-      }),
+    const upload = this.lpoUpload;
+    let record$: Observable<SalesLpo>;
+    if (this.lpo?.id) {
+      record$ = (this.lpo.lpoNumber || '') === this.poNumberInput
+        ? of(this.lpo)
+        : this.salesService.updateSalesLpo(this.lpo.id, { ...this.lpo, lpoNumber: this.poNumberInput });
+    } else {
+      record$ = this.salesService.createSalesLpo(this.buildLpo(this.poNumberInput, this.lpoFile));
+    }
+    return record$.pipe(
       map(lpo => {
         this.lpo = lpo;
         this.poNumber = this.poNumberInput;
         return lpo;
-      })
+      }),
+      switchMap(lpo => !upload || lpo?.id == null ? of(lpo) :
+        this.salesService.uploadSalesLpoDocument(lpo.id, upload).pipe(
+          map(uploaded => {
+            if (this.lpoUpload === upload) this.lpoUpload = null;
+            this.lpoFileRaw = null;
+            return this.lpo = { ...lpo, ...uploaded };
+          }),
+          catchError(() => of(lpo))
+        ))
     );
   }
 
   /** Saves the LPO, then creates the delivery note linked to it (or picks up the existing one
    *  when coming back to this step) and moves on to the template. */
   submitLpo(): void {
-    if (!this.quoteId || !this.lpoFile || this.isReadingLpo || this.isSavingLpo) return;
+    if (!this.quoteId || !this.lpoFileName || this.isSavingLpo) return;
     this.isSavingLpo = true;
     this.saveLpo().pipe(
       switchMap(lpo => this.salesService.getOrCreateDeliveryNoteForQuote(this.quoteId!, {
@@ -313,7 +311,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     if (!this.quoteId || this.isSavingDraft) return;
     let save$: Observable<unknown>;
     if (this.currentStep === 1) {
-      if (!this.lpoFile && !this.poNumberInput) {
+      if (!this.lpoFileName && !this.poNumberInput) {
         this.messageService.add({ severity: 'warn', summary: 'Nothing to Save', detail: 'Choose the LPO file or enter its PO number first.' });
         return;
       }
@@ -339,9 +337,9 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** SalesLpo body for this quote. document.fileUrl stays empty — the file itself is stored on
-   *  the quote (no upload endpoint yet). */
-  private buildLpo(lpoNumber: string, file: QuoteDocumentAttachment | null, size?: number): Partial<SalesLpo> {
+  /** SalesLpo body for this quote. document.fileUrl starts empty — upload-document fills the
+   *  document in; `file` is only a legacy one kept on the quote. */
+  private buildLpo(lpoNumber: string, file: QuoteDocumentAttachment | null): Partial<SalesLpo> {
     const customerId = this.selectedCustomer?.id ?? (this.quote?.customerId as any)?.id;
     return {
       lpoNumber: lpoNumber || '',
@@ -354,7 +352,6 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         fileName: file?.fileName || '',
         fileUrl: '',
         contentType: file?.contentType || '',
-        size,
         uploadedAt: new Date(file?.uploadedAt || new Date()).toISOString()
       },
       receivedBy: Number(sessionStorage.getItem('userid')) || undefined
@@ -441,7 +438,7 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** Stores a newly uploaded logo on the quote (no upload endpoint yet — same as the LPO file). */
+  /** Stores a newly uploaded logo on the quote (no upload endpoint for logos yet). */
   private saveLogo(): Observable<unknown> {
     if (!this.pendingLogo || !this.quoteId) return of(null);
     const logo = this.pendingLogo;
@@ -476,13 +473,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   private async generatePdfBlob(): Promise<Blob> {
     const element = document.getElementById('generate-dn-preview');
     if (!element) throw new Error('Preview element not found');
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-    return pdf.output('blob');
+    // Shared renderer: compressed (the old uncompressed one made ~9 MB email attachments) and multi-page.
+    return renderElementToPdf(element);
   }
 
   async downloadPDF(): Promise<void> {

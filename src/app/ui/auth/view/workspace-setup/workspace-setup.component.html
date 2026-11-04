@@ -1,0 +1,48 @@
+<div class="ws-shell">
+  <div class="ws-card">
+    <div class="ws-logo">
+      <img src="assets/logo.png" alt="OptimaX" width="48" height="48" />
+    </div>
+
+    <h1 class="ws-title">Set up your workspace</h1>
+    <p class="ws-desc">
+      Configure your organisation's workspace and server for this installation.
+    </p>
+
+    <div class="ws-field" [class.ws-field--error]="!!wsError">
+      <label for="wsId">Workspace ID</label>
+      <div class="ws-input-wrap">
+        <input
+          id="wsId"
+          type="text"
+          placeholder="yourcompany"
+          [(ngModel)]="workspaceId"
+          (keyup.enter)="continue()"
+          autocomplete="organization"
+          spellcheck="false"
+        />
+        <span class="ws-suffix">.optimaxsuites.com</span>
+      </div>
+      <small class="ws-error" *ngIf="wsError">{{ wsError }}</small>
+    </div>
+
+    <div class="ws-field" [class.ws-field--error]="!!urlError">
+      <label for="wsUrl">Server URL</label>
+      <div class="ws-input-wrap">
+        <input
+          id="wsUrl"
+          type="url"
+          placeholder="https://be.optimaxsuites.com"
+          [(ngModel)]="serverUrl"
+          (keyup.enter)="continue()"
+          autocomplete="url"
+          spellcheck="false"
+        />
+      </div>
+      <small class="ws-error" *ngIf="urlError">{{ urlError }}</small>
+    </div>
+
+    <button class="ws-btn ws-btn--primary" (click)="continue()">Continue</button>
+    <button class="ws-btn ws-btn--ghost" (click)="skip()">Use defaults (OptimaX Suites cloud)</button>
+  </div>
+</div>

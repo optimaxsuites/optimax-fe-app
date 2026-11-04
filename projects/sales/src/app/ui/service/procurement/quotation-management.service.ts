@@ -1,5 +1,6 @@
 // quotation-management.service.ts
 
+import { toApiDate } from '../sales/date.util';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, EMPTY } from 'rxjs';
@@ -198,7 +199,7 @@ export class QuotationManagementService {
       map((res: any) => ({
         lpoId: res?.lpoId ?? String(quotationId),
         lpoNumber: res?.lpoNumber ?? `LPO-${new Date().getFullYear()}-${String(quotationId)}`,
-        lpoIssuedAt: res?.lpoIssuedAt ? new Date(res.lpoIssuedAt) : new Date()
+        lpoIssuedAt: res?.lpoIssuedAt ? toApiDate(res.lpoIssuedAt) : new Date()
       }))
     );
   }

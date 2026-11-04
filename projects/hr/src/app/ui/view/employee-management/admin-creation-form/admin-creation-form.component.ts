@@ -13,6 +13,9 @@ import { MetadataService } from '../../../service/metadata.service';
 import { RolesService } from '../../../service/roles.service';
 import { NavigationLinksService } from '../../../shared-component/service/navigation-links/navigation-links.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
+import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { findIdByName, parseImportedDate } from '../employee-import.util';
+import { buildOnboardingEmailHtml, buildOnboardingLink, generateTemporaryPassword, onboardingLinkExpiry } from '../onboarding-credentials.util';
 // // import { CompanyProfileService }
 
 @Component({
@@ -31,6 +34,7 @@ export class AdminCreationFormComponent implements OnChanges {
   submitted = false;
   lastSubmittedName = '';
   pendingCredentials: { name: string; username: string; password: string } | null = null;
+  showPendingPassword = false;
   basicForm!: FormGroup;
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
@@ -84,6 +88,8 @@ export class AdminCreationFormComponent implements OnChanges {
     "Zenith Bank"
   ];
   nextOfKinRelationships: any[] = [];
+  maritalStatuses: any[] = [];
+  religions: any[] = [];
   nextOfKinList: any[] = []
   guarantorList: any[] = []
   formErrors: string[] = [];
@@ -113,13 +119,16 @@ export class AdminCreationFormComponent implements OnChanges {
    
 
     this.metadataService.ensureMetaLoaded();
-    this.metadataService.departments$.subscribe(data => (this.departments = data));
+    this.metadataService.departments$.subscribe(data => { this.departments = data; this.applyImportLookups(); });
     this.metadataService.levels$.subscribe(data =>
       this.levels = (data || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name }))
     )
     this.metadataService.leaves$.subscribe(data => (this.leaves = data));
-   this.metadataService.employment$.subscribe(data => this.employments = data);
-    this.metadataService.gender$.subscribe(data => (this.gender = data));
+   this.metadataService.employment$.subscribe(data => { this.employments = data; this.applyImportLookups(); });
+    this.metadataService.gender$.subscribe(data => { this.gender = data; this.applyImportLookups(); });
+    this.metadataService.maritalStatuses$.subscribe(data => (this.maritalStatuses = data));
+    this.metadataService.religions$.subscribe(data => (this.religions = data));
+    this.metadataService.nextOfKinRelationships$.subscribe(data => (this.nextOfKinRelationships = data));
    this.loadEmployees();
    
     this.basicForm = this.fb.group({
@@ -130,8 +139,8 @@ export class AdminCreationFormComponent implements OnChanges {
       gender: ["", [Validators.required]],
       title: ["", [Validators.required]],
       department: ["", [Validators.required]],
-      level: [0, [Validators.required]],
-      jobType: [0, [Validators.required]],
+      level: [null, [Validators.required]],
+      jobType: [null, [Validators.required]],
       supervisor: ["", [Validators.required]],
     });
 
@@ -203,23 +212,144 @@ export class AdminCreationFormComponent implements OnChanges {
     if (!this.importData) return;
     const d = this.importData;
 
-    // Match gender from loaded metadata
-    const genderId = this.gender.find(
-      g => g.name?.toLowerCase() === d.gender?.toLowerCase()
-    )?.id ?? '';
-
     this.basicForm.patchValue({
       firstName: d.firstName ?? '',
       lastName: d.lastName ?? '',
       email: d.email ?? '',
       workemail: d.email ?? '',
-      gender: genderId,
       title: d.jobTitle ?? '',
     });
 
-    if (d.startDate) {
-      this.employeeForm.patchValue({ startDate: d.startDate });
+    const startDate = parseImportedDate(d.startDate);
+    if (startDate) {
+      this.employeeForm.patchValue({ startDate: formatDate(startDate, 'yyyy-MM-dd', 'en-US') });
     }
+    this.applyImportLookups();
+  }
+
+  /**
+   * Fills the dropdowns the import has names for (gender, department, employment type). Runs again
+   * whenever one of those lists loads, since the import can arrive first; never overwrites a choice.
+   */
+  private applyImportLookups(): void {
+    if (!this.importData || !this.basicForm) return;
+    const d = this.importData;
+    const fillIfEmpty = (controlName: string, items: any[], name: string | undefined) => {
+      const control = this.basicForm.get(controlName);
+      if (!control || control.value) return;
+      const id = findIdByName(items, name);
+      if (id !== undefined) control.setValue(id);
+    };
+    fillIfEmpty('gender', this.gender, d.gender);
+    fillIfEmpty('department', this.departments, d.department);
+    fillIfEmpty('jobType', this.employments, d.employmentType);
+  }
+
+  /** Personal and bank details from an imported form that go on the employee record; blanks are left out. */
+  private importedEmployeeFields(): Record<string, any> {
+    const d = this.importData;
+    if (!d) return {};
+    const dob = parseImportedDate(d.dob);
+    const fields: Record<string, any> = {
+      phone: d.phone,
+      address: d.address,
+      dob: dob ? this.toLocalDateTime(dob) : undefined,
+      maritalStatusId: findIdByName(this.maritalStatuses, d.maritalStatus),
+      religionId: findIdByName(this.religions, d.religion),
+      bankName: d.bankName,
+      accountNumber: d.accountNumber,
+      bvn: d.bvn,
+    };
+    return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== ''));
+  }
+
+  /** What the import will add beyond this form, for the summary step. */
+  get importedSummary(): { label: string; value: string }[] {
+    const d = this.importData;
+    if (!d) return [];
+    const rows: [string, string | undefined][] = [
+      ['Phone', d.phone],
+      ['Date of Birth', d.dob],
+      ['Address', d.address],
+      ['Marital Status', d.maritalStatus],
+      ['Religion', d.religion],
+      ['Bank', d.bankName],
+      ['Account Number', d.accountNumber],
+      ['BVN', d.bvn],
+      ['Next of Kin', [d.nokName, d.nokRelationship, d.nokPhone].filter(Boolean).join(' · ')],
+      ['Guarantor 1', [d.g1Name, d.g1Phone].filter(Boolean).join(' · ')],
+      ['Guarantor 2', [d.g2Name, d.g2Phone].filter(Boolean).join(' · ')],
+    ];
+    return rows.filter(([, value]) => !!value).map(([label, value]) => ({ label, value: value as string }));
+  }
+
+  /** Imported fields with nowhere to go on the employee record, so HR knows to keep the paper form. */
+  get importedUnsavedFields(): string[] {
+    const d = this.importData;
+    if (!d) return [];
+    const rows: [string, string | undefined][] = [
+      ['Middle name', d.middleName],
+      ['Nationality', d.nationality],
+      ['State of origin', d.stateOfOrigin],
+      ['LGA of origin', d.lgaOfOrigin],
+      ['Branch', d.branch],
+      ['Highest qualification', d.highestQualification],
+      ['Field of study', d.fieldOfStudy],
+      ['Account name', d.accountName],
+    ];
+    return rows.filter(([, value]) => !!value).map(([label]) => label);
+  }
+
+  /** Creates the next of kin and guarantors from an imported form once the employee exists. */
+  private saveImportedRelatives(employeeId: number | undefined): void {
+    const d = this.importData;
+    if (!d || !employeeId) return;
+    const requests: Observable<unknown>[] = [];
+
+    if (d.nokName) {
+      const nextOfKin = {
+        fullName: d.nokName,
+        email: d.nokEmail ?? '',
+        phone: d.nokPhone ?? '',
+        address: d.nokAddress ?? '',
+        relationshipId: findIdByName(this.nextOfKinRelationships, d.nokRelationship) ?? null,
+        emergencyContact: false,
+        employeeId: Number(employeeId),
+      };
+      const formData = new FormData();
+      formData.append('nextOfKinDTO', JSON.stringify(nextOfKin));
+      requests.push(this.employeeService.addNOK(formData));
+    }
+
+    [
+      { fullName: d.g1Name, phone: d.g1Phone, email: d.g1Email },
+      { fullName: d.g2Name, phone: d.g2Phone, email: d.g2Email },
+    ]
+      .filter((guarantor) => !!guarantor.fullName)
+      .forEach((guarantor) => {
+        const formData = new FormData();
+        formData.append('guarantor', JSON.stringify({
+          fullName: guarantor.fullName,
+          email: guarantor.email ?? '',
+          phone: guarantor.phone ?? '',
+          employeeId: Number(employeeId),
+        }));
+        requests.push(this.employeeService.addGuarantor(formData));
+      });
+
+    if (requests.length === 0) return;
+    forkJoin(requests.map((request) => request.pipe(map(() => true), catchError(() => of(false))))).subscribe((results) => {
+      const failed = results.filter((ok) => !ok).length;
+      if (failed > 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Some imported details not saved',
+          detail: `${failed} of ${results.length} imported next-of-kin/guarantor records could not be saved. Add them from the employee's profile.`,
+          key: 'tl',
+          life: 6000,
+        });
+      }
+    });
   }
 
   get metaTitle(): string {
@@ -501,7 +631,7 @@ private setProbationValidators(): void {
   const newEmployee: any = {
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
-    email: this.basicForm.get('workemail')?.value || this.basicForm.get('email')?.value,
+    email: this.basicForm.get('email')?.value,
     workEmail: this.basicForm.get('workemail')?.value,
     genderId: this.basicForm.get('gender')?.value,
     jobTitle: this.basicForm.get('title')?.value,
@@ -516,6 +646,7 @@ private setProbationValidators(): void {
     probationStartDate: this.toLocalDateTime(this.employeeForm.get('probationStartDate')?.value),
     probationEndDate: this.toLocalDateTime(this.employeeForm.get('probationEndDate')?.value),
     appraisalDueDate: this.toLocalDateTime(this.employeeForm.get('appraisalDueDate')?.value),
+    ...this.importedEmployeeFields(),
   };
 
   const hasOptiMaxAccess = this.guarantorForm.get('optimaxAccess')?.value;
@@ -525,28 +656,43 @@ private setProbationValidators(): void {
   const email = this.basicForm.get('email')?.value ?? '';
   const resolvedEmail = workEmail || email;
   const username = resolvedEmail.split('@')[0] || resolvedEmail;
-  const password = this.generateRandomPassword();
+  const password = generateTemporaryPassword();
+
+  const createUserThenPersist = () => {
+    const signupDetails = this.buildSignupDetails(username, password, resolvedEmail, firstName, lastName);
+    this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
+      next: (userData) => {
+        // The shared auth interceptor turns a 401 into an empty 200, so a reply without an id is a failure.
+        if (!userData?.id) {
+          this.failSubmit('The user account was not created: the server refused the request. Sign in again and retry, or contact support if it keeps happening.');
+          return;
+        }
+        this.persistEmployeeWithUser(newEmployee, userData.id, hasOptiMaxAccess, shouldRedirect, username, password);
+      },
+      error: (error) => {
+        this.failSubmit(this.errorMessageService.getUserMessage(error, 'Failed to create user account. Please try again.'));
+      }
+    });
+  };
 
   this.authenticationService.getRegDataByUsername(username).subscribe({
     next: (existingUser) => {
       const existingId = existingUser?.id ?? existingUser?.userId;
-      this.persistEmployeeWithUser(newEmployee, existingId ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
+      if (existingId) {
+        this.persistEmployeeWithUser(newEmployee, existingId, hasOptiMaxAccess, shouldRedirect, username, password);
+      } else {
+        createUserThenPersist();
+      }
     },
-    error: () => {
-      const signupDetails = this.buildSignupDetails(username, password, resolvedEmail, firstName, lastName);
-      this.authenticationService.userRegistrationByAdmin(signupDetails).subscribe({
-        next: (userData) => {
-          this.persistEmployeeWithUser(newEmployee, userData?.id ?? null, hasOptiMaxAccess, shouldRedirect, username, password);
-        },
-        error: (error) => {
-          this.resetSubmitLoading();
-          const detail = this.errorMessageService.getUserMessage(error, 'Failed to create user account. Please try again.');
-          this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 4000 });
-        }
-      });
-    }
+    error: () => createUserThenPersist()
   });
 }
+
+  /** Ends a failed submit: re-enables the buttons and says why. */
+  private failSubmit(detail: string): void {
+    this.resetSubmitLoading();
+    this.messageService.add({ severity: 'error', summary: 'Error', detail, key: 'tl', life: 6000 });
+  }
 
   private persistEmployeeWithUser(
     newEmployee: any,
@@ -561,6 +707,12 @@ private setProbationValidators(): void {
     formData.append('employee', JSON.stringify(newEmployee));
     this.employeeService.addEmployee(formData).subscribe({
       next: (data: any) => {
+        // The shared auth interceptor turns a 401 into an empty 200, so a reply without an id means nothing was saved.
+        if (!data?.id) {
+          this.failSubmit('The employee was not saved: the server refused the request. Sign in again and retry, or contact support if it keeps happening.');
+          return;
+        }
+        this.saveImportedRelatives(data.id);
         if (hasOptiMaxAccess && userId) {
           const roleRequest = { userId, appRoleId: this.guarantorForm.get('roleId')?.value };
           this.authenticationService.userApplicationRole(roleRequest).subscribe({
@@ -612,66 +764,26 @@ private setProbationValidators(): void {
     const companyName = 'The Company';
     const hrEmail = '';
     const name = `${data.firstName} ${data.lastName}`.trim();
-    const url = `${window.location.origin}/onboarding/${data.id}/wer23456fghi367ghj?onboarding=1`;
+    const expiresAt = onboardingLinkExpiry();
+    const url = buildOnboardingLink(data.id, expiresAt);
 
-    if (options?.username && options?.password) {
-      this.pendingCredentials = { name, username: options.username, password: options.password };
+    if (!options?.username || !options?.password) return;
+    const credentials = { name, username: options.username, password: options.password };
+    // The credentials card is only for when the email can't go out, so HR can pass them on by hand.
+    const showCredentials = () => {
+      this.pendingCredentials = credentials;
+      this.showPendingPassword = false;
+    };
+
+    if (!data.email) {
+      showCredentials();
+      return;
     }
-
-    if (options?.username && options?.password && data.email) {
-      const subject = `${companyName} — Your Onboarding Credentials`;
-      const htmlBody = this.buildOnboardingEmailHtml({ name, username: options.username, password: options.password, url, companyName, hrEmail });
-      this.employeeService.sendNotificationEmail(data.email, subject, htmlBody).subscribe({
-        next: () => { this.pendingCredentials = null; },
-        error: () => {}
-      });
-    }
-  }
-
-  private buildOnboardingEmailHtml(d: { name: string; username: string; password: string; url: string; companyName: string; hrEmail: string }): string {
-    const hrLine = d.hrEmail
-      ? `Please contact the <strong>HR Department</strong> at <a href="mailto:${d.hrEmail}" style="color:#1e3a5f;text-decoration:none;">${d.hrEmail}</a> for any queries regarding your onboarding.`
-      : `Please contact the <strong>HR Department</strong> for any queries regarding your onboarding.`;
-    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:36px 16px;"><tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-  <tr><td style="background:#1b3358;padding:36px 40px;text-align:center;">
-    <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#7aa7d4;text-transform:uppercase;">Human Resources</p>
-    <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;">${d.companyName}</h1>
-    <p style="margin:8px 0 0;font-size:13px;color:#a8c5e8;">Staff Onboarding</p>
-  </td></tr>
-  <tr><td style="padding:40px 40px 28px;">
-    <p style="margin:0 0 20px;font-size:15px;color:#1a2b3c;font-weight:600;">Dear ${d.name},</p>
-    <p style="margin:0 0 16px;font-size:14px;color:#475569;line-height:1.7;">We are delighted to welcome you to <strong>${d.companyName}</strong>. Please complete your onboarding by submitting the required documentation through the portal below.</p>
-    <p style="margin:0 0 8px;font-size:13px;color:#64748b;">You will be required to provide:</p>
-    <ul style="margin:0 0 24px;padding-left:20px;font-size:13px;color:#64748b;line-height:2;">
-      <li>Passport photograph / Valid ID</li><li>Guarantor information</li><li>Next-of-kin details</li><li>Bank account number</li><li>Any other requested personal information</li>
-    </ul>
-    <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
-      <tr><td style="background:#1b3358;border-radius:6px;padding:13px 30px;">
-        <a href="${d.url}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.3px;">Begin Onboarding Process →</a>
-      </td></tr>
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px;">
-      <tr><td style="padding:22px 26px;">
-        <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Portal Credentials</p>
-        <table cellpadding="0" cellspacing="0">
-          <tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Username</td><td style="padding:5px 0;font-size:13px;color:#1e293b;font-weight:600;">${d.username}</td></tr>
-          <tr><td style="padding:5px 16px 5px 0;font-size:13px;color:#94a3b8;white-space:nowrap;">Password</td><td style="padding:5px 0;font-size:13px;color:#1e293b;font-family:monospace;font-weight:700;letter-spacing:1.5px;background:#f1f5f9;border-radius:4px;padding-left:8px;padding-right:8px;">${d.password}</td></tr>
-        </table>
-        <p style="margin:14px 0 0;font-size:11px;color:#94a3b8;">You will be prompted to change your password after your first login.</p>
-      </td></tr>
-    </table>
-    <p style="margin:0 0 4px;font-size:12px;color:#94a3b8;">If the button above does not work, copy and paste the link below into your browser:</p>
-    <p style="margin:0;font-size:12px;color:#3b82f6;word-break:break-all;">${d.url}</p>
-  </td></tr>
-  <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;">
-    <p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.6;">${hrLine}</p>
-    <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">We look forward to a productive and rewarding journey together.<br/><strong>Human Resources Department</strong><br/>${d.companyName}</p>
-  </td></tr>
-  <tr><td style="padding:16px 40px;text-align:center;"><p style="margin:0;font-size:11px;color:#cbd5e1;">This is a system-generated message. Please do not reply to this email.</p></td></tr>
-</table></td></tr></table></body></html>`;
+    const subject = `${companyName} — Your Onboarding Credentials`;
+    const htmlBody = buildOnboardingEmailHtml({ ...credentials, url, companyName, hrEmail, expiresAt });
+    this.employeeService.sendNotificationEmail(data.email, subject, htmlBody).subscribe({
+      error: () => showCredentials()
+    });
   }
 
   private resetSubmitLoading() {
@@ -680,6 +792,8 @@ private setProbationValidators(): void {
   }
 
   addAnother() {
+    // The import belonged to the employee just created; the next one starts blank.
+    this.importData = null;
     this.submitted = false;
     this.lastSubmittedName = '';
     this.basicForm.reset();
@@ -717,35 +831,6 @@ private setProbationValidators(): void {
       upi: businessInfo
     };
   }
-
-  private generateRandomPassword(length = 12): string {
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const numbers = '0123456789';
-    const symbols = '!@#$%*?';
-    const all = lowercase + uppercase + numbers + symbols;
-
-    const pick = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
-    const passwordChars = [
-      pick(lowercase),
-      pick(uppercase),
-      pick(numbers),
-      pick(symbols)
-    ];
-
-    for (let i = passwordChars.length; i < length; i += 1) {
-      passwordChars.push(pick(all));
-    }
-
-    return passwordChars.sort(() => Math.random() - 0.5).join('');
-  }
-
-
-
- 
-
-
-
 
   onFileChange(event: Event, controlName: string) {
     const input = event.target as HTMLInputElement;
@@ -864,7 +949,10 @@ console.log(this.guarantorForm.value)
     return '';
   }
 
-  dismissCredentials() { this.pendingCredentials = null; }
+  dismissCredentials() {
+    this.pendingCredentials = null;
+    this.showPendingPassword = false;
+  }
 
   copyToClipboard(value: string) {
     navigator.clipboard.writeText(value).catch(() => {});

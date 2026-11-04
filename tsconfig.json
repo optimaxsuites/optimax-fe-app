@@ -26,8 +26,6 @@
     "allowSyntheticDefaultImports": true,
     "paths": {
       "zone.js": ["./node_modules/zone.js"],
-      "@kolkov/angular-editor": ["./projects/sales/node_modules/@kolkov/angular-editor"],
-      "@kolkov/angular-editor/*": ["./projects/sales/node_modules/@kolkov/angular-editor/*"],
       "ng-apexcharts": ["./node_modules/ng-apexcharts"],
       "ng-apexcharts/*": ["./node_modules/ng-apexcharts/*"]
     }

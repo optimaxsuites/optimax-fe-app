@@ -9,12 +9,13 @@ import { SalesEmailService } from '../../../../service/sales/sales-email.service
 import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails, QuoteAttachments, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
-import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
+import { TemplateTypesComponent } from '../../template-types/template-types.component';
+import { QuoteTemplate } from '../../template-types/quote-templates.config';
 import { lastValueFrom } from 'rxjs';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
-import { SalesDocumentEmailService } from '../../../../service/sales/sales-document-email.service';
+import { SalesDocumentComponent } from '../../sales-document/sales-document.component';
+import { SalesDocumentModel, quoteDocument } from '../../../../service/sales/sales-document';
+import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CompanyProfileService } from '../../../../shared-component/service/company-profile/company-profile.service';
@@ -43,7 +44,8 @@ export function futureDateValidator(): ValidatorFn {
     BackButtonComponent,
     TemplateTypesComponent,
     ToastModule,
-    SendEmailModalComponent
+    SendEmailModalComponent,
+    SalesDocumentComponent
   ],
   // No component-level MessageService: toasts go through the app-wide one (shown by app.html's
   // <p-toast>) so a result like "Email sent" stays visible after routing to the detail page.
@@ -1305,6 +1307,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
         
         // Handle delivery action
+        // Remember the template so the quote's detail page downloads the same design
+        this.salesService.saveDocumentTemplate('QUOTE', response.id, this.selectedTemplate?.id, response.id);
         await this.handleDeliveryAction(this.withFormTax(response), this.selectedAction);
       },
       error: (error: any) => {
@@ -1394,6 +1398,8 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
 
   showSendQuoteModal = false;
   isSendingEmail = false;
+  /** Set only while a PDF is being rendered (see generateQuotePDF). */
+  pdfDocument: SalesDocumentModel | null = null;
   pendingSendQuoteNumber = '';
   pendingSendCustomerName = '';
   emailSubject = '';
@@ -1415,32 +1421,13 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
    */
   private async downloadQuotePdf(quote: Quote): Promise<Blob | null> {
     try {
-      const blob = await lastValueFrom(this.pdfGenerationService.generatePdf({
-        documentType: 'QUOTATION',
-        documentId: String(quote.id),
-        documentNumber: quote.quoteNumber,
-        tenantId: 'optimax',
-        data: {
-          ...quote,
-          // Best-effort: lets a backend that understands templates render the
-          // matching layout/branding instead of always using its own default.
-          templateId: this.selectedTemplate?.id,
-          templateColorTheme: this.selectedTemplate?.colorTheme,
-          templateSections: this.selectedTemplate?.sections
-        }
-      }));
-      this.pdfGenerationService.downloadBlob(blob as any, `Quote-${quote.quoteNumber}.pdf`);
-      return blob as any;
+      const blob = await this.generateQuotePDF(quote);
+      this.pdfGenerationService.downloadBlob(blob, `Quote-${quote.quoteNumber}.pdf`);
+      return blob;
     } catch (err) {
-      console.warn('[QuoteFormComponent] Server PDF failed, using client fallback:', err);
-      try {
-        const clientBlob = await this.generateQuotePDF(quote);
-        this.pdfGenerationService.downloadBlob(clientBlob, `Quote-${quote.quoteNumber}.pdf`);
-        return clientBlob;
-      } catch (e) {
-        console.error('Client PDF generation failed:', e);
-        return null;
-      }
+      console.error('Quote PDF generation failed:', err);
+      this.messageService.add({ severity: 'error', summary: 'PDF Error', detail: 'The quote PDF could not be generated.' });
+      return null;
     }
   }
 
@@ -1526,79 +1513,32 @@ export class QuoteFormComponent implements OnInit, OnDestroy {
   }
 
   // Generate PDF from live preview mockup
+  /** The quote rendered as a real A4 page in the chosen template (SalesDocumentComponent, drawn
+   *  off-screen) — not a capture of the step-1 form preview, which came out small and blurry. */
   private async generateQuotePDF(quote: Quote): Promise<Blob> {
-    this.generatedQuoteNumber = quote.quoteNumber;
-
-    // The preview element lives only on step 1 — switch there if needed
-    const prevStep = this.currentStep;
-    if (this.currentStep !== 1) {
-      this.currentStep = 1;
+    this.pdfDocument = quoteDocument(quote, this.documentMerchant, this.selectedCustomer);
+    this.cdr.detectChanges();
+    await new Promise(resolve => setTimeout(resolve, 50));
+    try {
+      const element = document.getElementById('quote-pdf-document');
+      if (!element) throw new Error('Quote document element not found');
+      return await renderElementToPdf(element);
+    } finally {
+      this.pdfDocument = null;
       this.cdr.detectChanges();
     }
+  }
 
-    // Allow Angular to render the preview with the new quote number
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    const element = document.getElementById('quote-preview-document');
-    if (!element) {
-      this.currentStep = prevStep;
-      this.generatedQuoteNumber = '';
-      throw new Error('Preview document element not found');
-    }
-
-    // Clone the element into an unconstrained off-screen container so
-    // html2canvas captures the full scrollable content, not just the
-    // portion visible inside the overflow:auto preview column.
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'fixed';
-    clone.style.top = '-99999px';
-    clone.style.left = '0';
-    clone.style.width = element.offsetWidth + 'px';
-    clone.style.height = 'auto';
-    clone.style.overflow = 'visible';
-    clone.style.maxHeight = 'none';
-    document.body.appendChild(clone);
-
-    // Let the clone reflow
-    await new Promise(resolve => setTimeout(resolve, 80));
-
-    let canvas: HTMLCanvasElement;
-    try {
-      canvas = await html2canvas(clone, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0
-      });
-    } finally {
-      document.body.removeChild(clone);
-    }
-
-    // Restore step
-    this.currentStep = prevStep;
-    this.generatedQuoteNumber = '';
-    this.cdr.detectChanges();
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    // Tile across multiple pages if content is taller than one A4 page
-    let remaining = imgHeight;
-    let yOffset = 0;
-    while (remaining > 0) {
-      pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidth, imgHeight);
-      remaining -= pageHeight;
-      yOffset += pageHeight;
-      if (remaining > 0) pdf.addPage();
-    }
-
-    return pdf.output('blob');
+  /** The seller's details as the document's "From" block (company, contact, bank, logo). */
+  private get documentMerchant(): any {
+    return {
+      companyName: this.billedBy.name,
+      address: this.billedBy.address,
+      email: this.billedBy.email,
+      phone: this.billedBy.phone,
+      bankDetails: { bankName: this.billedBy.bankName, accountName: this.billedBy.accountName, accountNumber: this.billedBy.accountNumber },
+      logoUrl: this.logoUrl || undefined
+    };
   }
 
   // Send email via SalesEmailService

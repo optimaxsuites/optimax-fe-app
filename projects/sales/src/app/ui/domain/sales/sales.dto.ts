@@ -216,6 +216,10 @@ export interface AdditionalQuoteOptions {
    *  copy, until the backend has an upload endpoint. Falls back to the quote's logoUrl. */
   deliveryNoteLogo?: QuoteDocumentAttachment;
   deliveryNoteMeta?: SalesDeliveryNoteMeta;
+  /** Template the seller picked for this quote, and for the invoice made from it — so downloads
+   *  from the detail pages use the same design (no backend column for it yet). */
+  templateId?: string;
+  invoiceTemplateId?: string;
 }
 
 
@@ -442,6 +446,9 @@ export interface SalesDeliveryNoteItem {
  * Files still live on the quote's additionalOptions (lpoDocument / signedDeliveryNoteDocument)
  * because the backend has no upload endpoint yet — signedDocumentUrl stays empty until it does.
  */
+/** @deprecated use SalesDeliveryNote */
+export type DeliveryNote = SalesDeliveryNote;
+
 export interface SalesDeliveryNote {
   id?: number;
   tenantId?: string;
@@ -504,8 +511,9 @@ export interface SalesDeliveryNote {
 // ------------------------------------------------------------------
 // LPO (Local Purchase Order) DTOs
 // Backs /x/api/v2/commerce/sales-lpos (GET/POST, GET/PUT/DELETE /{id}, PATCH /{id}/verify and
-// /{id}/reject). The file itself still lives on the quote's additionalOptions.lpoDocument because
-// the backend has no upload endpoint yet, so document.fileUrl is empty until it does.
+// /{id}/reject, POST /{id}/upload-document). The file is uploaded to upload-document, which sets
+// document.fileUrl; LPOs saved before that endpoint existed keep theirs on the quote's
+// additionalOptions.lpoDocument.
 // ------------------------------------------------------------------
 
 export type SalesLpoStatus = 'RECEIVED' | 'VERIFIED' | 'REJECTED';

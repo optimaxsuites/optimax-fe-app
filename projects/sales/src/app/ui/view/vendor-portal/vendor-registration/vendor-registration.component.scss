@@ -976,16 +976,16 @@
   }
 }
 
-// ─── Success page ─────────────────────────────────────────────────────────────
-.vr-success {
-  min-height: 100vh;
+// ─── Loading / no record page ─────────────────────────────────────────────────
+.vr-state {
+  min-height: 60vh;
   background: var(--gray-50);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
 
-  .vr-success-card {
+  .vr-state-card {
     background: white;
     border: 1px solid var(--gray-200);
     border-radius: 12px;
@@ -996,32 +996,21 @@
     box-shadow: none;
   }
 
-  .vr-success-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--green-pale);
-    border: 1px solid #bbf7d0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 20px;
-    color: var(--green);
-  }
-
   h1 { font-size: 20px; font-weight: 700; color: var(--gray-900); margin: 0 0 8px; }
   p  { font-size: 13px; color: var(--gray-500); margin: 0 0 20px; line-height: 1.6; }
 
-  .vr-app-num {
-    background: var(--brand-pale);
-    border: 1px solid var(--brand-pale2);
-    border-radius: 8px;
-    padding: 12px 20px;
-    margin-bottom: 20px;
+  .vr-btn { display: inline-flex; }
+}
 
-    label { font-size: 11px; color: var(--gray-500); display: block; margin-bottom: 4px; }
-    strong { font-size: 18px; font-weight: 700; color: var(--brand); letter-spacing: .06em; }
-  }
+// ─── Read-only details ────────────────────────────────────────────────────────
+.vr-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+
+  // The toggles and chips are clickable divs, which a disabled fieldset doesn't reach.
+  &:disabled { pointer-events: none; }
 }
 
 // ─── Responsive ───────────────────────────────────────────────────────────────
@@ -1107,6 +1096,18 @@
     background: var(--red-pale);
     color: #991b1b;
     border-bottom: 1px solid #fecaca;
+  }
+
+  &--info {
+    background: #eff6ff;
+    color: #1e40af;
+    border-bottom: 1px solid #bfdbfe;
+  }
+
+  &--success {
+    background: var(--green-pale);
+    color: #166534;
+    border-bottom: 1px solid #bbf7d0;
   }
 
   svg { flex-shrink: 0; }
