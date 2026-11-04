@@ -81,6 +81,7 @@ p{
 }
 
 .ob-footer {
+  margin-top: auto;
   background: #0f172a;
   color: #64748b;
   padding: 1rem 1.5rem;
@@ -355,3 +356,9 @@ color: #224957;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
   }
+/* Lets the onboarding footer sit at the bottom of short pages. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}

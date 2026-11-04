@@ -2064,7 +2064,9 @@ public sendLoanToAccountingForDisbursement(
           paidFromAccount: String(payload.paidFromAccount || '').trim() || undefined,
           paidAt,
           notes: `Repayment recorded via ${payload.modeofPayment || 'BANK_TRANSFER'} for ${paymentType.replace(/_/g, ' ').toLowerCase()}`,
-          receiptNumber: repaymentResult.repayment.receiptNumber
+          receiptNumber: repaymentResult.repayment.receiptNumber,
+          // Payroll picks up PENDING deductions dated in its month and takes them from that salary.
+          status: payload.modeofPayment === 'PAYROLL_DEDUCTION' ? 'PENDING' : 'COMPLETED'
         }).pipe(
           switchMap((paymentRecord) => {
             updatedLoan.paymentHistory = [

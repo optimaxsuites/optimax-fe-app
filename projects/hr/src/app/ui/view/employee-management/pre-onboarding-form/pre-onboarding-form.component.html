@@ -11,7 +11,7 @@
   </button>
 </div>
 
-<div class="page">
+<div class="page" #formPage>
 
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <div class="page-header">
@@ -64,32 +64,12 @@
               <div class="dbox"></div><div class="dbox"></div><div class="dbox"></div><div class="dbox"></div>
             </div>
           </div>
-          <div class="field">
-            <label>Gender</label>
-            <div class="checks">
-              <label class="chk"><span class="box"></span>Male</label>
-              <label class="chk"><span class="box"></span>Female</label>
-            </div>
-          </div>
+          <!-- Write-in, not tick boxes: a typed or handwritten word can be read back on import, a tick can't. -->
+          <div class="field"><label>Gender <span class="opt">(Male / Female)</span></label><div class="line"></div></div>
         </div>
         <div class="row-2">
-          <div class="field">
-            <label>Marital Status</label>
-            <div class="checks">
-              <label class="chk"><span class="box"></span>Single</label>
-              <label class="chk"><span class="box"></span>Married</label>
-              <label class="chk"><span class="box"></span>Divorced</label>
-              <label class="chk"><span class="box"></span>Widowed</label>
-            </div>
-          </div>
-          <div class="field">
-            <label>Religion</label>
-            <div class="checks">
-              <label class="chk"><span class="box"></span>Christianity</label>
-              <label class="chk"><span class="box"></span>Islam</label>
-              <label class="chk"><span class="box"></span>Other</label>
-            </div>
-          </div>
+          <div class="field"><label>Marital Status <span class="opt">(Single / Married / Divorced / Widowed)</span></label><div class="line"></div></div>
+          <div class="field"><label>Religion <span class="opt">(Christianity / Islam / Other)</span></label><div class="line"></div></div>
         </div>
         <div class="row-3">
           <div class="field"><label>Nationality</label><div class="line"></div></div>
@@ -125,14 +105,7 @@
       <div class="field"><label>Job Title / Position</label><div class="line"></div></div>
     </div>
     <div class="row-3">
-      <div class="field">
-        <label>Employment Type</label>
-        <div class="checks">
-          <label class="chk"><span class="box"></span>Full-Time</label>
-          <label class="chk"><span class="box"></span>Part-Time</label>
-          <label class="chk"><span class="box"></span>Contract</label>
-        </div>
-      </div>
+      <div class="field"><label>Employment Type <span class="opt">(Full-Time / Part-Time / Contract)</span></label><div class="line"></div></div>
       <div class="field"><label>Proposed Start Date</label><div class="line"></div></div>
       <div class="field"><label>Branch / Location</label><div class="line"></div></div>
     </div>

@@ -6,6 +6,7 @@ import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
 import { CooperativeService } from '../../../service/loan/cooperative-loan/cooperative.service';
 import { BankAccountDetails, PaymentConfigService, PaymentTypeConfig } from '../../../service/loan/loan-payment-config.service';
+import { PAYROLL_DEDUCTION, REPAYMENT_METHODS, RepaymentMethodOption, payrollDeductionReference, payrollPeriodLabel } from '../repayment-methods';
 
 type CooperativeRepaymentPaymentType = 'PRINCIPAL_REPAYMENT' | 'INTEREST_REPAYMENT' | 'LATE_FEE';
 
@@ -29,6 +30,8 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
   messages: Message[] = [];
   paymentTypes: PaymentTypeConfig[] = [];
   selectedLoanId = '';
+  readonly repaymentMethods = REPAYMENT_METHODS;
+  readonly payrollPeriod = payrollPeriodLabel();
 
   constructor(
     private fb: FormBuilder,
@@ -38,7 +41,7 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
     this.paymentForm = this.fb.group({
       paymentType: ['PRINCIPAL_REPAYMENT', Validators.required],
       amount: [{ value: 0, disabled: true }, [Validators.required, Validators.min(0.01)]],
-      paymentMethod: ['BANK_TRANSFER', Validators.required],
+      paymentMethod: [PAYROLL_DEDUCTION, Validators.required],
       paymentReference: ['', Validators.required],
       paidFromAccount: ['', Validators.required],
       notes: ['']
@@ -169,11 +172,26 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
     return 'Enter the 10-digit account number used for this payment.';
   }
 
+  /** 1-based position of the current installment in the loan's schedule, as the service numbers it. */
+  private get currentInstallmentNumber(): number {
+    if (!this.currentLoan || !this.currentInstallment) return 0;
+    const index = this.cooperativeService.getRepaymentsByLoanId(this.currentLoan.id).findIndex((item) => item.id === this.currentInstallment!.id);
+    return index >= 0 ? index + 1 : 0;
+  }
+
+  get isPayrollDeduction(): boolean {
+    return this.paymentForm.get('paymentMethod')?.value === PAYROLL_DEDUCTION;
+  }
+
+  selectRepaymentMethod(method: RepaymentMethodOption): void {
+    if (method.available) this.paymentForm.get('paymentMethod')?.setValue(method.value);
+  }
+
   get canSubmit(): boolean {
     return !this.isLoading
       && this.paymentForm.valid
       && this.selectedAmountDue > 0
-      && this.hasValidDestinationAccount;
+      && (this.isPayrollDeduction || this.hasValidDestinationAccount);
   }
 
   submit(): void {
@@ -189,8 +207,12 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
       modeofPayment: formValue.paymentMethod,
       paidDate: new Date().toISOString(),
       paymentType: this.selectedPaymentType,
-      paymentReference: String(formValue.paymentReference || '').trim(),
-      paidFromAccount: String(formValue.paidFromAccount || '').trim(),
+      paymentReference: this.isPayrollDeduction
+        ? payrollDeductionReference(this.currentLoan.loanCode || this.currentLoan.id, this.currentInstallmentNumber)
+        : String(formValue.paymentReference || '').trim(),
+      paidFromAccount: this.isPayrollDeduction
+        ? `MEMBER-${this.currentLoan.memberId || this.currentLoan.cooperativeMemberId || ''}`
+        : String(formValue.paidFromAccount || '').trim(),
       paidIntoAccount: this.selectedAccountDetails.accountNumber
     }).subscribe({
       next: (recorded) => {
@@ -206,8 +228,10 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
 
         this.messages = [{
           severity: 'success',
-          summary: 'Payment Recorded',
-          detail: `${this.selectedPaymentTypeLabel} of ${this.formatCurrency(Number(formValue.amount || this.selectedAmountDue))} has been recorded successfully.`
+          summary: this.isPayrollDeduction ? 'Deduction Scheduled' : 'Payment Recorded',
+          detail: this.isPayrollDeduction
+            ? `${this.formatCurrency(Number(formValue.amount || this.selectedAmountDue))} (${this.selectedPaymentTypeLabel.toLowerCase()}) will be deducted from the ${this.payrollPeriod} payroll.`
+            : `${this.selectedPaymentTypeLabel} of ${this.formatCurrency(Number(formValue.amount || this.selectedAmountDue))} has been recorded successfully.`
         }];
 
         setTimeout(() => {
@@ -259,13 +283,18 @@ export class CooperativePaymentModalComponent implements OnInit, OnChanges {
 
   private updateSourceAccountValidation(): void {
     const control = this.paymentForm.get('paidFromAccount');
+    const reference = this.paymentForm.get('paymentReference');
     const paymentMethod = this.paymentForm.get('paymentMethod')?.value;
-    if (!control) {
+    if (!control || !reference) {
       return;
     }
 
-    if (paymentMethod === 'PAYROLL_DEDUCTION') {
-      control.setValidators([Validators.required, Validators.pattern(/^[A-Za-z0-9\-_/]{4,24}$/)]);
+    // Payroll deductions fill in their own reference and source; other methods need them typed in.
+    reference.setValidators(paymentMethod === PAYROLL_DEDUCTION ? [] : [Validators.required]);
+    reference.updateValueAndValidity();
+
+    if (paymentMethod === PAYROLL_DEDUCTION) {
+      control.clearValidators();
     } else if (paymentMethod === 'MOBILE_MONEY') {
       control.setValidators([Validators.required, Validators.pattern(/^[0-9]{10,15}$/)]);
     } else if (paymentMethod === 'CASH') {

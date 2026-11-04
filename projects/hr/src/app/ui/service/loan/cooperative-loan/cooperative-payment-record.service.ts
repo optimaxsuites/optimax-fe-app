@@ -46,6 +46,8 @@ export interface CreateCooperativePaymentRecordPayload {
   paidAt?: string;
   notes?: string;
   receiptNumber?: string;
+  /** Defaults to COMPLETED. Payroll deductions are PENDING until the payroll run takes them from salary. */
+  status?: CooperativePaymentRecord['status'];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -60,7 +62,7 @@ export class CooperativePaymentRecordService {
       paidAt,
       recordedAt,
       recordedBy: this.getCurrentUserId(),
-      status: 'COMPLETED'
+      status: payload.status ?? 'COMPLETED'
     });
   }
 

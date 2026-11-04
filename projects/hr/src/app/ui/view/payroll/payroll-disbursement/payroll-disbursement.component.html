@@ -67,6 +67,17 @@
     </div>
   </div>
 
+  <!-- Employees the bank file can't pay -->
+  <div class="disb-skipped-notice" *ngIf="unroutableEmployees.length > 0">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>
+      <strong>{{ unroutableEmployees.length }} employee{{ unroutableEmployees.length !== 1 ? 's' : '' }}</strong>
+      can't be paid by bank file: missing account number, or a bank name we don't have a code for.
+      Fix their bank details or exempt them before uploading:
+      {{ unroutableNames }}.
+    </span>
+  </div>
+
   <!-- Tabs -->
   <div class="disb-tabs" *ngIf="employees.length">
     <button class="disb-tab" [class.active]="activeTab==='paystack'" (click)="activeTab='paystack'">
@@ -86,11 +97,11 @@
     <div *ngIf="activeTab === 'paystack'">
       <div class="disb-info-box">
         <i class="fas fa-info-circle"></i>
-        Paystack Bulk Transfer will initiate transfers from your connected Paystack account to each employee's bank account. Ensure your Paystack balance is sufficient: <strong>{{ fmt(totalNet) }}</strong>
+        <strong>Paystack transfers aren't connected yet.</strong> No money can be sent from here.
+        To pay this run ({{ fmt(totalNet) }}), download the <strong>GTBank Excel</strong> file or a <strong>custom template</strong> and upload it to your bank.
       </div>
-      <button class="disb-action-btn disb-action-btn--green" (click)="initiatePaystackTransfer()" [disabled]="disbursing">
-        <i class="fas" [class.fa-paper-plane]="!disbursing" [class.fa-spinner]="disbursing" [class.fa-spin]="disbursing"></i>
-        {{ disbursing ? 'Initiating…' : 'Initiate Paystack Transfer' }}
+      <button class="disb-action-btn" type="button" (click)="activeTab='gtbank'">
+        <i class="fas fa-university"></i> Go to GTBank Excel
       </button>
     </div>
 

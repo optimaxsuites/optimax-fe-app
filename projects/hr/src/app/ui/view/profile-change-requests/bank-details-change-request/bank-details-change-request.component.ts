@@ -230,7 +230,6 @@ export class BankDetailsChangeRequestComponent implements OnInit, OnChanges {
 
     this.mailNotificationService.sendMail(emailBody).subscribe({
       next: () => {
-        console.log('Bank change request confirmation email sent to employee');
       },
       error: (err) => {
         console.error('Error sending employee confirmation email:', err);
@@ -295,7 +294,6 @@ export class BankDetailsChangeRequestComponent implements OnInit, OnChanges {
 
     this.mailNotificationService.sendMail(emailBody).subscribe({
       next: () => {
-        console.log(`Bank change request notification sent to HR/admin: ${recipientEmail}`);
       },
       error: (err) => {
         console.error(`Error sending HR/admin notification to ${recipientEmail}:`, err);

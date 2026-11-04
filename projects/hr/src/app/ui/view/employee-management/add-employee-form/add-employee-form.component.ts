@@ -9,7 +9,13 @@ import { MetadataService } from '../../../service/metadata.service';
 import { ErrorMessageService } from '../../../shared-component/service/error-message/error-message.service';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { environment } from '../../../shared-component/environments/environment';
-// // import { CompanyProfileService }
+import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
+
+/** One labelled line on the review step. */
+interface SummaryRow {
+  label: string;
+  value: string;
+}
 
 interface Employee {
   id: number;
@@ -159,7 +165,8 @@ export class AddEmployeeFormComponent implements OnDestroy {
     private route: ActivatedRoute,
     private errorMessageService: ErrorMessageService,
     private confirmationService: ConfirmationService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authenticationService: AuthenticationService
   ) {  }
 
   ngOnInit(): void {
@@ -249,8 +256,7 @@ export class AddEmployeeFormComponent implements OnDestroy {
         this.employeeData = employee;
         this.applyEmployeeData(employee);
         if (!this.admin) {
-          const userId = employee?.userId ?? employee?.user?.userId ?? employee?.createdBy;
-          if (userId) this.loadCompanyBranding(userId);
+          this.loadCompanyBranding(employee);
         }
       },
       error: (err) => {
@@ -276,7 +282,30 @@ export class AddEmployeeFormComponent implements OnDestroy {
     return false;
   }
 
-  private loadCompanyBranding(userId: number): void {
+  /**
+   * Fills the onboarding header and footer from the company profile. Tries the account that created
+   * the employee first, then the employee's own account, and keeps the generic header if neither has one.
+   */
+  private loadCompanyBranding(employee: any): void {
+    const candidates = [employee?.createdBy, employee?.userId ?? employee?.user?.userId]
+      .filter((id, index, all) => id !== null && id !== undefined && id !== '' && all.indexOf(id) === index);
+    const tryNext = (index: number) => {
+      if (index >= candidates.length) return;
+      this.authenticationService.getUserPrimaryInfoById(String(candidates[index])).subscribe({
+        next: (info: any) => {
+          const profile = info?.data ?? info;
+          const companyName = profile?.companyName || profile?.company?.name || '';
+          if (!companyName) {
+            tryNext(index + 1);
+            return;
+          }
+          this.obCompanyName = companyName;
+          this.obLogoUrl = profile?.logoUrl || profile?.logo || null;
+        },
+        error: () => tryNext(index + 1)
+      });
+    };
+    tryNext(0);
   }
 
   private applyEmployeeData(employee: any): void {
@@ -567,10 +596,90 @@ export class AddEmployeeFormComponent implements OnDestroy {
   }
 
   onSubmit() {
-    if (this.loading || !this.ensureEmployeeLoaded()) return;
+    if (this.loading || !this.ensureEmployeeLoaded() || !this.ensureAllSectionsComplete()) return;
     this.loading = true;
     // Entries are saved when leaving their tab; retry any that failed so the submission is complete.
     this.saveNextOfKinEntries(() => this.saveGuarantorEntries(() => this.addNewEmployee()));
+  }
+
+  /** Every step must be filled in before submitting; otherwise names the gaps and opens the first one. */
+  private ensureAllSectionsComplete(): boolean {
+    const missing: { tab: number; name: string }[] = [];
+    this.basicForm.markAllAsTouched();
+    this.employeeForm.markAllAsTouched();
+    if (this.basicForm.invalid) missing.push({ tab: 1, name: 'Basic information' });
+    if (this.employeeForm.invalid) missing.push({ tab: 2, name: 'Bank and ID details' });
+    if (this.nextOfKinList.length === 0) missing.push({ tab: 3, name: 'Next of kin' });
+    if (this.guarantorList.length === 0) missing.push({ tab: 4, name: 'Guarantor' });
+    if (missing.length === 0) return true;
+
+    this.currentTab = missing[0].tab;
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Incomplete',
+      detail: `Please complete: ${missing.map((m) => m.name).join(', ')}.`,
+      key: 'tl',
+      life: 5000
+    });
+    return false;
+  }
+
+  /** The name for a lookup id (gender, marital status…), or the value itself if it isn't in the list. */
+  private lookupName(items: any[], id: any): string {
+    if (id === null || id === undefined || id === '') return '-';
+    const match = (items || []).find((item: any) => String(item?.id) === String(id));
+    return match?.name ?? String(id);
+  }
+
+  private formatDisplayDate(value: any): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? String(value) : formatDate(date, 'd MMM yyyy', 'en-US');
+  }
+
+  get basicSummary(): SummaryRow[] {
+    const v = this.basicForm.getRawValue();
+    return [
+      { label: 'First name', value: v.firstName || '-' },
+      { label: 'Last name', value: v.lastName || '-' },
+      { label: 'Email', value: v.email || '-' },
+      { label: 'Phone', value: v.phone || '-' },
+      { label: 'Home address', value: v.address || '-' },
+      { label: 'Date of birth', value: this.formatDisplayDate(v.DOB) },
+      { label: 'Gender', value: this.lookupName(this.gender, v.gender) },
+      { label: 'Marital status', value: this.lookupName(this.maritalStatuses, v.maritalStatus) },
+      { label: 'Religion', value: this.lookupName(this.religions, v.religion) },
+    ];
+  }
+
+  get employmentSummary(): SummaryRow[] {
+    const v = this.employeeForm.getRawValue();
+    return [
+      { label: 'Bank name', value: v.bankName || '-' },
+      { label: 'Account number', value: v.accountNumber || '-' },
+      { label: 'BVN', value: v.bvn || '-' },
+      { label: 'NIN', value: v.nin || '-' },
+    ];
+  }
+
+  nextOfKinSummary(kin: any): SummaryRow[] {
+    return [
+      { label: 'Full name', value: kin.fullName || '-' },
+      { label: 'Relationship', value: this.lookupName(this.nextOfKinRelationships, kin.relationship) },
+      { label: 'Email', value: kin.email || '-' },
+      { label: 'Phone', value: kin.phone || '-' },
+      { label: 'Address', value: kin.address || '-' },
+      { label: 'Date of birth', value: this.formatDisplayDate(kin.DOB) },
+      { label: 'Emergency contact', value: kin.emergencyContact ? 'Yes' : 'No' },
+    ];
+  }
+
+  guarantorSummary(guarantor: any): SummaryRow[] {
+    return [
+      { label: 'Full name', value: guarantor.fullName || '-' },
+      { label: 'Email', value: guarantor.email || '-' },
+      { label: 'Phone', value: guarantor.phone || '-' },
+    ];
   }
 
   saveDraft() {
@@ -907,16 +1016,6 @@ private saveEmployee(): Observable<any> {
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 
-  }
-  getFormControls(control: string) {
-    const formGroup = this[control as keyof this] as FormGroup;
-    return Object.keys(formGroup.controls).map(key => ({
-      key: key,
-      value: formGroup.get(key)?.value
-    }));
-  }
-  getKeys(obj: any): string[] {
-    return Object.keys(obj).filter(key => !key.startsWith('__'));
   }
   toTitleCaseWithSpace(key: string): string {
     return key

@@ -5,9 +5,6 @@ import { NavigationLinksService } from '../../shared-component/service/navigatio
 import { ImportedEmployeeData } from './pre-onboarding-import/pre-onboarding-import.component';
 import { finalize } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { CalendarOptions } from '@fullcalendar/core';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { RandomTokenService } from '../../shared-component/service/random-token/random-token.service';
 import { ViewEmployeeComponent } from './view-employee/view-employee.component';
 import { AdminCreationFormComponent } from './admin-creation-form/admin-creation-form.component';
@@ -65,200 +62,6 @@ selectedPosition: any;
 openAddForm: boolean = false;
 openImportDialog: boolean = false;
 importedData: ImportedEmployeeData | null = null;
-employeeList = [
-  {
-    id: 'tok12345abc', // Example token value
-    firstName: 'Chukwuemeka',
-    lastName: 'Okafor',
-    dob: '1990-02-15',
-    gender: 'Male',
-    email: 'chukwuemeka.okafor@example.com',
-    phone: '+2348012345678',
-    maritalStatus: 'Married',
-    religion: 'Christianity',
-    address: '12, Adeola Avenue, Lagos, Nigeria',
-    jobTitle: 'Software Engineer',
-    department: 'IT',
-    level: 'Senior Level 1',
-    employmentType: 'Full-Time',
-    supervisor: 'Rolayo Awe',
-    bankName: 'GTBank',
-    accountNumber: '1234567890',
-    nin: '9876543210',
-    bvn: '12345678901',
-    nextOfKin: [
-      { name: 'Ngozi Okafor', relationship: 'Wife', phone: '+2348012345679' }
-    ],
-    guarantor: [
-      { name: 'Ifeanyi Nwankwo', relationship: 'Friend', phone: '+2348012345670' }
-    ],
-    hireDate: '2023-01-10',
-    profileImage: 'https://randomuser.me/api/portraits/men/1.jpg', // Example profile image
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 5,
-      leavesRemaining: 15,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 5,
-          from: '2023-05-10',
-          to: '2023-05-15',
-        }
-      ]
-    },
-    attendance: {
-      year: '2023',
-      daysPresent: 200,
-      daysAbsent: 10,
-      lateArrivals: 5,
-      overtimeHours: 15,
-      lastPresent: '2023-10-10',
-      day2DayAttendance: [
-        {
-          date: '2023-10-09',
-          clockIn: '9:00 AM',
-          clockOut: '5:00 PM',
-          comment: 'Meeting with clients'
-        },
-        {
-          date: '2023-10-08',
-          clockIn: '9:15 AM',
-          clockOut: '5:05 PM',
-          comment: 'Came in late'
-        }
-      ]
-    }
-  },
-  {
-    id: 'tok56789def',
-    firstName: 'Aisha',
-    lastName: 'Abdullahi',
-    dob: '1992-07-20',
-    gender: 'Female',
-    email: 'aisha.abdullahi@example.com',
-    phone: '+2348076543210',
-    maritalStatus: 'Single',
-    religion: 'Islam',
-    address: '25, Sultan Bello Road, Abuja, Nigeria',
-    jobTitle: 'HR Manager',
-    department: 'Human Resources',
-    level: 'Junior Staff',
-    employmentType: 'Full-Time',
-    supervisor: 'Maryam Bello',
-    bankName: 'Access Bank',
-    accountNumber: '1098765432',
-    nin: '5678901234',
-    bvn: '98765432109',
-    nextOfKin: [
-      { name: 'Fatima Abdullahi', relationship: 'Sister', phone: '+2348076543211' }
-    ],
-    guarantor: [
-      { name: 'Suleiman Ahmed', relationship: 'Uncle', phone: '+2348076543212' }
-    ],
-    hireDate: '2023-02-05',
-    profileImage: 'https://randomuser.me/api/portraits/women/4.jpg', // Example profile image
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 7,
-      leavesRemaining: 13,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 7,
-          from: '2023-06-01',
-          to: '2023-06-08',
-        }
-      ]
-    },
-    attendance: {
-      year: '2023',
-      daysPresent: 190,
-      daysAbsent: 20,
-      lateArrivals: 3,
-      overtimeHours: 10,
-      lastPresent: '2023-10-09',
-      day2DayAttendance: [
-        {
-          date: '2023-10-09',
-          clockIn: '9:10 AM',
-          clockOut: '5:00 PM',
-          comment: 'Team meeting'
-        },
-        {
-          date: '2023-10-08',
-          clockIn: '9:00 AM',
-          clockOut: '5:00 PM',
-          comment: 'Reviewed employee reports'
-        }
-      ]
-    }
-  },
-  {
-    id: 'tok67890ghi',
-    firstName: 'Babatunde',
-    lastName: 'Balogun',
-    dob: '1985-12-30',
-    gender: 'Male',
-    email: 'babatunde.balogun@example.com',
-    phone: '+2348032109876',
-    maritalStatus: 'Divorced',
-    religion: 'Christianity',
-    address: '15, Ajose Adeogun Street, Victoria Island, Lagos',
-    jobTitle: 'Accountant',
-    department: 'Finance',
-    level: 'Mid Level 1',
-    employmentType: 'Contract',
-    supervisor: 'Omotola Adebayo',
-    bankName: 'UBA',
-    accountNumber: '6543210987',
-    nin: '3456789012',
-    bvn: '23456789012',
-    nextOfKin: [
-      { name: 'Yewande Balogun', relationship: 'Ex-Wife', phone: '+2348032109877' }
-    ],
-    guarantor: [
-      { name: 'Adeyemi Johnson', relationship: 'Brother', phone: '+2348032109878' }
-    ],
-    hireDate: '2023-03-20',
-    profileImage: 'https://randomuser.me/api/portraits/men/5.jpg', // Example profile image
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 10,
-      leavesRemaining: 10,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 10,
-          from: '2023-07-01',
-          to: '2023-07-10',
-        }
-      ]
-    },
-    attendance: {
-      year: '2023',
-      daysPresent: 180,
-      daysAbsent: 25,
-      lateArrivals: 2,
-      overtimeHours: 25,
-      lastPresent: '2023-10-08',
-      day2DayAttendance: [
-        {
-          date: '2023-10-08',
-          clockIn: '8:45 AM',
-          clockOut: '5:00 PM',
-          comment: 'Monthly finance meeting'
-        },
-        {
-          date: '2023-10-07',
-          clockIn: '9:00 AM',
-          clockOut: '5:15 PM',
-          comment: 'Reviewed financial statements'
-        }
-      ]
-    }
-  }
-];
 
 salaryStructure: any[] = [];
 employees: any = []
@@ -267,7 +70,6 @@ loading = false;
 onlineUserIds = new Set<number>();
 private presenceInterval: any;
 selectedEmployeeType: any;
-calendarOptions: CalendarOptions = {}
 currentPage = 1;
 pageSize = 12;
 pageSizeOptions = [8, 12, 16, 24];
@@ -285,10 +87,6 @@ statusOptions = [
   { label: 'Left / Offboarded', value: 'LEFT' },
   { label: 'All',         value: 'ALL' },
 ];
-
-handleDateClick(arg: DateClickArg) {
-  alert('date click! ' + arg.dateStr)
-}
 
   constructor(
     private messageService: MessageService,
@@ -399,6 +197,21 @@ handleDateClick(arg: DateClickArg) {
     });
   }
 
+  private brandingCache: { companyName: string; logoUrl: string } | null = null;
+
+  /** The signed-in company's name and logo, for the staff ID card. */
+  get companyBranding(): { companyName: string; logoUrl: string } {
+    if (!this.brandingCache) {
+      let business: any = {};
+      try { business = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}'); } catch {}
+      this.brandingCache = {
+        companyName: business?.companyName || business?.company?.name || '',
+        logoUrl: business?.logoUrl || business?.logo || '',
+      };
+    }
+    return this.brandingCache;
+  }
+
   isOnline(employee: any): boolean {
     return employee?.userId != null && this.onlineUserIds.has(Number(employee.userId));
   }
@@ -414,6 +227,13 @@ handleDateClick(arg: DateClickArg) {
     return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  /** The status as a label, e.g. "On Leave". A missing status shows as "Unknown", not "Active". */
+  empStatusLabel(employee: any): string {
+    const status = String(employee?.employeeStatus ?? '').trim();
+    if (!status) return 'Unknown';
+    return status.toLowerCase().split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+
   empStatusClass(employee: any): string {
     switch (employee?.employeeStatus) {
       case 'ACTIVE':           return 'emp-status--active';
@@ -425,7 +245,7 @@ handleDateClick(arg: DateClickArg) {
       case 'FIRED':
       case 'INTERNSHIP_ENDED': return 'emp-status--terminated';
       case 'CONTRACT':         return 'emp-status--contract';
-      default:                 return 'emp-status--active';
+      default:                 return 'emp-status--unknown';
     }
   }
 
@@ -465,7 +285,6 @@ handleDateClick(arg: DateClickArg) {
 
       },
       error: (err) => {
-        console.log(err);
         this.finishLoading(startedAt);
         this.messageService.add({
           severity: 'error',
@@ -565,20 +384,8 @@ handleDateClick(arg: DateClickArg) {
     this.fetchEmployees();
 
   }
-  generateLeaveEvents(leaveDetails: { leavesSpent: any[] }) {
-    return leaveDetails.leavesSpent.map((leave) => {
-      return {
-        title: `${leave.type} Leave`,
-        start: leave.from,
-        end: leave.to,
-        backgroundColor: '#2EB270',
-      };
-    });
-  }
-
   viewThisEmployee(employee: any) {
     if (employee) {
-      console.log(employee);
       this.viewEmployee = false;
       this.employeeInView = employee;
       this.selectedEmployee.set(employee);
@@ -1171,7 +978,6 @@ handleDateClick(arg: DateClickArg) {
   //     error: (err) => {
   //       console.error('Failed to load employee image', err);
   //          this.employeeProfilePhotoUrl = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
-  //     console.log(this.employeeProfilePhotoUrl)
   //     },
   //   });
   // }

@@ -72,6 +72,7 @@
         Review and correct the extracted information below before creating the employee record.
         Fields left blank will need to be completed inside the form.
       </div>
+      <div *ngIf="notice" class="review-notice"><i class="fas fa-exclamation-triangle"></i> {{ notice }}</div>
 
       <!-- Personal Information -->
       <div class="review-section">

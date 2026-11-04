@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, EventEmitter, inject, OnDestroy, Output } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../shared-component/service/environments/environment.prod';
+import { readFilledPreOnboardingForm } from './pdf-form-reader';
 
 export interface ImportedEmployeeData {
   firstName?: string;
@@ -41,6 +42,11 @@ export interface ImportedEmployeeData {
   g2Email?: string;
 }
 
+/** The same data with empty fields dropped, so merging never blanks out a value. */
+function withoutBlanks(data: ImportedEmployeeData): ImportedEmployeeData {
+  return Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== ''));
+}
+
 @Component({
   selector: 'app-pre-onboarding-import',
   templateUrl: './pre-onboarding-import.component.html',
@@ -58,6 +64,8 @@ export class PreOnboardingImportComponent implements OnDestroy {
   progressLabel = 'Initialising...';
   isDragOver = false;
   error = '';
+  /** Shown above the review fields when part of the form couldn't be read. */
+  notice = '';
   previewUrl: string | null = null;
 
   data: ImportedEmployeeData = {};
@@ -93,13 +101,23 @@ export class PreOnboardingImportComponent implements OnDestroy {
 
     try {
       let imageFile: File;
+      let fromPdf: ImportedEmployeeData = {};
 
       if (file.type === 'application/pdf') {
-        this.progressLabel = 'Rendering PDF page...';
+        this.progressLabel = 'Reading PDF...';
         this.progress = 20;
-        const blob = await this.pdfFirstPageToBlob(file);
-        this.setPreviewUrl(URL.createObjectURL(blob));
-        imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
+        const pdfjs = await this.loadPdfJs();
+        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+        try {
+          const pdf = await loadingTask.promise;
+          // A form filled in on a computer carries its values as text: read them exactly, no AI needed.
+          fromPdf = await readFilledPreOnboardingForm(pdf).catch(() => ({}));
+          const blob = await this.pdfPagesToBlob(pdf);
+          this.setPreviewUrl(URL.createObjectURL(blob));
+          imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
+        } finally {
+          await loadingTask.destroy();
+        }
       } else {
         imageFile = file;
         this.setPreviewUrl(URL.createObjectURL(file));
@@ -111,27 +129,38 @@ export class PreOnboardingImportComponent implements OnDestroy {
       const form = new FormData();
       form.append('file', imageFile);
 
-      let result: any;
+      // The AI read covers scans and photos (and the tick boxes on older copies of the form).
+      let fromAi: ImportedEmployeeData = {};
+      let aiError = '';
       try {
-        result = await firstValueFrom(this.http.post<any>(this.extractUrl, form));
+        const result = await firstValueFrom(this.http.post<any>(this.extractUrl, form));
+        const payload = result?.data ?? result?.result ?? result;
+        if (payload?.error) aiError = String(payload.error);
+        else if (payload && typeof payload === 'object') fromAi = this.mapResult(payload);
       } catch (httpErr: any) {
-        const msg = httpErr?.error?.message ?? httpErr?.error ?? httpErr?.message ?? String(httpErr);
-        this.error = `Extraction request failed: ${msg}`;
-        this.state = 'upload';
-        console.error('extract-form HTTP error', httpErr);
-        return;
+        aiError = httpErr?.error?.message ?? httpErr?.message ?? 'the request failed';
       }
 
       this.progress = 100;
       this.progressLabel = 'Done';
 
-      if (result?.error) {
-        this.error = `AI extraction error: ${result.error}`;
+      // What the PDF itself says wins; the AI fills the gaps.
+      const merged = { ...withoutBlanks(fromAi), ...withoutBlanks(fromPdf) };
+      if (!Object.keys(merged).length) {
+        this.error = aiError
+          ? `Couldn't read the form: ${aiError}`
+          : "Couldn't find any details on this form. Check the file is the filled-in form, or enter the details manually.";
         this.state = 'upload';
         return;
       }
 
-      this.data = this.mapResult(result);
+      this.data = merged;
+      const unticked = ([['gender', 'gender'], ['maritalStatus', 'marital status'], ['religion', 'religion'], ['employmentType', 'employment type']] as const)
+        .filter(([key]) => !merged[key])
+        .map(([, label]) => label);
+      this.notice = unticked.length
+        ? `Couldn't read ${unticked.join(', ')} from the form. Please select them below.`
+        : '';
       this.state = 'review';
 
     } catch (err: any) {
@@ -158,27 +187,38 @@ export class PreOnboardingImportComponent implements OnDestroy {
     return pdfjs;
   }
 
-  private async pdfFirstPageToBlob(file: File): Promise<Blob> {
-    const pdfjs = await this.loadPdfJs();
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
-    try {
-      const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2.5 });
-
+  /**
+   * Renders the form's pages one under the other into a single JPEG. The form runs to two pages
+   * (next of kin and guarantors are on the second), so sending only page 1 lost them.
+   * Capped at four pages to stay inside browsers' canvas size limits.
+   */
+  private async pdfPagesToBlob(pdf: any): Promise<Blob> {
+    const pageCount = Math.min(pdf.numPages, 4);
+    const rendered: HTMLCanvasElement[] = [];
+    for (let n = 1; n <= pageCount; n++) {
+      const page = await pdf.getPage(n);
+      const viewport = page.getViewport({ scale: 2 });
       const canvas = document.createElement('canvas');
       canvas.width  = viewport.width;
       canvas.height = viewport.height;
       // The main app installs pdfjs 4 (needs canvasContext); this project declares pdfjs 6 (uses canvas).
       const renderParams: any = { canvas, canvasContext: canvas.getContext('2d'), viewport };
       await page.render(renderParams).promise;
-
-      return await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
-      });
-    } finally {
-      await loadingTask.destroy();
+      rendered.push(canvas);
     }
+
+    const sheet = document.createElement('canvas');
+    sheet.width = Math.max(...rendered.map((c) => c.width));
+    sheet.height = rendered.reduce((sum, c) => sum + c.height, 0);
+    const ctx = sheet.getContext('2d')!;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, sheet.width, sheet.height);
+    let y = 0;
+    for (const c of rendered) { ctx.drawImage(c, 0, y); y += c.height; }
+
+    return await new Promise<Blob>((resolve, reject) => {
+      sheet.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.92);
+    });
   }
 
   // ── Map AI response → ImportedEmployeeData ─────────────────────────────────
@@ -241,6 +281,7 @@ export class PreOnboardingImportComponent implements OnDestroy {
     this.data = {};
     this.setPreviewUrl(null);
     this.error = '';
+    this.notice = '';
     this.progress = 0;
     this.progressLabel = 'Initialising...';
   }

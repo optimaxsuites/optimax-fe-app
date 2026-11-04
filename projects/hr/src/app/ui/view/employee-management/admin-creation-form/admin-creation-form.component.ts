@@ -38,7 +38,6 @@ export class AdminCreationFormComponent implements OnChanges {
   basicForm!: FormGroup;
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
-  leaveForm!: FormGroup
   registerInfo!: FormGroup
   showModal: boolean = false;
   currentFile: string = '';
@@ -54,12 +53,6 @@ export class AdminCreationFormComponent implements OnChanges {
   gender: any[] = [];
 
   levels: any[] = []
-  leaves: any[] = []
-  isAmountTouched: boolean = false
-  selectedLeaves: {
-    name: number,
-    amount: number
-  }[] = []
 
 
   currentTab = 1;
@@ -96,8 +89,6 @@ export class AdminCreationFormComponent implements OnChanges {
   userInfoRegData: any[] = [];
   userRegData: any = { };
   roles: any[] = [];
-  totalLeaveDays: number = 0;
-  errorMessage: string = "";
   showMetaModal: boolean = false;
   activeMetaType: 'department' | 'employment' | 'level' | 'gender' | null = null;
   savingMeta: boolean = false;
@@ -123,7 +114,6 @@ export class AdminCreationFormComponent implements OnChanges {
     this.metadataService.levels$.subscribe(data =>
       this.levels = (data || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name }))
     )
-    this.metadataService.leaves$.subscribe(data => (this.leaves = data));
    this.metadataService.employment$.subscribe(data => { this.employments = data; this.applyImportLookups(); });
     this.metadataService.gender$.subscribe(data => { this.gender = data; this.applyImportLookups(); });
     this.metadataService.maritalStatuses$.subscribe(data => (this.maritalStatuses = data));
@@ -152,13 +142,6 @@ export class AdminCreationFormComponent implements OnChanges {
       probationStartDate: [''],
       probationEndDate: [''],
       appraisalDueDate: ['', Validators.required]
-    });
-
-    this.leaveForm = this.fb.group({
-      // leaveDays: [null, Validators.required],
-      leaveType: [null, [Validators.pattern("^[0-9]*$"), Validators.min(1)]],
-      leaveAmount: [null, [Validators.pattern("^[0-9]*$"), Validators.min(1)]],
-    
     });
 
     this.guarantorForm = this.fb.group({
@@ -193,7 +176,6 @@ export class AdminCreationFormComponent implements OnChanges {
       this.employeeForm.get('probationEndDate')?.updateValueAndValidity();
     });
 
-    this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
     this.fetchRoles();
     this.updateSupervisorValidators();
 
@@ -377,7 +359,6 @@ export class AdminCreationFormComponent implements OnChanges {
         }));
       },
       error: (err) => {
-        console.log('Error fetching roles:', err);
         this.roles = [];
       }
     });
@@ -526,9 +507,6 @@ export class AdminCreationFormComponent implements OnChanges {
     supervisorControl.updateValueAndValidity();
   }
 
-  calculateTotalLeaveDays(): void {
-    this.totalLeaveDays = Object.values(this.selectedLeaves).reduce((sum: number, leave) => sum + Number(leave.amount || 0), 0);
-  }
 private setProbationValidators(): void {
   const isProbation = this.employeeForm.get('isProbation')?.value;
   if (isProbation) {
@@ -551,7 +529,6 @@ private setProbationValidators(): void {
     }
     if(file instanceof File){
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-      console.log(file)
       if (!allowedTypes.includes(file.type )) {
         return { invalidFileType: true };
       }else{
@@ -561,8 +538,6 @@ private setProbationValidators(): void {
     else if(typeof(file) == "string"){
       const allowedTypes = ['.png', '.jpeg', '.jpg'];
       const fileExtension = file.slice(file.lastIndexOf('.')).toLowerCase();
-      console.log(file)
-    console.log(fileExtension)
       if (!allowedTypes.includes(fileExtension )) {
         return { invalidFileType: true };
       }else{
@@ -582,10 +557,6 @@ private setProbationValidators(): void {
     this.employeeForm.markAllAsTouched()
     if(this.employeeForm.invalid) return
   }
-  // if(this.currentTab == 3){
-  //   this.leaveForm.markAllAsTouched()
-  //   if(this.leaveForm.invalid) return
-  // }
   if(this.currentTab == 3){
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.invalid) return
@@ -798,11 +769,8 @@ private setProbationValidators(): void {
     this.lastSubmittedName = '';
     this.basicForm.reset();
     this.guarantorForm.reset();
-    this.leaveForm.reset();
     this.employeeForm.reset();
     this.currentTab = 1;
-    this.selectedLeaves = [];
-    this.totalLeaveDays = 0;
   }
 
   private buildSignupDetails(username: string, password: string, email: string, firstName = '', lastName = '') {
@@ -836,11 +804,9 @@ private setProbationValidators(): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
       const file = input.files[0];
-     console.log(`${controlName} file:`, file);
       this.guarantorForm.patchValue({ [controlName]: file }); 
       this.guarantorForm.get(controlName)?.updateValueAndValidity();
 
-console.log(this.guarantorForm.value)
     }
   }
   onProfilePhotoChange(event: Event, controlName: string) {
@@ -958,51 +924,5 @@ console.log(this.guarantorForm.value)
     navigator.clipboard.writeText(value).catch(() => {});
   }
 
-  addLeave(){
-    this.isAmountTouched = true
-    const leaveType = this.leaveForm.value.leaveType;
-    const leaveAmount = this.leaveForm.value.leaveAmount;
-    if(  this.leaveForm.valid && 
-      typeof leaveAmount === 'number' && 
-      !isNaN(leaveAmount)){
-      this.selectedLeaves.push({
-        name: leaveType,
-        amount: leaveAmount
-      })
-      this.calculateTotalLeaveDays()
-      this.isAmountTouched =false
-      this.leaveForm.reset()
-    }else {
-      this.isAmountTouched= true
-      this.errorMessage = this.getLeaveAmountErrorMessage()
-    }
-
-  }
-
-  getLeaveNameWithId(id: number){
-    const leave = this.leaves.find((item) => item.value === id);
-    return leave ? leave.label : 'Unknown';
-  }
-
-  getLeaveAmountErrorMessage(): string {
-    const control = this.leaveForm.get('leaveAmount');
-  
-   
-    if (control?.value <= 0 && typeof control?.value === 'number') {
-      return 'Value must be at least 1.';
-    }
-  
-    if (!isNaN(control?.value)) {
-      return 'Please enter a positive number.';
-    }
-  
-    return '';
-  }
-
-  removeLeave(id: number){
-    const leaveIndex = this.selectedLeaves.findIndex(s => s.name === id);
-    this.selectedLeaves.splice(leaveIndex, 1)
-    this.calculateTotalLeaveDays()
-  }
   
 }

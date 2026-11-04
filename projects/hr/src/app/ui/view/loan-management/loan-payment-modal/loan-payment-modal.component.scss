@@ -184,6 +184,88 @@
     }
   }
 
+  // Repayment methods: payroll deduction is live, the rest are shown greyed out as "Coming soon".
+  .method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+
+    .method-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 8px;
+      border: 1px solid #e3eef0;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      i {
+        font-size: 1.2rem;
+        color: #2E6276;
+      }
+
+      strong {
+        font-size: 0.8rem;
+        color: #1a4b5c;
+      }
+
+      small {
+        font-size: 0.65rem;
+        color: #8aadba;
+      }
+
+      &:hover:not(:disabled) {
+        border-color: #2E6276;
+        background: #f8feff;
+      }
+
+      &.selected {
+        border-color: #2EB270;
+        background: rgba(46, 178, 112, 0.05);
+        box-shadow: 0 0 0 1px #2EB270;
+
+        i {
+          color: #2EB270;
+        }
+      }
+
+      &.coming-soon {
+        cursor: not-allowed;
+        background: #f7f9fa;
+        border-style: dashed;
+
+        i,
+        strong {
+          color: #b5c6cd;
+        }
+
+        small {
+          color: #eb9b3f;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+      }
+    }
+  }
+
+  .payroll-card {
+    border-color: rgba(46, 178, 112, 0.35);
+    background: rgba(46, 178, 112, 0.04);
+
+    .card-header i {
+      color: #2EB270;
+    }
+
+    .field-hint i {
+      color: #2EB270;
+    }
+  }
+
   .bank-details-card {
     background: #f8fcfd;
     border-radius: 12px;
@@ -359,6 +441,10 @@
     .payment-type-grid {
       grid-template-columns: 1fr;
       gap: 8px;
+    }
+
+    .method-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
 
     .form-actions {

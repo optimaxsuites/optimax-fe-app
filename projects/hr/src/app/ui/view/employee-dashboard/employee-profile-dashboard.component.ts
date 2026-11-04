@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CalendarOptions } from '@fullcalendar/core/index.js';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 import { EmployeeService } from '../../service/employee.service';
 // // import { CompanyProfileService }
 import { AuthenticationService } from '../../shared-component/service/auth-service/authentication.service';
@@ -258,10 +258,6 @@ export class EmployeeProfileDashboardComponent {
     } catch {
       return false;
     }
-  }
-
-  handleDateClick(arg: DateClickArg) {
-    alert('date click! ' + arg.dateStr);
   }
 
   formatDate(value: any): string {
@@ -661,7 +657,7 @@ export class EmployeeProfileDashboardComponent {
             netSalaryComputed: this.calculateNetSalary(salaryDetails),
           };
         },
-        error: (err) => console.log(err),
+        error: () => {},
       });
     }
 
@@ -673,7 +669,6 @@ export class EmployeeProfileDashboardComponent {
     if (this.employeeInView?.leaveDetails) {
       this.calendarOptions = {
         ...this.calendarOptions,
-        dateClick: (arg) => this.handleDateClick(arg),
         events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
       };
     }
@@ -1441,7 +1436,6 @@ export class EmployeeProfileDashboardComponent {
     if (!this.employeeInView || this.resendingCredentials) return;
     const employee = this.employeeInView;
     const email = employee?.workEmail || employee?.email || '';
-    console.log("Got username " + email);
     if (!email) {
       this.messageService.add({ severity: 'warn', summary: 'Cannot Resend', detail: 'No email address found on this employee record.', key: 'tl', life: 5000 });
       return;

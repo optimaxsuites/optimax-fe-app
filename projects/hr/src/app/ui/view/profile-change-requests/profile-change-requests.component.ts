@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ProfileChangeRequestService } from '../../service/profile-change-request.service';
 import {
   ProfileChangeRequestDTO,
@@ -14,6 +14,7 @@ import {
   selector: 'app-profile-change-requests',
   templateUrl: './profile-change-requests.component.html',
   styleUrl: './profile-change-requests.component.scss',
+  providers: [ConfirmationService],
 })
 export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   requests: ProfileChangeRequestDTO[] = [];
@@ -57,6 +58,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   constructor(
     private profileChangeRequestService: ProfileChangeRequestService,
     private messageService: MessageService,
+    private confirmationService: ConfirmationService,
     private fb: FormBuilder
   ) {
     this.rejectionForm = this.fb.group({
@@ -67,7 +69,6 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadRequests();
 
-    console.log(this.requests);
 
 
     this.profileChangeRequestService.requests$
@@ -78,9 +79,7 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
       });
 
       const userRegData = JSON.parse(localStorage.getItem('userRegData') || '{}');
-      console.log("userReg", userRegData)
       this.userIsAdmin = userRegData && userRegData.roles[0] ? userRegData.roles[0] === 'ROLE_ADMIN': false;
-      console.log(this.userIsAdmin)
   }
 
   ngOnDestroy(): void {
@@ -194,7 +193,19 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
   }
 
   deleteRequest(request: ProfileChangeRequestDTO): void {
-    if (!confirm(`Delete this request from ${request.employeeName}? This cannot be undone.`)) return;
+    this.confirmationService.confirm({
+      key: 'deleteRequest',
+      header: 'Delete request',
+      message: `Delete this request from ${request.employeeName}? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => this.executeDeleteRequest(request),
+    });
+  }
+
+  private executeDeleteRequest(request: ProfileChangeRequestDTO): void {
     this.isProcessingRequest = true;
     this.profileChangeRequestService.deleteProfileChangeRequest(request.id!)
       .pipe(takeUntil(this.destroy$))

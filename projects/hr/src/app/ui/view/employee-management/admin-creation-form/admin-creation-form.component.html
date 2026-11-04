@@ -318,69 +318,6 @@
     </div>
   </form>
 
-  <!-- <form [formGroup]="leaveForm"  *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
-
-    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
-     
-      <div class="mb-4">
-          <table class="styled-table">
-            <thead class="bg-customBlue text-white">
-              <td>Leave Types</td>
-              <td>Assigned number of day(s)</td>
-            </thead>
-            <tbody class="w-full">
-              <tr class="w-full" *ngFor="let leave of selectedLeaves; let i = index">
-                <td class="w-1/2">{{getLeaveNameWithId(leave.name)}}</td>
-                <td class="w-1/2">
-                   <div class="flex w-full justify-between items-center gap-1 px-2">
-                    <p class="">{{leave.amount}} day(s)</p>
-                    <i (click)="removeLeave(i)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-2xl " ></i>
-                   </div>
-                </td>
-              </tr>
-            
-              <tr *ngIf="selectedLeaves.length > 0" >
-                <td>Total</td>
-                <td class="px-4">
-                  {{totalLeaveDays}}
-                </td>
-              </tr>
-
-              <tr class="">
-                <td>
-                  <div class="w-full">
-                    <ng-select 
-                    [items]="leaves" 
-                    bindLabel="label"
-                    bindValue="value"
-                    placeholder="Select leave"
-                    formControlName="leaveType"
-                    class="w-full rounded-md"></ng-select>
-          
-                  </div>
-                </td>
-
-                <td>
-                  <input type="number" min="0" (keydown.enter)="addLeave()" (change)="errorMessage = ''"  class="outline-none w-full p-2" placeholder="0" formControlName="leaveAmount">
-                  <small *ngIf="isAmountTouched" class="text-red-600">
-                   {{getLeaveAmountErrorMessage()}}
-                    </small>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-         
-    
-      </div>
-      <div class="text-right">
-        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !leaveForm.valid">
-          Next
-        </button>
-      </div>
-    
-    </div>
-  </form> -->
 
 
   <form [formGroup]="guarantorForm" *ngIf="currentTab === 3" class="form-section" >
@@ -447,13 +384,6 @@
           </div>
         </div>
       
-        <div class="summary-card">
-          <p class="summary-title">Leave Information</p>
-          <div *ngFor="let control of getFormControls('leaveForm')">
-            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
-          </div>
-        </div>
-
         <div class="summary-card" *ngIf="importedSummary.length > 0 || importedUnsavedFields.length > 0">
           <p class="summary-title">From Imported Form</p>
           <p *ngFor="let row of importedSummary"><strong>{{ row.label }}:</strong> <span class="ml-1">{{ row.value }}</span></p>

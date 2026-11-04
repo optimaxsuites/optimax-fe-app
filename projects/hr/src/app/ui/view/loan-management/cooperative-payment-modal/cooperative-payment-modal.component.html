@@ -55,7 +55,49 @@
         </div>
       </div>
 
-      <div class="bank-details-card" [class.invalid-account]="!hasValidDestinationAccount">
+      <div class="form-group">
+        <label>Payment Method <span class="required">*</span></label>
+        <div class="method-grid" role="radiogroup" aria-label="Payment method">
+          <button
+            type="button"
+            *ngFor="let method of repaymentMethods"
+            class="method-card"
+            role="radio"
+            [attr.aria-checked]="paymentForm.get('paymentMethod')?.value === method.value"
+            [attr.aria-disabled]="!method.available"
+            [disabled]="!method.available"
+            [class.selected]="paymentForm.get('paymentMethod')?.value === method.value"
+            [class.coming-soon]="!method.available"
+            (click)="selectRepaymentMethod(method)">
+            <i [class]="method.icon"></i>
+            <strong>{{ method.label }}</strong>
+            <small>{{ method.description }}</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- Payroll deduction: nothing to transfer, it comes out of the member's salary -->
+      <div class="bank-details-card payroll-card" *ngIf="isPayrollDeduction">
+        <div class="card-header">
+          <i class="fas fa-file-invoice-dollar"></i>
+          <span>Deducted from salary</span>
+        </div>
+        <div class="bank-info">
+          <div class="info-row">
+            <span>Payroll:</span>
+            <strong>{{ payrollPeriod }}</strong>
+          </div>
+          <div class="info-row">
+            <span>Amount:</span>
+            <strong>{{ formatCurrency(selectedAmountDue) }}</strong>
+          </div>
+        </div>
+        <small class="field-hint">
+          This {{ selectedPaymentTypeLabel.toLowerCase() }} will be taken from the {{ payrollPeriod }} salary and shown on that payslip. No transfer is needed.
+        </small>
+      </div>
+
+      <div class="bank-details-card" *ngIf="!isPayrollDeduction" [class.invalid-account]="!hasValidDestinationAccount">
         <div class="card-header">
           <i class="fas fa-university"></i>
           <span>Destination Account</span>
@@ -79,36 +121,27 @@
         </div>
       </div>
 
-      <div class="form-grid">
-        <label>
-          Payment Method <span class="required">*</span>
-          <select formControlName="paymentMethod">
-            <option value="BANK_TRANSFER">Bank Transfer</option>
-            <option value="CASH">Cash</option>
-            <option value="PAYROLL_DEDUCTION">Payroll Deduction</option>
-            <option value="MOBILE_MONEY">Mobile Money</option>
-            <option value="OTHER">Other</option>
-          </select>
+      <ng-container *ngIf="!isPayrollDeduction">
+        <div class="form-grid">
+          <label>
+            Amount
+            <input type="number" formControlName="amount" readonly>
+          </label>
+        </div>
+
+        <label class="full-width-field">
+          Transaction Reference <span class="required">*</span>
+          <input type="text" formControlName="paymentReference" placeholder="Enter transfer or cashier reference">
         </label>
 
-        <label>
-          Amount
-          <input type="number" formControlName="amount" readonly>
+        <label class="full-width-field">
+          {{ sourceAccountLabel }} <span class="required">*</span>
+          <input type="text" formControlName="paidFromAccount" [placeholder]="sourceAccountHint">
+          <small class="field-hint">{{ sourceAccountHint }}</small>
         </label>
-      </div>
+      </ng-container>
 
-      <label class="full-width-field">
-        Transaction Reference <span class="required">*</span>
-        <input type="text" formControlName="paymentReference" placeholder="Enter transfer, payroll, or cashier reference">
-      </label>
-
-      <label class="full-width-field">
-        {{ sourceAccountLabel }} <span class="required">*</span>
-        <input type="text" formControlName="paidFromAccount" [placeholder]="sourceAccountHint">
-        <small class="field-hint">{{ sourceAccountHint }}</small>
-      </label>
-
-      <div class="error-message" *ngIf="paymentForm.get('paidFromAccount')?.invalid && paymentForm.get('paidFromAccount')?.touched">
+      <div class="error-message" *ngIf="!isPayrollDeduction && paymentForm.get('paidFromAccount')?.invalid && paymentForm.get('paidFromAccount')?.touched">
         <small>Enter a valid source account or payment reference for the selected method.</small>
       </div>
 
@@ -120,7 +153,7 @@
       <div class="modal-actions">
         <button type="button" class="cancel-btn" (click)="cancel()">Cancel</button>
         <button type="submit" class="submit-btn" [disabled]="!canSubmit">
-          <span *ngIf="!isLoading">Record Payment</span>
+          <span *ngIf="!isLoading">{{ isPayrollDeduction ? 'Deduct from Salary' : 'Record Payment' }}</span>
           <span *ngIf="isLoading">Recording...</span>
         </button>
       </div>

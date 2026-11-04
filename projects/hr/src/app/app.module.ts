@@ -278,7 +278,7 @@ import { PayrollCorrectionComponent } from './ui/view/payroll/payroll-correction
     EmployeeManagementComponent,
     AdminCreationFormComponent,
     EmployeeProfileDashboardComponent,
-    // EmployeeOnboardingFormComponent,
+    EmployeeOnboardingFormComponent,
     PreOnboardingFormComponent,
     PreOnboardingImportComponent,
     OffboardingFormComponent,
