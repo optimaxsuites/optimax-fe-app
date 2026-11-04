@@ -2456,7 +2456,7 @@ export class CommunicationComponent
       const senderName =
         this.userDirectory[senderUserId] ||
         this.notificationFieldText(rawMsgSender, '') ||
-        (this.directMessages.find((d: any) => d.userId === senderUserId)?.fullName) ||
+        (this.dmContacts.find((d: any) => d.userId === senderUserId)?.fullName) ||
         '';
       const rawContent = this.notificationFieldText(msg.content, '');
       const formatted = this.formatMessagePreview(rawContent);
