@@ -4,7 +4,7 @@ import { SalesDeliveryNote, MerchantInfo } from '../../../../domain/sales/sales.
 import { formatApiDate } from '../../../../service/sales/date.util';
 import {
   QuoteTemplate, TEMPLATE_ACCENT_COLORS, DeliveryNoteOptionalField, deliveryNoteShowsField
-} from '../../template-types/template-types.component';
+} from '../../template-types/quote-templates.config';
 
 interface MetaCell { label: string; value: string; rowspan?: number; }
 interface MetaRow { left?: MetaCell; right?: MetaCell; }

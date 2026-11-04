@@ -441,6 +441,9 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     const sub = this.stompClient.subscribe(
       `/topic/collab/chat/channel/${target.backendId}`,
       (frame) => this.ngZone.run(() => {
+        if (this.isSignalFrame(frame.body)) {
+          return;
+        }
         const incoming = this.parseIncoming(frame.body);
         if (
           incoming.senderUserId &&
@@ -880,6 +883,7 @@ export class ChatRealtimeNotifierService implements OnDestroy {
       latestMessage?.senderUserId || incoming.senderUserId || 0,
     );
     const rawContent = latestMessage?.content ?? incoming.content ?? '';
+    if (this.isSignalContent(String(rawContent))) return;
     const humanContent = this.humanizeMessageContent(String(rawContent));
     const detail = this.notificationText(
       humanContent,
@@ -939,15 +943,19 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     if (!Array.isArray(messages) || !messages.length) {
       return null;
     }
+    const realMessages = messages.filter(
+      (entry) => !this.isSignalContent(String(entry?.content || '')),
+    );
+    if (!realMessages.length) return null;
     if (preferredMessageId) {
-      const exact = messages.find(
+      const exact = realMessages.find(
         (entry) => Number(entry?.id) === Number(preferredMessageId),
       );
       if (exact) {
         return exact;
       }
     }
-    return [...messages]
+    return [...realMessages]
       .sort((left, right) => this.toTimestamp(right?.sentAt) - this.toTimestamp(left?.sentAt))[0];
   }
 
@@ -1042,13 +1050,39 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     return trimmed;
   }
 
+  private isSignalContent(content: string): boolean {
+    if (!content) return false;
+    if (content.startsWith('__receiptSignal') || content.startsWith('__callSignal')) return true;
+    if (content.includes('__receiptSignal') || content.includes('__callSignal')) return true;
+    return false;
+  }
+
+  private isSignalFrame(body: string): boolean {
+    if (!body) return false;
+    if (this.isSignalContent(body)) return true;
+    try {
+      const p = JSON.parse(body);
+      const msg = (p?.message && typeof p.message === 'object') ? p.message : p;
+      if (msg?.__receiptSignal || msg?.__callSignal) return true;
+      if (this.isSignalContent(String(msg?.content || ''))) return true;
+    } catch { /* not JSON */ }
+    return false;
+  }
+
   private humanizeMessageContent(content: string): string {
-    if (!content || !content.startsWith('{')) return content;
+    if (!content) return content;
+    if (this.isSignalContent(content)) return '';
+    if (!content.startsWith('{')) return content;
     try {
       const p = JSON.parse(content);
+      if (p?.__receiptSignal || p?.__callSignal) return '';
       if (typeof p?.title === 'string' && typeof p?.module === 'string') {
         return `[Issue] ${p.title}${p.priority ? ' · ' + p.priority : ''}`;
       }
+      if (typeof p?.text === 'string') return p.text;
+      if (typeof p?.body === 'string') return p.body;
+      if (typeof p?.message === 'string') return p.message;
+      if (typeof p?.description === 'string') return p.description;
     } catch { /* not JSON */ }
     return content;
   }

@@ -8,6 +8,7 @@ import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.compo
 import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
 import { ModuleRegistryComponent } from './ui/view/module-registry/module-registry.component';
 import { BugTrackerComponent } from './ui/view/bug-tracker/bug-tracker.component';
+import { AppUpdatesComponent } from './ui/view/app-updates/app-updates.component';
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
@@ -42,6 +43,10 @@ const routes: Routes = [
       {
         path: 'bug-tracker/:uuid',
         component: BugTrackerComponent,
+      },
+      {
+        path: 'app-updates/:uuid',
+        component: AppUpdatesComponent,
       },
       {
         path: 'crm-settings/:uuid',

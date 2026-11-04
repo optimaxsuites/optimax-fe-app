@@ -446,6 +446,9 @@ export interface SalesDeliveryNoteItem {
  * Files still live on the quote's additionalOptions (lpoDocument / signedDeliveryNoteDocument)
  * because the backend has no upload endpoint yet — signedDocumentUrl stays empty until it does.
  */
+/** @deprecated use SalesDeliveryNote */
+export type DeliveryNote = SalesDeliveryNote;
+
 export interface SalesDeliveryNote {
   id?: number;
   tenantId?: string;

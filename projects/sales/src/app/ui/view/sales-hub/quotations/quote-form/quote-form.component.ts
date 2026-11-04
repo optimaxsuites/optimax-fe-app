@@ -9,7 +9,8 @@ import { SalesEmailService } from '../../../../service/sales/sales-email.service
 import { Customer, Product, Quote, QuoteStatus, QuoteItem, CustomerBankDetails, QuoteAttachments, MerchantInfo } from '../../../../domain/sales/sales.dto';
 import { toDateInputValue, formatApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
-import { TemplateTypesComponent, QuoteTemplate } from '../../template-types/template-types.component';
+import { TemplateTypesComponent } from '../../template-types/template-types.component';
+import { QuoteTemplate } from '../../template-types/quote-templates.config';
 import { lastValueFrom } from 'rxjs';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
 import { SalesDocumentComponent } from '../../sales-document/sales-document.component';

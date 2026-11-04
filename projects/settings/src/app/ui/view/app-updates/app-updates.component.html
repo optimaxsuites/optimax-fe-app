@@ -1,0 +1,137 @@
+<div class="updates-page">
+
+  <!-- Header -->
+  <div class="updates-header">
+    <div class="app-icon">
+      <img src="assets/images/logo.png" alt="OptimaXERP" class="app-logo"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="app-logo-fallback" style="display:none">
+        <i class="fas fa-cube"></i>
+      </div>
+    </div>
+    <div class="app-meta">
+      <h1 class="app-name">OptimaXERP</h1>
+      <div class="version-row">
+        <span class="version-label">Version {{ updateService.currentVersion }}</span>
+        <span class="platform-badge">
+          <i [class]="platformIcon"></i> {{ platformLabel }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status card -->
+  <div class="status-card">
+
+    <!-- Idle / up-to-date -->
+    <ng-container *ngIf="status === 'idle' || status === 'up-to-date'">
+      <div class="status-icon" [class.green]="status === 'up-to-date'">
+        <i [class]="status === 'up-to-date' ? 'fas fa-check-circle' : 'fas fa-sync-alt'"></i>
+      </div>
+      <div class="status-text">
+        <p class="status-title">{{ status === 'up-to-date' ? 'You\'re up to date' : 'Check for updates' }}</p>
+        <p class="status-sub">
+          {{ status === 'up-to-date'
+              ? 'OptimaXERP ' + updateService.currentVersion + ' is the latest version.'
+              : 'Tap below to see if a newer version is available.' }}
+        </p>
+      </div>
+      <button class="btn-check" (click)="check()">
+        <i class="fas fa-search"></i> Check for Updates
+      </button>
+    </ng-container>
+
+    <!-- Checking -->
+    <ng-container *ngIf="status === 'checking'">
+      <div class="status-icon spinning">
+        <i class="fas fa-sync-alt"></i>
+      </div>
+      <div class="status-text">
+        <p class="status-title">Checking for updates…</p>
+        <p class="status-sub">Contacting the update server</p>
+      </div>
+    </ng-container>
+
+    <!-- Update available / ready (desktop or web) -->
+    <ng-container *ngIf="status === 'ready'">
+      <div class="status-icon blue">
+        <i class="fas fa-arrow-circle-down"></i>
+      </div>
+      <div class="status-text">
+        <p class="status-title">
+          {{ updateService.isDesktop ? 'Update available — ' + (updateInfo?.version ?? '') : 'Update ready to install' }}
+        </p>
+        <p class="status-sub" *ngIf="updateInfo?.date">
+          Released {{ updateInfo?.date | date:'mediumDate' }}
+        </p>
+        <p class="status-sub" *ngIf="!updateService.isDesktop">
+          A new version has been downloaded in the background.
+        </p>
+      </div>
+      <button class="btn-install" (click)="apply()">
+        <i class="fas fa-download"></i>
+        {{ updateService.isDesktop ? 'Download &amp; Install' : 'Reload to Update' }}
+      </button>
+    </ng-container>
+
+    <!-- Downloading (desktop only) -->
+    <ng-container *ngIf="status === 'downloading'">
+      <div class="status-icon blue spinning">
+        <i class="fas fa-download"></i>
+      </div>
+      <div class="status-text full-width">
+        <p class="status-title">Downloading update…</p>
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="downloadProgress"></div>
+        </div>
+        <p class="status-sub">{{ downloadProgress }}% — the app will restart automatically when done</p>
+      </div>
+    </ng-container>
+
+    <!-- Error -->
+    <ng-container *ngIf="status === 'error'">
+      <div class="status-icon red">
+        <i class="fas fa-exclamation-circle"></i>
+      </div>
+      <div class="status-text">
+        <p class="status-title">Update check failed</p>
+        <p class="status-sub">{{ errorMessage }}</p>
+      </div>
+      <button class="btn-check" (click)="check()">
+        <i class="fas fa-redo"></i> Retry
+      </button>
+    </ng-container>
+
+  </div>
+
+  <!-- Release notes -->
+  <div class="release-notes" *ngIf="updateInfo?.notes && status === 'ready'">
+    <h3 class="rn-title"><i class="fas fa-sticky-note"></i> What's new</h3>
+    <p class="rn-body">{{ updateInfo!.notes }}</p>
+  </div>
+
+  <!-- Info rows -->
+  <div class="info-list">
+    <div class="info-row">
+      <span class="info-key">Product</span>
+      <span class="info-val">OptimaXERP Suite</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Version</span>
+      <span class="info-val">{{ updateService.currentVersion }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Platform</span>
+      <span class="info-val"><i [class]="platformIcon"></i> {{ platformLabel }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Developer</span>
+      <span class="info-val">Centrifuge Group</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Copyright</span>
+      <span class="info-val">&copy; {{ currentYear }} Centrifuge Group. All rights reserved.</span>
+    </div>
+  </div>
+
+</div>

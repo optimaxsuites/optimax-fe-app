@@ -1,0 +1,49 @@
+[package]
+name = "optimaxerp-desktop"
+version = "2026.11.2"
+description = "OptimaXERP Desktop Application"
+authors = ["Optimax"]
+edition = "2021"
+
+[lib]
+name = "optimaxerp_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-updater = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Local reverse-proxy server (bypasses CORS for desktop mode)
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+
+# SQLite (bundled — no system dependency)
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Secure credential storage (Keychain on macOS, Credential Manager on Windows)
+keyring = "2"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+thiserror = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
