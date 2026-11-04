@@ -80,7 +80,6 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
   }
 
   submitRequest(): void {
-    console.log("empl", this.employee)
     if (!this.employee) {
       this.messageService.add({
         severity: 'error',
@@ -90,7 +89,6 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
       return;
     }
 
-    console.log("type", this.changeType)
 
     if (this.changeType === 'delete') {
       this.submitDeleteRequest();
@@ -104,7 +102,6 @@ export class NokChangeRequestComponent implements OnInit, OnChanges {
     } else if (this.changeType === 'add') {
       this.submitAddRequest();
     } else if (this.changeType === 'edit') {
-      console.log("here in edit ")
       this.submitEditRequest();
     }
   }

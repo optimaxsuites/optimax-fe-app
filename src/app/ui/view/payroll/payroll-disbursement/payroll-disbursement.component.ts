@@ -56,7 +56,7 @@ const NIGERIAN_BANK_CODES: Record<string, [string, string]> = {
   styleUrls: ['./payroll-disbursement.component.scss'],
 })
 export class PayrollDisbursementComponent implements OnInit, OnDestroy {
-  activeTab: 'paystack' | 'gtbank' | 'template' = 'paystack';
+  activeTab: 'paystack' | 'gtbank' | 'template' = 'gtbank';
   loading = false;
   runs: any[] = [];
   selectedRunId: number | null = null;
@@ -64,7 +64,6 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
   employees: any[] = [];
   skippedCount = 0;
   exemptedIds = new Set<any>();
-  disbursing = false;
   postingToFinance = false;
   financePosted = false;
   toastMsg = '';
@@ -201,21 +200,8 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
   }
 
   // ── Paystack ──────────────────────────────────────────────────────────────
-  initiatePaystackTransfer(): void {
-    if (!this.selectedRunId || !this.includedEmployees.length) return;
-    this.disbursing = true;
-    const transferPayload = this.includedEmployees.map(e => ({
-      amount: Math.round((e.netPayable ?? 0) * 100),
-      recipient: e.employee?.accountNumber ?? e.accountNumber,
-      reference: `PAY${e.id ?? Date.now()}`,
-      reason: `Salary ${this.monthNames[(+e.month || 1) - 1]} ${e.year ?? ''}`.trim(),
-    }));
-    console.log('Paystack bulk transfer payload:', transferPayload);
-    setTimeout(() => {
-      this.disbursing = false;
-      this.showAlert('Paystack transfer initiated for ' + this.includedEmployees.length + ' employees.', 'success');
-    }, 1200);
-  }
+  // Not connected yet: there is no transfer endpoint, so nothing here may claim money was sent.
+  // Salaries are paid through the bank file (GTBank or a custom template) until the integration exists.
 
   // ── GTBank XLSX download ──────────────────────────────────────────────────
   downloadGTBank(): void {
@@ -262,7 +248,12 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
     XLSX.writeFile(wb, `GTBank_Bulk_Payment_${month}_${year}.xlsx`);
 
     this.generatingFile = false;
-    this.showAlert('GTBank Excel file downloaded. Upload to GTBank Internet Banking → Bulk Payment.', 'success');
+    const unroutable = this.unroutableEmployees.length;
+    if (unroutable > 0) {
+      this.showAlert(`GTBank file downloaded, but ${unroutable} employee${unroutable !== 1 ? 's have' : ' has'} no account number or a bank we can\'t match. Their rows have no sort code: fix or exempt them before uploading.`, 'error');
+    } else {
+      this.showAlert('GTBank Excel file downloaded. Upload to GTBank Internet Banking → Bulk Payment.', 'success');
+    }
   }
 
   // ── Custom template CSV ───────────────────────────────────────────────────
@@ -336,18 +327,42 @@ export class PayrollDisbursementComponent implements OnInit, OnDestroy {
   }
 
   // ── Bank code helpers ─────────────────────────────────────────────────────
-  getBankSortCode(bankNameLower: string): string {
+  /**
+   * The [CBN code, sort code] for a bank name, or null if it isn't a known bank. Only matches when the
+   * name contains a known bank's name, preferring the longest, so a blank or vague name never
+   * borrows another bank's codes.
+   */
+  private lookupBankCodes(bankName: string): [string, string] | null {
+    const name = (bankName ?? '').trim().toLowerCase();
+    if (!name) return null;
+    let best: [string, [string, string]] | null = null;
     for (const [key, codes] of Object.entries(NIGERIAN_BANK_CODES)) {
-      if (bankNameLower.includes(key) || key.includes(bankNameLower)) return codes[1];
+      if (name.includes(key) && (!best || key.length > best[0].length)) best = [key, codes];
     }
-    return '';
+    return best ? best[1] : null;
   }
 
-  getBankCode(bankNameLower: string): string {
-    for (const [key, codes] of Object.entries(NIGERIAN_BANK_CODES)) {
-      if (bankNameLower.includes(key) || key.includes(bankNameLower)) return codes[0];
-    }
-    return '';
+  getBankSortCode(bankName: string): string {
+    return this.lookupBankCodes(bankName)?.[1] ?? '';
+  }
+
+  getBankCode(bankName: string): string {
+    return this.lookupBankCodes(bankName)?.[0] ?? '';
+  }
+
+  /** Included employees the bank file can't pay: no account number, or a bank name we can't match. */
+  get unroutableEmployees(): any[] {
+    return this.includedEmployees.filter(e =>
+      !(e.employee?.accountNumber ?? e.accountNumber) || !this.lookupBankCodes(e.employee?.bankName ?? e.bankName ?? '')
+    );
+  }
+
+  get unroutableNames(): string {
+    return this.unroutableEmployees.map(e => this.employeeName(e)).join(', ');
+  }
+
+  employeeName(e: any): string {
+    return `${e.employee?.firstName ?? e.firstName ?? ''} ${e.employee?.lastName ?? e.lastName ?? ''}`.trim() || 'Unnamed employee';
   }
 
   private mapToEmployeePayroll(e: any): any {

@@ -245,15 +245,8 @@
               <span>{{ isOnline(employee) ? 'Online' : 'Away' }}</span>
             </span>
             <!-- Employment status badge -->
-            <span class="emp-status-badge" [ngClass]="{
-                'emp-status--active':     employee?.employeeStatus === 'ACTIVE',
-                'emp-status--joining':    employee?.employeeStatus === 'JOINING',
-                'emp-status--suspended':  employee?.employeeStatus === 'SUSPENDED',
-                'emp-status--onleave':    employee?.employeeStatus === 'ON_LEAVE',
-                'emp-status--terminated': employee?.employeeStatus === 'TERMINATED' || employee?.employeeStatus === 'RESIGNED' || employee?.employeeStatus === 'INTERNSHIP_ENDED',
-                'emp-status--contract':   employee?.employeeStatus === 'CONTRACT'
-              }">
-              {{ (employee?.employeeStatus || 'ACTIVE') | titlecase }}
+            <span class="emp-status-badge" [ngClass]="empStatusClass(employee)">
+              {{ empStatusLabel(employee) }}
             </span>
             <button *ngIf="employee?.employeeStatus === 'JOINING'"
               type="button"
@@ -387,7 +380,7 @@
         </div>
         <div class="dir-list-col dir-list-col--status">
           <span class="emp-status-badge" [ngClass]="empStatusClass(employee)">
-            {{ (employee?.employeeStatus || 'ACTIVE') | titlecase }}
+            {{ empStatusLabel(employee) }}
           </span>
         </div>
         <div class="dir-list-col dir-list-col--joined">{{ fmtDate(employee?.hireDate || employee?.employementStartDate || employee?.employmentStartDate) }}</div>
@@ -546,9 +539,9 @@
       <div class="staff-id-card">
         <div class="staff-id-card__header">
           <div class="staff-id-card__brand">
-            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
+            <img [src]="companyBranding.logoUrl || 'assets/logo.png'" [alt]="companyBranding.companyName || 'Company Logo'" class="staff-id-card__logo" />
             <div>
-              <p class="staff-id-card__eyebrow">{{ (companyProfile$ | async)?.companyName || 'OptimaX' }}</p>
+              <p class="staff-id-card__eyebrow">{{ companyBranding.companyName || 'OptimaX' }}</p>
               <h3>Staff Identification Card</h3>
             </div>
           </div>
@@ -621,7 +614,7 @@
       <div class="staff-id-card staff-id-card--back">
         <div class="staff-id-card__header">
           <div class="staff-id-card__brand">
-            <img [src]="(companyProfile$ | async)?.logoUrl || 'assets/logo.png'" [alt]="(companyProfile$ | async)?.companyName || 'Company Logo'" class="staff-id-card__logo" />
+            <img [src]="companyBranding.logoUrl || 'assets/logo.png'" [alt]="companyBranding.companyName || 'Company Logo'" class="staff-id-card__logo" />
             <div>
               <p class="staff-id-card__eyebrow">Reverse side</p>
               <h3>Verification and emergency</h3>

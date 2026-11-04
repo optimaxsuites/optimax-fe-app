@@ -105,6 +105,9 @@ currentStageRequiresComment = false;
   currentPage = 1;
   fetchEmployeeLoading = false;
 
+// The server's payroll run already applies salary, attendance penalties and overtime. These used to hold
+// made-up rates (₦1,000 late, ₦3,000 absent, 150% overtime, "Junior" ₦4,500…) that changed real pay,
+// so the browser no longer adds its own penalties, overtime or fallback salaries.
 payrollSettings: PayrollSettings = {
   paySchedule: {
     startDay: 15,
@@ -118,39 +121,20 @@ payrollSettings: PayrollSettings = {
     lateWindowEnd: '10:30',
     latePenalty: {
       type: 'fixed',
-      amount: 1000
+      amount: 0
     },
     absentPenalty: {
       type: 'fixed',
-      amount: 3000
+      amount: 0
     }
   },
   overtime: {
-    enabled: true,
+    enabled: false,
     rateType: 'percentage',
-    rateValue: 150,
-    maxHoursPerPeriod: 20
+    rateValue: 0,
+    maxHoursPerPeriod: 0
   },
-  salaryByLevel: [
-    { level: 'Junior', monthly: 4500, daily: 200 },
-    { level: 'Mid-level', monthly: 5500, daily: 250 },
-    { level: 'Senior', monthly: 6500, daily: 300 },
-    { level: 'Contract', monthly: 0, daily: 180 }
-  ]
-};
-
-attendanceOverrides: Record<number, AttendanceSummary> = {
-  1: { lateDays: 1, absentDays: 0 },
-  2: { lateDays: 0, absentDays: 1 },
-  4: { lateDays: 2, absentDays: 0 },
-  8: { lateDays: 0, absentDays: 2 }
-};
-
-overtimeOverrides: Record<number, number> = {
-  1: 4,
-  3: 2,
-  6: 5,
-  9: 3
+  salaryByLevel: []
 };
 
  payrollColumns: TableColumn[] = [
@@ -397,17 +381,25 @@ private buildEmployeeFullName(employee: any): string {
 }
 
  
+  /** Generates the run the menu item names: the current month (1–12) and year. Empty filters mean everyone. */
   generatePayrollSummary() {
+    if (this.triggeredGeneration) return;
     this.triggeredGeneration = true;
     const payload = {
-        month: 0,
-        year: 0,
+        month: this.currentMonth,
+        year: this.currentYear,
         employeeIds: [],
         level: [],
         department: []
     }
 
-    this.payrollService.postGeneratePayroll(payload).subscribe({
+    this.payrollService.postGeneratePayroll(payload).pipe(
+      // The run's outcome shouldn't wait on the notification email: refresh and unlock the button now.
+      finalize(() => {
+        this.triggeredGeneration = false;
+        this.generatePayrolls();
+      })
+    ).subscribe({
      next: (response: Payroll) => {
         console.log(response)
         if(response && response.employees.length){
@@ -448,12 +440,7 @@ private buildEmployeeFullName(employee: any): string {
                     </div>
                 `
             }
-            this.mailNotificationService.sendMail(mailBody).subscribe({
-                next: mailResponse => {
-                      this.triggeredGeneration = false;
-                      this.generatePayrolls()
-                },
-            })
+            this.mailNotificationService.sendMail(mailBody).subscribe({ error: () => {} })
           
         }
         else {
@@ -494,15 +481,17 @@ private buildEmployeeFullName(employee: any): string {
                     </div>
                 `
             }
-            this.mailNotificationService.sendMail(mailBody).subscribe({
-                next: mailResponse => {
-                      this.triggeredGeneration = false;
-                },
-            })  
+            this.mailNotificationService.sendMail(mailBody).subscribe({ error: () => {} })  
 
         }
      },
      error: err => {
+        this.messageService.add({
+            severity: 'error',
+            summary: 'Generation failed',
+            detail: err?.error?.message || `Payroll for ${this.currentMonthName} ${this.currentYear} could not be generated. Please try again.`,
+            key: this.toastKey
+        });
         const mailBody = {
                 name: `${this.currentUser.firstName} ${this.currentUser.lastName}` || 'there',
                 recieverEmail: this.currentUser.email || '',
@@ -537,11 +526,7 @@ private buildEmployeeFullName(employee: any): string {
 
                 `
             }
-            this.mailNotificationService.sendMail(mailBody).subscribe({
-                next: mailResponse => {
-                      this.triggeredGeneration = false;
-                },
-            })  
+            this.mailNotificationService.sendMail(mailBody).subscribe({ error: () => {} })  
 
      }
     })
@@ -1124,7 +1109,7 @@ private buildEmployeeFullName(employee: any): string {
   }
 
   private getAttendanceSummary(employee: any): AttendanceSummary {
-    return employee.attendanceSummary ?? this.attendanceOverrides[employee.id] ?? { lateDays: 0, absentDays: 0 };
+    return employee.attendanceSummary ?? { lateDays: 0, absentDays: 0 };
   }
 
   private resolvePenaltyAmount(penalty: { type: PenaltyType; amount: number }, dailyRate: number): number {
@@ -1144,9 +1129,11 @@ private buildEmployeeFullName(employee: any): string {
   }
 
   private calculateOvertimePay(employee: any, basePay: number, payType: PayType): { overtimePay: number; overtimeHours: number } {
-    if (!this.payrollSettings.overtime.enabled) return { overtimePay: 0, overtimeHours: 0 };
-    const overrideHours = this.overtimeOverrides[employee.id] ?? 0;
-    const overtimeHours = Math.min(employee.overtimeHours ?? overrideHours, this.payrollSettings.overtime.maxHoursPerPeriod);
+    // Overtime the server already paid (the run's overtimePay) is kept; the browser adds none of its own.
+    if (!this.payrollSettings.overtime.enabled) {
+      return { overtimePay: Number(employee.overtimePay) || 0, overtimeHours: Number(employee.overtimeHours) || 0 };
+    }
+    const overtimeHours = Math.min(employee.overtimeHours ?? 0, this.payrollSettings.overtime.maxHoursPerPeriod);
     if (!overtimeHours) return { overtimePay: 0, overtimeHours: 0 };
     const hourlyRate = this.getHourlyRate(employee, payType, basePay);
     if (!hourlyRate) return { overtimePay: 0, overtimeHours: 0 };
@@ -1157,6 +1144,8 @@ private buildEmployeeFullName(employee: any): string {
   }
 
   private calculateBasePay(employee: any, payType: PayType): number {
+    // The run's own base pay is authoritative; the rest only applies to rows without one.
+    if (typeof employee.basePay === 'number') return employee.basePay;
     if (payType === 'project') {
       if (employee.totalProjectPay) return employee.totalProjectPay;
       return (employee.projects || []).reduce((sum: number, project: any) => sum + (project.projectPay || 0), 0);
@@ -1207,7 +1196,7 @@ private buildEmployeeFullName(employee: any): string {
             deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
         }
 
-        const loanDeductions = await this.payrollLoanDeductionService.getLoanDeductionsForEmployee(employee, this.selectedMonth, this.selectedYear);
+        const loanDeductions = await this.payrollLoanDeductionService.getLoanDeductionsForEmployee(employee, this.selectedMonthNumber, Number(this.selectedYear));
         loanDeductions.forEach((deduction: { amount: number; reason: string }) => {
             deductions.push({
                 amount: deduction.amount,
@@ -1446,7 +1435,7 @@ private buildEmployeeFullName(employee: any): string {
         try {
             // Use getLoanDeductionsForPayroll for batch deduction
 
-            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(this.currentPayroll, this.selectedMonth, Number(this.selectedYear)));
+            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(this.currentPayroll, this.selectedMonthNumber, Number(this.selectedYear)));
             if (options.showNoDataMessage || (Array.isArray(result) && result.length > 0)) {
                 this.loanDeductionSyncMessage = `Loan deductions sync complete: ${Array.isArray(result) ? result.length : 0} employees processed.`;
             }
@@ -1572,6 +1561,11 @@ download(format: string) {
 }
 
 
+
+  /** The selected month as 1–12. `selectedMonth` holds the name ("January"); loan schedules use numbers. */
+  private get selectedMonthNumber(): number {
+    return this.monthNames.indexOf(this.selectedMonth) + 1;
+  }
 
   private activeOnly(emps: any[]): any[] {
     return emps.filter((e: any) =>

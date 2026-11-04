@@ -6,6 +6,16 @@ import { LoanService } from './loan/loan.service';
 import { CooperativeService } from './loan/cooperative-loan/cooperative.service';
 import { forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
+/** The employee id on a payroll row. Rows nest the employee, so `row.id` is the payroll row's own id. */
+function payrollEmployeeId(row: any): any {
+  return row?.employee?.id ?? row?.employeeId ?? row?.id;
+}
+
+/** Payroll only takes repayments set up as payroll deductions; transfers and cash were already paid. */
+function isPayrollDeduction(payment: any): boolean {
+  return (payment?.paymentMethod ?? payment?.modeofPayment) === 'PAYROLL_DEDUCTION';
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -31,13 +41,13 @@ export class PayrollLoanDeductionService {
         return payrollRecords.map(employee => {
           // Advance Loan Deductions
           const employeeAdvanceLoans = (advanceLoans || []).filter((loan: AdvanceLoan) =>
-            loan.employee?.id === employee.id && loan.status === 'ACTIVE'
+            String(loan.employee?.id) === String(payrollEmployeeId(employee)) && loan.status === 'ACTIVE'
           );
           let advanceLoanDeduction = 0;
           employeeAdvanceLoans.forEach(loan => {
             const payment = (loan.paymentHistory || []).find((ph: AdvanceLoanPaymentHistory) => {
               const paidAt = new Date(ph.paidAt);
-              return paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
+              return isPayrollDeduction(ph) && paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
             });
             if (payment) {
               advanceLoanDeduction += payment.totalAmount || 0;
@@ -46,13 +56,13 @@ export class PayrollLoanDeductionService {
           // Cooperative Loan Deductions
           const employeeCoopLoans = (cooperativeLoans || []).filter((loan: CooperativeLoan) => {
             // cooperativeMemberId is string|number, match to employee.id
-            return String(loan.cooperativeMemberId) === String(employee.id) && loan.status === 'ACTIVE';
+            return String(loan.cooperativeMemberId) === String(payrollEmployeeId(employee)) && loan.status === 'ACTIVE';
           });
           let coopLoanDeduction = 0;
           employeeCoopLoans.forEach(loan => {
             const payment = (loan.paymentHistory || []).find((ph: PaymentHistory) => {
               const paidAt = new Date(ph.paidAt);
-              return paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
+              return isPayrollDeduction(ph) && paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
             });
             if (payment && payment.status === 'PENDING') {
               coopLoanDeduction += payment.amount || 0;
@@ -89,14 +99,14 @@ export class PayrollLoanDeductionService {
       return payrollRecords.map(employee => {
         // Find loans for this employee
         const employeeLoans = loans.filter(loan =>
-          loan.employee?.id === employee.id && loan.status === 'ACTIVE'
+          String(loan.employee?.id) === String(payrollEmployeeId(employee)) && loan.status === 'ACTIVE'
         );
         let loanDeduction = 0;
         employeeLoans.forEach(loan => {
           // Find payment for this month/year
           const payment = (loan.paymentHistory || []).find((ph: AdvanceLoanPaymentHistory) => {
             const paidAt = new Date(ph.paidAt);
-            return paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
+            return isPayrollDeduction(ph) && paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
           });
           if (payment) {
             loanDeduction += payment.totalAmount || 0;
@@ -118,13 +128,13 @@ export class PayrollLoanDeductionService {
     // Advance Loans
     const advanceLoans = await firstValueFrom(this.loanService.getAllAdvanceLoans());
     const employeeAdvanceLoans = (advanceLoans || []).filter((loan: any) =>
-      loan.employee?.id === employee.id && loan.status === 'ACTIVE'
+      String(loan.employee?.id) === String(payrollEmployeeId(employee)) && loan.status === 'ACTIVE'
     );
     let advanceDeductions: { amount: number; reason: string; dueDate?: string }[] = [];
     employeeAdvanceLoans.forEach((loan: any) => {
       const payment = (loan.paymentHistory || []).find((ph: any) => {
         const paidAt = new Date(ph.paidAt);
-        return paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
+        return isPayrollDeduction(ph) && paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
       });
         if (payment) {
           advanceDeductions.push({ amount: payment.totalAmount || 0, reason: 'Advance Loan Repayment', dueDate: payment.paidAt });
@@ -134,13 +144,13 @@ export class PayrollLoanDeductionService {
     // Cooperative Loans
     const cooperativeLoans = await firstValueFrom(this.cooperativeService.getLoans());
     const employeeCoopLoans = (cooperativeLoans || []).filter((loan: any) =>
-      String(loan.cooperativeMemberId) === String(employee.id) && loan.status === 'ACTIVE'
+      String(loan.cooperativeMemberId) === String(payrollEmployeeId(employee)) && loan.status === 'ACTIVE'
     );
     let coopDeductions: { amount: number; reason: string; dueDate?: string }[] = [];
     employeeCoopLoans.forEach((loan: any) => {
       const payment = (loan.paymentHistory || []).find((ph: any) => {
         const paidAt = new Date(ph.paidAt);
-        return paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
+        return isPayrollDeduction(ph) && paidAt.getFullYear() === year && paidAt.getMonth() + 1 === month;
       });
       if (payment && payment.status === 'PENDING') {
         coopDeductions.push({ amount: payment.amount || 0, reason: 'Cooperative Loan Repayment', dueDate: payment.paidAt });

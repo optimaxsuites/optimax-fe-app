@@ -6,6 +6,7 @@ import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/lo
 import { AdvancePaymentRecordService, CreatePaymentRecordPayload } from '../../../service/loan/loan-payment-record.service';
 import { PaymentConfigService, BankAccountDetails } from '../../../service/loan/loan-payment-config.service';
 import { formatNaira } from '../../../service/loan/loan-format.util';
+import { PAYROLL_DEDUCTION, REPAYMENT_METHODS, RepaymentMethodOption, payrollDeductionReference, payrollPeriodLabel } from '../repayment-methods';
 
 @Component({
   selector: 'app-payment-modal',
@@ -24,6 +25,8 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
   isLoading = false;
   messages: Message[] = [];
   selectedLoanId = '';
+  readonly repaymentMethods = REPAYMENT_METHODS;
+  readonly payrollPeriod = payrollPeriodLabel();
   
   paymentTypes = [
     { value: 'PRINCIPAL_REPAYMENT', label: 'Principal Payment', icon: 'fas fa-money-bill-wave', description: 'Pay towards the principal amount' },
@@ -58,9 +61,10 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
     return this.fb.group({
       paymentType: ['PRINCIPAL_REPAYMENT', Validators.required],
       amount: [{ value: 0, disabled: true }, Validators.required],
-      paymentMethod: ['BANK_TRANSFER', Validators.required],
-      paymentReference: ['', Validators.required],
-      paidFromAccount: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
+      paymentMethod: [PAYROLL_DEDUCTION, Validators.required],
+      // Only needed for methods paid outside payroll; payroll deductions fill these in themselves.
+      paymentReference: [''],
+      paidFromAccount: ['', Validators.pattern('^[0-9]{4}$')],
       notes: ['']
     });
   }
@@ -216,6 +220,14 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
     return selected?.label || 'Payment';
   }
 
+  get isPayrollDeduction(): boolean {
+    return this.paymentForm.get('paymentMethod')?.value === PAYROLL_DEDUCTION;
+  }
+
+  selectRepaymentMethod(method: RepaymentMethodOption): void {
+    if (method.available) this.paymentForm.get('paymentMethod')?.setValue(method.value);
+  }
+
   onSubmit(): void {
     if (this.isLoading) {
       return;
@@ -245,8 +257,10 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
       installmentNumber: currentInstallment?.installmentNo || 0,
       amount: this.selectedAmountDue,
       paymentMethod: formValue.paymentMethod,
-      paymentReference: formValue.paymentReference,
-      paidFromAccount: formValue.paidFromAccount,
+      paymentReference: this.isPayrollDeduction
+        ? payrollDeductionReference(this.currentLoan.loanCode || this.currentLoan.id, currentInstallment?.installmentNo)
+        : formValue.paymentReference,
+      paidFromAccount: this.isPayrollDeduction ? 'PAYROLL' : formValue.paidFromAccount,
       notes: formValue.notes
     };
 
@@ -255,8 +269,10 @@ export class LoanPaymentModalComponent implements OnInit, OnChanges {
         this.isLoading = false;
         this.messages = [{
           severity: 'success',
-          summary: 'Payment Recorded',
-          detail: `Your ${this.selectedPaymentTypeLabel} of ${this.formatCurrency(this.selectedAmountDue)} has been recorded.`
+          summary: this.isPayrollDeduction ? 'Deduction Scheduled' : 'Payment Recorded',
+          detail: this.isPayrollDeduction
+            ? `${this.formatCurrency(this.selectedAmountDue)} (${this.selectedPaymentTypeLabel.toLowerCase()}) will be deducted from your ${this.payrollPeriod} salary.`
+            : `Your ${this.selectedPaymentTypeLabel} of ${this.formatCurrency(this.selectedAmountDue)} has been recorded.`
         }];
         setTimeout(() => {
           this.paymentSuccess.emit();
