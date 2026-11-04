@@ -1,5 +1,6 @@
 {
   "buildCommand": "npm run build:prod",
+  "installCommand": "npm ci --ignore-scripts",
   "outputDirectory": "dist/erp-fe/browser",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
