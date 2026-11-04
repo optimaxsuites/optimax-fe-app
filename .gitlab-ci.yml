@@ -1,5 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # OptimaX Frontend — GitLab CI/CD
+# mod  branch → build + publish dist + docker build/push
 # test branch → build + publish dist + docker build/push + deploy to test server (Docker, manual)
 # prod branch → build + publish dist + docker build/push + deploy to prod     (Kubernetes, manual)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +33,7 @@ build-frontend:
       - dist/
     expire_in: 1 hour
   rules:
-    - if: '$CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
+    - if: '$CI_COMMIT_BRANCH == "mod" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
 
 build-and-push:
   stage: build
@@ -47,7 +48,7 @@ build-and-push:
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
+    - if: '$CI_COMMIT_BRANCH == "mod" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
 
 publish-dist:
   stage: publish
@@ -62,7 +63,7 @@ publish-dist:
         --upload-file frontend-dist.tar.gz \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/frontend/${CI_COMMIT_REF_SLUG}/frontend-dist.tar.gz"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
+    - if: '$CI_COMMIT_BRANCH == "mod" || $CI_COMMIT_BRANCH == "test" || $CI_COMMIT_BRANCH == "prod"'
 
 deploy-test:
   stage: deploy
@@ -80,7 +81,7 @@ deploy-test:
         set -e
         cd $MOD_DEPLOY_PATH
         docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-        docker pull $CI_REGISTRY_IMAGE:test
+        docker pull $CI_REGISTRY_IMAGE:mod
         docker compose up -d --no-build frontend
         docker image prune -f
       "
@@ -89,7 +90,7 @@ deploy-test:
   tags:
     - optimax_runner
   rules:
-    - if: '$CI_COMMIT_BRANCH == "test"'
+    - if: '$CI_COMMIT_BRANCH == "mod" || $CI_COMMIT_BRANCH == "test"'
       when: manual
 
 deploy-prod:
@@ -109,4 +110,3 @@ deploy-prod:
   rules:
     - if: '$CI_COMMIT_BRANCH == "prod"'
       when: manual
-

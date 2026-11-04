@@ -6,7 +6,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build ERP-FE --configuration production",
+    "build": "ng build ERP-FE",
+    "build:prod": "node --max-old-space-size=4096 node_modules/@angular/cli/bin/ng build ERP-FE --configuration production",
+    "watch": "ng build ERP-FE --watch --configuration development",
     "test": "ng test",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
