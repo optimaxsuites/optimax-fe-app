@@ -79,6 +79,8 @@ export class PreOnboardingImportComponent implements OnDestroy {
   }
 
   // ── Extraction pipeline ─────────────────────────────────────────────────────
+  // PDF-to-image conversion is handled server-side (PdfImageUtil / PDFBox).
+  // The frontend sends the raw file for all types — no client-side pdfjs needed.
   async handleFile(file: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowed.includes(file.type)) {
@@ -92,30 +94,26 @@ export class PreOnboardingImportComponent implements OnDestroy {
     this.setPreviewUrl(null);
 
     try {
-      let imageFile: File;
-
-      if (file.type === 'application/pdf') {
-        this.progressLabel = 'Rendering PDF page...';
-        this.progress = 20;
-        const blob = await this.pdfFirstPageToBlob(file);
-        this.setPreviewUrl(URL.createObjectURL(blob));
-        imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
-      } else {
-        imageFile = file;
+      // Images get an inline preview; PDFs are rendered server-side so no preview here.
+      if (file.type !== 'application/pdf') {
         this.setPreviewUrl(URL.createObjectURL(file));
       }
 
       this.progressLabel = 'Reading form with AI...';
-      this.progress = 50;
+      this.progress = 30;
 
       const form = new FormData();
-      form.append('file', imageFile);
+      form.append('file', file);
 
       let result: any;
       try {
         result = await firstValueFrom(this.http.post<any>(this.extractUrl, form));
       } catch (httpErr: any) {
-        const msg = httpErr?.error?.message ?? httpErr?.error ?? httpErr?.message ?? String(httpErr);
+        const isNetwork = httpErr?.status === 0 || httpErr?.error instanceof ProgressEvent;
+        const msg = httpErr?.error?.message
+          ?? (typeof httpErr?.error === 'string' ? httpErr.error : null)
+          ?? httpErr?.message
+          ?? (isNetwork ? `Could not reach the server. Please check your connection.` : `HTTP ${httpErr?.status ?? '?'}`);
         this.error = `Extraction request failed: ${msg}`;
         this.state = 'upload';
         console.error('extract-form HTTP error', httpErr);
@@ -141,45 +139,6 @@ export class PreOnboardingImportComponent implements OnDestroy {
     }
   }
 
-  // ── PDF → JPEG ──────────────────────────────────────────────────────────────
-  /**
-   * Loads pdf.js from the pdfjs-dist package the first time a PDF is dropped. Its worker code is
-   * loaded into the page too (`globalThis.pdfjsWorker`), so parsing runs on the main thread and no
-   * separate worker file has to be served; for one page of a form that only takes a moment.
-   * The legacy build is used because the modern one needs very recent browsers (Chrome 122+,
-   * Safari 18.4+) and fails outright on anything older.
-   */
-  private async loadPdfJs() {
-    const [pdfjs, worker] = await Promise.all([
-      import('pdfjs-dist/legacy/build/pdf.mjs'),
-      import('pdfjs-dist/legacy/build/pdf.worker.min.mjs'),
-    ]);
-    (globalThis as any).pdfjsWorker ??= worker;
-    return pdfjs;
-  }
-
-  private async pdfFirstPageToBlob(file: File): Promise<Blob> {
-    const pdfjs = await this.loadPdfJs();
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
-    try {
-      const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2.5 });
-
-      const canvas = document.createElement('canvas');
-      canvas.width  = viewport.width;
-      canvas.height = viewport.height;
-      // The main app installs pdfjs 4 (needs canvasContext); this project declares pdfjs 6 (uses canvas).
-      const renderParams: any = { canvas, canvasContext: canvas.getContext('2d'), viewport };
-      await page.render(renderParams).promise;
-
-      return await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.95);
-      });
-    } finally {
-      await loadingTask.destroy();
-    }
-  }
 
   // ── Map AI response → ImportedEmployeeData ─────────────────────────────────
   private mapResult(r: any): ImportedEmployeeData {

@@ -123,6 +123,7 @@
         <form class="form" (ngSubmit)="userLoginAction()" novalidate>
 
           <div class="field" [class.has-error]="submitted && !loginInfo.username">
+
             <label class="field-label" for="lUsername">Username</label>
             <div class="input-wrap">
               <span class="input-icon">
@@ -199,6 +200,13 @@
             <span>Using a shared workstation?</span>
             <button type="button" class="mode-btn" (click)="toggleLoginMode()">
               Switch to PIN mode
+            </button>
+          </div>
+
+          <div class="mode-row" *ngIf="isDesktop">
+            <span>Wrong workspace or server?</span>
+            <button type="button" class="mode-btn" (click)="changeWorkspace()">
+              Change workspace
             </button>
           </div>
 

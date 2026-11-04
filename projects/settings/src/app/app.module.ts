@@ -113,6 +113,7 @@ import { ImageViewerDialogComponent } from './ui/view/bug-tracker/image-viewer-d
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
+import { AppUpdatesComponent } from './ui/view/app-updates/app-updates.component';
 import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
@@ -174,6 +175,7 @@ import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.com
     CrmSettingsComponent,
     FinanceSettingsComponent,
     FinancePeriodCloseComponent,
+    AppUpdatesComponent,
   ],
   imports: [
     // BrowserModule,

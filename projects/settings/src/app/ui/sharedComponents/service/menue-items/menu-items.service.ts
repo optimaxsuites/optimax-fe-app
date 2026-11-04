@@ -1016,6 +1016,15 @@ export class MenuItemsService {
       description: 'Track, manage and resolve bugs and issues across all OptimaX modules.',
       submenu: [],
     },
+    {
+      label: 'Updates & Version',
+      code: 'APP_UPDATES',
+      route: this.navigationLink.getLink('appUpdates'),
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-arrow-circle-up',
+      description: 'Check for app updates, view release notes, and manage your installed version.',
+      submenu: [],
+    },
   ];
 
   appList = []
@@ -1163,7 +1172,7 @@ export class MenuItemsService {
 
   getUnlockedSettingsModules(): MenuItem[] {
     const isAdmin = this.isSuperUser();
-    const alwaysShowAll = ['General Settings', 'Bug Tracker'];
+    const alwaysShowAll = ['General Settings', 'Bug Tracker', 'Updates & Version'];
     const adminOnly = ['User and Roles Management', 'Module Registry'];
     return this.settingsMenuItems.filter(module => {
       if (adminOnly.includes(module.label)) return isAdmin;

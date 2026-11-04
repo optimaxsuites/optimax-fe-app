@@ -24,7 +24,8 @@ export interface TableAction<T = any> {
 @Component({
   selector: 'app-table',
   templateUrl: './table.component.html',
-  styleUrl: './table.component.scss'
+  styleUrl: './table.component.scss',
+  standalone: false
 })
 export class TableComponent {
   @Input() columns: TableColumn[] = [];

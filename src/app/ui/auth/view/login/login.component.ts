@@ -62,6 +62,10 @@ export class LoginComponent implements OnInit {
   pendingRedirectLabel = '';
   vendorSignupUrl = '';
   
+  isDesktop = typeof (window as any).__TAURI_INTERNALS__ !== 'undefined'
+           || window.location.hostname.includes('localhost')
+           || window.location.hostname.includes('127.0.0.1');
+
   // New state variable to toggle between login modes
   isCodeLogin: boolean = false;
   
@@ -219,6 +223,10 @@ export class LoginComponent implements OnInit {
     this.posCodeDisplay = '';
     this.submitted = false;
   }
+
+  changeWorkspace(): void {
+    this.router.navigate(['/workspace-setup']);
+  }
   
  
 async posLoginAction(): Promise<void> {
@@ -238,6 +246,10 @@ async posLoginAction(): Promise<void> {
   this.loading = false;
   return;
  }
+
+ // Ensure workspaceId is in sessionStorage for this session (set by WorkspaceSetupComponent)
+ const ws = localStorage.getItem('workspaceId') || 'optimax';
+ sessionStorage.setItem('workspaceId', ws);
 
  try {
   const data = await this.authenticationService.userLogin(loginDetails).toPromise();

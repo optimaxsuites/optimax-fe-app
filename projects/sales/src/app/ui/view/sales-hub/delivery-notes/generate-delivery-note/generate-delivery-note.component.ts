@@ -3,14 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Observable, Subject, forkJoin, of, takeUntil, lastValueFrom } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { SalesService } from '../../../../service/sales/sales.service';
 import { SalesEmailService } from '../../../../service/sales/sales-email.service';
 import { Customer, SalesDeliveryNote, SalesLpo, MerchantInfo, Quote, QuoteDocumentAttachment, SendSalesEmailRequest } from '../../../../domain/sales/sales.dto';
 import { formatApiDate, parseApiDate } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
-import { TemplateTypesComponent, QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
+import { TemplateTypesComponent } from '../../template-types/template-types.component';
+import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/quote-templates.config';
 import { SendEmailModalComponent } from '../../send-email-modal/send-email-modal.component';
 import { SalesDocumentEmailService, renderElementToPdf } from '../../../../service/sales/sales-document-email.service';
 import { MessageModule } from 'primeng/message';
@@ -61,6 +62,8 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
   lpoFileName = '';
   /** Legacy LPO file kept on the quote, from before /sales-lpos/{id}/upload-document existed. */
   private lpoFile: QuoteDocumentAttachment | null = null;
+  private lpoFileRaw: File | null = null;
+  private lpoFileSize?: number;
   /** The file picked in this visit, not uploaded yet — cleared once it is, so an unchanged
    *  file isn't uploaded again. */
   private lpoUpload: File | null = null;
@@ -225,12 +228,21 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
     const file: File | undefined = event.target.files?.[0];
     if (!file) return;
     this.lpoFileName = file.name;
+    this.lpoFileSize = file.size;
+    this.lpoFileRaw = file;
     this.lpoUpload = file;
+    this.lpoFile = {
+      fileName: file.name,
+      base64Content: '',
+      contentType: file.type || 'application/pdf',
+      uploadedAt: new Date()
+    };
   }
 
-  /** Creates/updates the quote's SalesLpo, then uploads a newly picked file to it — shared by
-   *  Continue and Save Draft on step 1. The record is kept before the upload, so a failed upload
-   *  retries against the same LPO instead of creating another. */
+  /** Creates/updates the quote's SalesLpo, then uploads a newly picked file to the dedicated
+   *  endpoint — avoids embedding base64 in the quote PUT which causes ERR_CONNECTION_CLOSED on
+   *  large PDFs. The record is kept before the upload, so a failed upload retries against the
+   *  same LPO instead of creating another. Shared by Continue and Save Draft on step 1. */
   private saveLpo(): Observable<SalesLpo | null> {
     const upload = this.lpoUpload;
     let record$: Observable<SalesLpo>;
@@ -251,8 +263,10 @@ export class GenerateDeliveryNoteComponent implements OnInit, OnDestroy {
         this.salesService.uploadSalesLpoDocument(lpo.id, upload).pipe(
           map(uploaded => {
             if (this.lpoUpload === upload) this.lpoUpload = null;
+            this.lpoFileRaw = null;
             return this.lpo = { ...lpo, ...uploaded };
-          })
+          }),
+          catchError(() => of(lpo))
         ))
     );
   }

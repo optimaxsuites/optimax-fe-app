@@ -144,6 +144,7 @@ import { ManageUserFormComponent } from './ui/pos/view/manage-user-form/manage-u
 import { ModalComponent } from './ui/shared/view/modal/modal.component';
 import { CommisionComponent } from './ui/pos/view/commision/commision.component';
 import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
+import { TauriHttpInterceptor } from './ui/auth/service/tauri-http.interceptor';
 import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
 //import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
 import { ButtonComponent } from './ui/shared/view/button/button.component';
@@ -261,6 +262,7 @@ import { TenantInit } from './ui/tenants/service/tenant-init.service';
 import { MenuModule } from 'primeng/menu';
 import { VendorSignupComponent } from './ui/auth/view/vendor-signup/vendor-signup.component';
 import { VendorPendingComponent } from './ui/auth/view/vendor-pending/vendor-pending.component';
+import { WorkspaceSetupComponent } from './ui/auth/view/workspace-setup/workspace-setup.component';
 
 
 const dbConfig: DBConfig = {
@@ -502,6 +504,7 @@ const dbConfig: DBConfig = {
     ReminderBellComponent,
     VendorSignupComponent,
     VendorPendingComponent,
+    WorkspaceSetupComponent,
     //  EstimatedDeliveryPipe
 
   ],
@@ -588,6 +591,11 @@ const dbConfig: DBConfig = {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TauriHttpInterceptor,
       multi: true,
     },
     {

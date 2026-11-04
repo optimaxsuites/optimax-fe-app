@@ -1,0 +1,133 @@
+prod.optimaxsuites.com {                                                                                                                                                                                                                                
+      header {                                                                                                                                                                                                                                            
+          Strict-Transport-Security max-age=31536000;                                                                                                                                                                                                     
+      }                                                                                                                                                                                                                                                   
+      tls {                                                                                                                                                                                                                                               
+          dns cloudflare {env.CLOUDFLARE_API_TOKEN}                                                                                                                                                                                                       
+      }                                                                                                                                                                                                                                                   
+      encode zstd gzip                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                          
+      handle /x/api/v2/* {                                                                                                                                                                                                                                
+          reverse_proxy localhost:31000 {                                                                                                                                                                                                                 
+              header_up Host {host}                                                                                                                                                                                                                       
+              header_up X-Forwarded-Host {host}                                                                                                                                                                                                           
+              header_up X-Real-IP {remote_host}                                                                                                                                                                                                           
+              header_up X-Forwarded-For {remote_host}                                                                                                                                                                                                     
+              header_up X-Forwarded-Proto {scheme}                                                                                                                                                                                                        
+          }                                                                                                                                                                                                                                               
+      }                                                                                                                                                                                                                                                   
+                                                                                                                                                                                                                                                          
+      handle {                                                                                                                                                                                                                                            
+          reverse_proxy localhost:31080                                                                                                                                                                                                                   
+      }                                                                                                                                                                                                                                                   
+  }   
+
+dhis2.optimaxsuites.com {
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    encode zstd gzip
+
+    reverse_proxy dhis2-app:8080 {
+        header_up Host {host}
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
+
+nhmis.optimaxsuites.com {
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    encode zstd gzip
+
+    handle /api/* {
+        reverse_proxy nhmis-gateway:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle /oauth/* {
+        reverse_proxy nhmis-gateway:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle /swagger-ui/* {
+        reverse_proxy nhmis-gateway:3000
+    }
+
+    handle /v3/api-docs* {
+        reverse_proxy nhmis-gateway:3000
+    }
+
+    handle /webjars/* {
+        reverse_proxy nhmis-gateway:3000
+    }
+
+    handle {
+        reverse_proxy nhmis-portal:8080
+    }
+   
+}
+staging.optimaxsuites.com {
+    header {
+        Strict-Transport-Security max-age=31536000;
+    }
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+    encode zstd gzip
+
+    handle /x/api/v2/* {
+        reverse_proxy optimax-gateway:1000 {
+            header_up Host {host}
+            header_up X-Forwarded-Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle {
+        reverse_proxy optimax-frontend:8090
+    }
+}
+dev.optimaxsuites.com {
+
+    header {
+        Strict-Transport-Security max-age=31536000;
+    }
+
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    encode zstd gzip
+
+    reverse_proxy optimax-frontend:80
+}

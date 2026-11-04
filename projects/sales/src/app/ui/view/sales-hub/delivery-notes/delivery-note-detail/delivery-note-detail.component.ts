@@ -12,7 +12,7 @@ import { ViewableDocument, downloadDocument, hasDocumentContent } from '../../..
 import { formatApiDate, formatApiDateTime } from '../../../../service/sales/date.util';
 import { BackButtonComponent } from '../../../../shared-component/view/back-button/back-button.component';
 import { DeliveryNoteDocumentComponent } from '../delivery-note-document/delivery-note-document.component';
-import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/template-types.component';
+import { QuoteTemplate, QUOTE_TEMPLATES } from '../../template-types/quote-templates.config';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
