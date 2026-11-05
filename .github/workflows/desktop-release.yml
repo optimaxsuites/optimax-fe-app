@@ -3,11 +3,11 @@ name: Desktop Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'   # e.g. v2026.11.02
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # e.g. v26.11.5
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g. v2026.11.02)'
+        description: 'Version tag (e.g. v26.11.5)'
         required: true
 
 permissions:

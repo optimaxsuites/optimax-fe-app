@@ -370,6 +370,16 @@ export class HeaderStateService {
     let obj: any = val;
     if (typeof val === 'string') {
       const trimmed = val.trim();
+      if (
+        trimmed.includes('__receiptSignal') ||
+        trimmed.includes('__callSignal') ||
+        trimmed.includes('DELIVERY_RECEIPT') ||
+        trimmed.includes('READ_RECEIPT') ||
+        trimmed.includes('"type":"RECEIPT"') ||
+        trimmed.includes('"receiptStatus"')
+      ) {
+        return true;
+      }
       if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
         return false;
       }
@@ -384,13 +394,14 @@ export class HeaderStateService {
       const signalTypes = [
         'CALL_SIGNAL', 'CALL', 'VIDEO_CALL', 'CALL_STATUS', 'SEEN', 'READ',
         'PLAYED', 'TYPING', 'PRESENCE', 'OFFER', 'ANSWER', 'CANDIDATE',
-        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG'
+        'BYE', 'ICE_CANDIDATE', 'SDP', 'ACK', 'PING', 'PONG',
+        'DELIVERY_RECEIPT', 'READ_RECEIPT', 'RECEIPT_SIGNAL', 'RECEIPT', 'DELIVERY'
       ];
-      if (signalTypes.includes(type)) return true;
-      if (obj.callStatus || obj.__signal || obj.__optimaxReadReceipt) return true;
+      if (signalTypes.includes(type) || type.includes('RECEIPT') || type.includes('SIGNAL')) return true;
+      if (obj.callStatus || obj.__signal || obj.__optimaxReadReceipt || obj.__receiptSignal || obj.receiptStatus) return true;
       if (obj.payload && typeof obj.payload === 'object') {
         const pType = (obj.payload.type || obj.payload.callType || obj.payload.callStatus || '').toString().toUpperCase();
-        if (signalTypes.includes(pType) || obj.payload.callStatus) return true;
+        if (signalTypes.includes(pType) || pType.includes('RECEIPT') || pType.includes('SIGNAL') || obj.payload.callStatus) return true;
       }
     }
     return false;
@@ -400,6 +411,17 @@ export class HeaderStateService {
     if (val == null) return fallback;
     let raw = typeof val === 'string' ? val.trim() : this.stringifyNotificationField(val, fallback);
     if (!raw) return fallback;
+
+    if (
+      raw.includes('__receiptSignal') ||
+      raw.includes('__callSignal') ||
+      raw.includes('DELIVERY_RECEIPT') ||
+      raw.includes('READ_RECEIPT') ||
+      raw.includes('"type":"RECEIPT"') ||
+      raw.includes('"receiptStatus"')
+    ) {
+      return '';
+    }
 
     if (raw.startsWith('{') && raw.endsWith('}')) {
       try {
