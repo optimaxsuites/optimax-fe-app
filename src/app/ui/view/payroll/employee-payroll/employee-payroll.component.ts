@@ -1,7 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
-import { finalize, firstValueFrom } from 'rxjs';
+import { catchError, finalize, firstValueFrom, from, map, mergeMap, of, toArray } from 'rxjs';
+import { buildPayslipEmailHtml, payslipEmailAddress, periodLabel, toPayslip } from '../payslip.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
@@ -258,6 +259,10 @@ constructor(   private employeeService: EmployeeService,  private sanitizer: Dom
       { label: 'Download Bank CSV',
         icon: 'pi pi-download',
         command: () => this.downloadBankCSV()
+      },
+      { label: 'Email Payslips',
+        icon: 'pi pi-envelope',
+        command: () => this.emailPayslips(this.payrollInView)
       }
     ];
      
@@ -290,7 +295,8 @@ formatCurrency(value: number | null | undefined): string {
   return value < 0 ? `- ${formatted}` : formatted;
 }
 
-generatePayrolls(){
+/** `onLoaded` runs with the fresh runs once they arrive (used after an approval). */
+generatePayrolls(onLoaded?: (records: any[]) => void){
     this.isLoadingPayroll = true;
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
@@ -317,6 +323,7 @@ generatePayrolls(){
             this.selectedMonth = this.months[this.months.length - 1];
             this.selectedYear = this.years[this.years.length - 1];
             this.filteredEmployeePayroll = this.activeOnly(this.payrollInView?.employees ?? []);
+            onLoaded?.(records);
         },
         error: err => {
           console.log(err);
@@ -1653,6 +1660,99 @@ download(format: string) {
       const file = event.target.files?.[0];
       this.selectedFile = file ?? null;
     }
+    // ── Payslip emails ─────────────────────────────────────────────────────────
+    emailingPayslips = false;
+    private static readonly EMAILED_RUNS_KEY = 'payroll.payslipsEmailedRuns';
+
+    private isRunFullyApproved(run: any): boolean {
+      const status = String(run?.payrollApprovalInstance?.status || run?.status || '').toUpperCase();
+      return ['APPROVED', 'COMPLETED', 'PAID'].includes(status);
+    }
+
+    /** Runs whose payslips went out from this browser, so a refresh after approval doesn't send twice. */
+    private emailedRuns(): Record<string, string> {
+      try { return JSON.parse(localStorage.getItem(EmployeePayrollComponent.EMAILED_RUNS_KEY) || '{}') || {}; } catch { return {}; }
+    }
+
+    private payslipsAlreadyEmailed(run: any): boolean {
+      return !!this.emailedRuns()[String(run?.id)];
+    }
+
+    private markPayslipsEmailed(run: any): void {
+      try {
+        const runs = { ...this.emailedRuns(), [String(run?.id)]: new Date().toISOString() };
+        localStorage.setItem(EmployeePayrollComponent.EMAILED_RUNS_KEY, JSON.stringify(runs));
+      } catch {}
+    }
+
+    /**
+     * Emails each employee in an approved run their payslip. Runs after the final approval, and from the
+     * "Email Payslips" menu item to resend. Employees without an email address are skipped and named.
+     */
+    emailPayslips(run: any): void {
+      if (this.emailingPayslips) return;
+      if (!run?.id || !this.isRunFullyApproved(run)) {
+        this.messageService.add({ severity: 'warn', summary: 'Not approved yet', detail: 'Payslips can be emailed once the payroll run is fully approved.', key: this.toastKey });
+        return;
+      }
+      const rows: any[] = run.employees ?? [];
+      if (!rows.length) {
+        this.messageService.add({ severity: 'warn', summary: 'No payslips', detail: 'This payroll run has no employees.', key: this.toastKey });
+        return;
+      }
+
+      let companyName = 'OptimaX';
+      try {
+        const biz = JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}');
+        companyName = biz?.companyName || biz?.company?.name || companyName;
+      } catch {}
+      const period = periodLabel(run.month, run.year);
+      const payslipsUrl = `${window.location.origin}/admin/employee-payslip/my-payslips`;
+
+      this.emailingPayslips = true;
+      this.messageService.add({ severity: 'info', summary: 'Emailing payslips', detail: `Sending ${period} payslips to ${rows.length} employee(s)…`, key: this.toastKey });
+
+      // Run rows don't always carry email addresses, so match them to the full employee records.
+      this.employeeService.getAllEmployee().pipe(
+        catchError(() => of([] as any[])),
+        mergeMap((employees: any[]) => {
+          const byId = new Map(employees.map(e => [String(e?.id), e]));
+          return from(rows).pipe(
+            mergeMap(row => {
+              const id = String(row?.employee?.id ?? row?.employeeId ?? '');
+              const employee = { ...(row?.employee || {}), ...(byId.get(id) || {}) };
+              const slip = toPayslip(row, run, employee);
+              const to = payslipEmailAddress(employee);
+              if (!to) return of({ name: slip.name || `#${id}`, result: 'skipped' as const });
+              const html = buildPayslipEmailHtml(slip, companyName, payslipsUrl);
+              return this.employeeService.sendNotificationEmail(to, `${companyName}: your payslip for ${period}`, html).pipe(
+                map(() => ({ name: slip.name, result: 'sent' as const })),
+                catchError(() => of({ name: slip.name || `#${id}`, result: 'failed' as const }))
+              );
+            }, 4),
+            toArray()
+          );
+        }),
+        finalize(() => { this.emailingPayslips = false; })
+      ).subscribe(results => {
+        const sent = results.filter(r => r.result === 'sent');
+        const skipped = results.filter(r => r.result === 'skipped').map(r => r.name);
+        const failed = results.filter(r => r.result === 'failed').map(r => r.name);
+        if (sent.length) this.markPayslipsEmailed(run);
+        this.messageService.add({
+          severity: failed.length || skipped.length ? 'warn' : 'success',
+          summary: 'Payslips emailed',
+          detail: [
+            `${sent.length} of ${results.length} ${period} payslip(s) sent.`,
+            skipped.length ? `No email address: ${skipped.join(', ')}.` : '',
+            failed.length ? `Failed to send: ${failed.join(', ')}. "Email Payslips" in the menu sends the run's payslips again (to everyone).` : '',
+          ].filter(Boolean).join(' '),
+          key: this.toastKey,
+          life: 10000
+        });
+      });
+    }
+
     onApprove() {
       if (this.isApprovingPayroll) {
         return;
@@ -1713,10 +1813,17 @@ download(format: string) {
       }))
       .subscribe({
         next: () => {
+          const approvedRunId = this.payrollInView?.id;
           this.openApproveModal = false;
           this.selectedFile = null;
           this.approvalComment = '';
-          this.generatePayrolls();
+          // Approval has several stages; payslips go out once, when the last stage approves the run.
+          this.generatePayrolls(records => {
+            const run = records.find(r => String(r?.id) === String(approvedRunId));
+            if (run && this.isRunFullyApproved(run) && !this.payslipsAlreadyEmailed(run)) {
+              this.emailPayslips(run);
+            }
+          });
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Payroll approved successfully', key: this.toastKey });
         },
         error: (err: any) => {

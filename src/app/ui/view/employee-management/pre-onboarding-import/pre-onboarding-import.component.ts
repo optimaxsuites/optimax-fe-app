@@ -87,6 +87,8 @@ export class PreOnboardingImportComponent implements OnDestroy {
   }
 
   // ── Extraction pipeline ─────────────────────────────────────────────────────
+  // PDF-to-image conversion for the AI read is handled server-side (PdfImageUtil / PDFBox), so the
+  // raw file is sent for all types. pdf.js is only used locally to read typed-in PDF form values.
   async handleFile(file: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowed.includes(file.type)) {
@@ -100,34 +102,22 @@ export class PreOnboardingImportComponent implements OnDestroy {
     this.setPreviewUrl(null);
 
     try {
-      let imageFile: File;
       let fromPdf: ImportedEmployeeData = {};
 
+      // Images get an inline preview; PDFs are rendered server-side so no preview here.
       if (file.type === 'application/pdf') {
         this.progressLabel = 'Reading PDF...';
         this.progress = 20;
-        const pdfjs = await this.loadPdfJs();
-        const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
-        try {
-          const pdf = await loadingTask.promise;
-          // A form filled in on a computer carries its values as text: read them exactly, no AI needed.
-          fromPdf = await readFilledPreOnboardingForm(pdf).catch(() => ({}));
-          const blob = await this.pdfPagesToBlob(pdf);
-          this.setPreviewUrl(URL.createObjectURL(blob));
-          imageFile = new File([blob], 'form.jpg', { type: 'image/jpeg' });
-        } finally {
-          await loadingTask.destroy();
-        }
+        fromPdf = await this.readPdfFormValues(file).catch(() => ({}));
       } else {
-        imageFile = file;
         this.setPreviewUrl(URL.createObjectURL(file));
       }
 
       this.progressLabel = 'Reading form with AI...';
-      this.progress = 50;
+      this.progress = 30;
 
       const form = new FormData();
-      form.append('file', imageFile);
+      form.append('file', file);
 
       // The AI read covers scans and photos (and the tick boxes on older copies of the form).
       let fromAi: ImportedEmployeeData = {};
@@ -138,7 +128,12 @@ export class PreOnboardingImportComponent implements OnDestroy {
         if (payload?.error) aiError = String(payload.error);
         else if (payload && typeof payload === 'object') fromAi = this.mapResult(payload);
       } catch (httpErr: any) {
-        aiError = httpErr?.error?.message ?? httpErr?.message ?? 'the request failed';
+        const isNetwork = httpErr?.status === 0 || httpErr?.error instanceof ProgressEvent;
+        aiError = httpErr?.error?.message
+          ?? (typeof httpErr?.error === 'string' ? httpErr.error : null)
+          ?? httpErr?.message
+          ?? (isNetwork ? 'could not reach the server. Please check your connection.' : `HTTP ${httpErr?.status ?? '?'}`);
+        console.error('extract-form HTTP error', httpErr);
       }
 
       this.progress = 100;
@@ -170,7 +165,7 @@ export class PreOnboardingImportComponent implements OnDestroy {
     }
   }
 
-  // ── PDF → JPEG ──────────────────────────────────────────────────────────────
+  // ── PDF form text ───────────────────────────────────────────────────────────
   /**
    * Loads pdf.js from the pdfjs-dist package the first time a PDF is dropped. Its worker code is
    * loaded into the page too (`globalThis.pdfjsWorker`), so parsing runs on the main thread and no
@@ -187,38 +182,15 @@ export class PreOnboardingImportComponent implements OnDestroy {
     return pdfjs;
   }
 
-  /**
-   * Renders the form's pages one under the other into a single JPEG. The form runs to two pages
-   * (next of kin and guarantors are on the second), so sending only page 1 lost them.
-   * Capped at four pages to stay inside browsers' canvas size limits.
-   */
-  private async pdfPagesToBlob(pdf: any): Promise<Blob> {
-    const pageCount = Math.min(pdf.numPages, 4);
-    const rendered: HTMLCanvasElement[] = [];
-    for (let n = 1; n <= pageCount; n++) {
-      const page = await pdf.getPage(n);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement('canvas');
-      canvas.width  = viewport.width;
-      canvas.height = viewport.height;
-      // The main app installs pdfjs 4 (needs canvasContext); this project declares pdfjs 6 (uses canvas).
-      const renderParams: any = { canvas, canvasContext: canvas.getContext('2d'), viewport };
-      await page.render(renderParams).promise;
-      rendered.push(canvas);
+  /** A form filled in on a computer carries its values as text: read them exactly, no AI needed. */
+  private async readPdfFormValues(file: File): Promise<ImportedEmployeeData> {
+    const pdfjs = await this.loadPdfJs();
+    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+    try {
+      return await readFilledPreOnboardingForm(await loadingTask.promise);
+    } finally {
+      await loadingTask.destroy();
     }
-
-    const sheet = document.createElement('canvas');
-    sheet.width = Math.max(...rendered.map((c) => c.width));
-    sheet.height = rendered.reduce((sum, c) => sum + c.height, 0);
-    const ctx = sheet.getContext('2d')!;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, sheet.width, sheet.height);
-    let y = 0;
-    for (const c of rendered) { ctx.drawImage(c, 0, y); y += c.height; }
-
-    return await new Promise<Blob>((resolve, reject) => {
-      sheet.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/jpeg', 0.92);
-    });
   }
 
   // ── Map AI response → ImportedEmployeeData ─────────────────────────────────

@@ -78,8 +78,10 @@ export class ProfileChangeRequestsComponent implements OnInit, OnDestroy {
         this.applyFilters();
       });
 
-      const userRegData = JSON.parse(localStorage.getItem('userRegData') || '{}');
-      this.userIsAdmin = userRegData && userRegData.roles[0] ? userRegData.roles[0] === 'ROLE_ADMIN': false;
+      let userRegData: any = {};
+      try { userRegData = JSON.parse(localStorage.getItem('userRegData') || '{}') ?? {}; } catch {}
+      // Stored logins don't always carry a roles list; without the guard the page crashed here.
+      this.userIsAdmin = userRegData?.roles?.[0] === 'ROLE_ADMIN';
   }
 
   ngOnDestroy(): void {

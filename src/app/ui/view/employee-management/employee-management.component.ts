@@ -79,7 +79,8 @@ resendingOnboardingIds: Record<number, boolean> = {};
 resendCredentials: { name: string; username: string; password: string } | null = null;
   showResendPassword = false;
 viewMode: 'card' | 'list' = 'card';
-selectedStatus: string = 'ACTIVE';
+// All by default: new hires start as Joining or Probation and were hidden behind an Active filter.
+selectedStatus: string = 'ALL';
 statusOptions = [
   { label: 'Active',      value: 'ACTIVE' },
   { label: 'Joining',     value: 'JOINING' },
@@ -178,12 +179,15 @@ statusOptions = [
     if (!token) return;
     const now = Date.now();
     this.presenceRequestInFlight = true;
-    this.http.get<any[]>(this.presenceUrl, {
+    this.http.get<any>(this.presenceUrl, {
       headers: { Authorization: `Bearer ${token}` }
     }).pipe(finalize(() => { this.presenceRequestInFlight = false; })).subscribe({
       next: (records) => {
         const onlineIds = new Set<number>();
-        (records || []).forEach(r => {
+        const list: any[] = Array.isArray(records) ? records
+          : Array.isArray(records?.content) ? records.content
+          : Array.isArray(records?.data) ? records.data : [];
+        list.forEach(r => {
           if (r.presenceStatus === 'ONLINE' && r.userId) {
             const updatedMs = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
             if (now - updatedMs <= this.PRESENCE_STALE_MS) {

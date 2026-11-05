@@ -1,6 +1,7 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { payslipFigures } from '../payslip.util';
 
 @Component({
   selector: 'app-payslip-view',
@@ -42,52 +43,15 @@ export class PayslipViewComponent implements OnInit {
     });
   }
 
-  get allowanceTotal(): number {
-    const a = this.payslip?.allowances;
-    if (!a) return 0;
-    if (typeof a.amount === 'number') return a.amount;
-    return Object.values(a).reduce((t: number, v: any) => {
-      const n = Number(v);
-      return Number.isFinite(n) ? t + n : t;
-    }, 0) as number;
-  }
-
-  get bonusTotal(): number {
-    return (this.payslip?.bonuses || []).reduce(
-      (t: number, b: any) => t + (Number(b?.amount) || 0), 0
-    );
-  }
-
-  get overtimePay(): number {
-    return Number(this.payslip?.overtimePay) || 0;
-  }
-
-  get grossPay(): number {
-    if (typeof this.payslip?.grossPay === 'number') return this.payslip.grossPay;
-    return (Number(this.payslip?.basePay) || 0) + this.allowanceTotal + this.bonusTotal + this.overtimePay;
-  }
-
-  get deductionLines(): { label: string; amount: number }[] {
-    const d = this.payslip?.deductions || {};
-    return [
-      { label: 'Tax (PAYE)',       amount: Number(d.tax)             || 0 },
-      { label: 'Pension',          amount: Number(d.pension)         || 0 },
-      { label: 'NHF',              amount: Number(d.nhf)             || 0 },
-      { label: 'Health Insurance', amount: Number(d.healthInsurance) || 0 },
-      { label: 'Loan / Advances',  amount: Number(d.advances)        || 0 },
-      { label: 'Cooperatives',     amount: Number(d.cooperatives)    || 0 },
-      { label: 'Other',            amount: Number(d.other)           || 0 },
-    ].filter(l => l.amount > 0);
-  }
-
-  get totalDeductions(): number {
-    if (typeof this.payslip?.totalDeductions === 'number') return this.payslip.totalDeductions;
-    return this.deductionLines.reduce((t, l) => t + l.amount, 0);
-  }
-
-  get netPay(): number {
-    return Number(this.payslip?.netPayable) || (this.grossPay - this.totalDeductions);
-  }
+  /** Same figures as the payslip email (payslip.util). */
+  private get figures() { return payslipFigures(this.payslip); }
+  get allowanceTotal(): number { return this.figures.allowanceTotal; }
+  get bonusTotal(): number { return this.figures.bonusTotal; }
+  get overtimePay(): number { return this.figures.overtimePay; }
+  get grossPay(): number { return this.figures.grossPay; }
+  get deductionLines(): { label: string; amount: number }[] { return this.figures.deductionLines; }
+  get totalDeductions(): number { return this.figures.totalDeductions; }
+  get netPay(): number { return this.figures.netPay; }
 
   statusClass(): string {
     const s = (this.payslip?.runStatus || '').toUpperCase();
