@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollService } from '../../../service/payroll.service';
+import { EmployeeService } from '../../../service/employee.service';
 import { catchError, of } from 'rxjs';
+import { toPayslip } from '../payslip.util';
 
 @Component({
   selector: 'app-employee-payslip-list',
@@ -72,37 +74,41 @@ export class EmployeePayslipListComponent implements OnInit {
     { id: 'view', label: 'View Payslip', icon: 'pi pi-eye' }
   ];
 
-  constructor(private payrollService: PayrollService) {}
+  constructor(private payrollService: PayrollService, private employeeService: EmployeeService) {}
 
+  /**
+   * Payslips of the signed-in employee. This used to read the employee from a 'sharedData' browser key
+   * that nothing sets, so it searched with no id and could show someone else's payslip.
+   */
   ngOnInit(): void {
-    const stored = localStorage.getItem('sharedData');
-    this.employeeInfo = stored ? JSON.parse(stored) : {};
-    this.loadPayslips();
+    this.loading = true;
+    this.employeeService.getCurrentEmployee().subscribe({
+      next: (employee: any) => {
+        this.employeeInfo = employee?.data ?? employee ?? {};
+        this.loadPayslips();
+      },
+      error: () => { this.employeeInfo = {}; this.loading = false; }
+    });
   }
 
   loadPayslips(): void {
+    const empId = this.employeeInfo?.id;
+    if (empId === undefined || empId === null || empId === '') {
+      this.loading = false;
+      return;
+    }
     this.loading = true;
     this.payrollService.getPayrollGenerationResponses(1, 500).pipe(
       catchError(() => of([]))
     ).subscribe({
       next: (response: any) => {
         const runs: any[] = Array.isArray(response) ? response : (response?.content ?? []);
-        const empId = this.employeeInfo?.id;
-
         const slips: any[] = [];
         runs.forEach(run => {
           const employees: any[] = run?.employees ?? [];
-          const match = employees.find(e =>
-            e?.employee?.id === empId || e?.employeeId === empId || e?.id === empId
-          );
-          if (match) {
-            slips.push({
-              ...match,
-              month: run.month,
-              year: run.year,
-              runStatus: (run.payrollApprovalInstance?.status || run.status || 'COMPLETED').toUpperCase()
-            });
-          }
+          // Only the run row's employee id counts; a row's own id is the row, not the employee.
+          const match = employees.find(e => String(e?.employee?.id ?? e?.employeeId ?? '') === String(empId));
+          if (match) slips.push(toPayslip(match, run, this.employeeInfo));
         });
 
         slips.sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
@@ -139,16 +145,7 @@ export class EmployeePayslipListComponent implements OnInit {
 
   viewPayrollDetails(slip: any): void {
     this.viewSlip = true;
-    this.activeSlip = {
-      empId: this.employeeInfo.id,
-      name: `${this.employeeInfo.firstName ?? ''} ${this.employeeInfo.lastName ?? ''}`.trim() || this.employeeInfo.name,
-      type: this.employeeInfo.type,
-      level: this.employeeInfo.level,
-      department: this.employeeInfo.department,
-      accountNumber: this.employeeInfo.accountNumber,
-      bank: this.employeeInfo.bank,
-      ...slip
-    };
+    this.activeSlip = slip;
   }
 
   handlePayslipAction(event: { actionId: string; row: any }): void {

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CrossBranchAttendanceService } from '../../../../service/attendance/cross-branch-attendance.service';
+import { UserSessionService } from '../../../../service/attendance/user-session.service';
 import { CrossBranchCheckInRequest } from '../../../../domain/attendance/cross-branch-request.dto';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -11,6 +12,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class SupervisorApprovalQueueComponent implements OnInit, OnDestroy {
   private crossBranchService = inject(CrossBranchAttendanceService);
+  private userSession = inject(UserSessionService);
   private destroy$ = new Subject<void>();
 
   outstandingRequests: CrossBranchCheckInRequest[] = [];
@@ -21,8 +23,9 @@ export class SupervisorApprovalQueueComponent implements OnInit, OnDestroy {
   rejectionReason: string = '';
   isProcessing: boolean = false;
 
-  supervisorId: number = 1; // Should come from session
-  supervisorName: string = 'Current Supervisor';
+  // The signed-in approver, recorded on each decision (was a fixed id 1 for everyone).
+  supervisorId: number = this.userSession.getCurrentUser()?.id ?? 0;
+  supervisorName: string = this.userSession.getCurrentUser()?.name || 'Current Supervisor';
 
   ngOnInit(): void {
     this.loadOutstandingRequests();

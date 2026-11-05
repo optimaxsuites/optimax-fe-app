@@ -79,7 +79,8 @@ resendingOnboardingIds: Record<number, boolean> = {};
 resendCredentials: { name: string; username: string; password: string } | null = null;
   showResendPassword = false;
 viewMode: 'card' | 'list' = 'card';
-selectedStatus: string = 'ACTIVE';
+// All by default: new hires start as Joining or Probation and were hidden behind an Active filter.
+selectedStatus: string = 'ALL';
 statusOptions = [
   { label: 'Active',      value: 'ACTIVE' },
   { label: 'Joining',     value: 'JOINING' },

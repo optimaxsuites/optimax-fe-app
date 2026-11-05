@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AttendancetableService } from '../../../../../service/attendance/attendancetable.service';
 import { AttendanceTableRecord } from '../../../../../domain/attendance/attendancetable.dto';
 import { CorrectionRequest } from '../../../../../domain/attendance/correctionrequest.dto';
-import { Observable, switchMap } from 'rxjs';
+import { map, Observable, of, switchMap } from 'rxjs';
 import * as L from 'leaflet';
 import { OfficeHoursService } from '../../../../../service/attendance/office-hours.service';
 import { UserSessionService } from '../../../../../service/attendance/user-session.service';
@@ -12,6 +12,7 @@ import { TableColumn, TableAction } from '../../../../../shared-component/view/t
 import { ToastService } from '../../../../../shared-component/service/toast/toast.service';
 import { AdminCorrectionApprovalService } from '../../../../../service/attendance/admin-correction-approval.service';
 import { CrossBranchApprovalService } from '../../../../../service/attendance/cross-branch-approval.service';
+import { CrossBranchAttendanceService } from '../../../../../service/attendance/cross-branch-attendance.service';
 import { environment } from '../../../../../shared-component/environments/environment.prod';
 
 @Component({
@@ -26,6 +27,7 @@ export class AttendancetableComponent implements OnInit, OnChanges {
   private toastService = inject(ToastService);
   private correctionRequestService = inject(AdminCorrectionApprovalService);
   private crossBranchApprovalService = inject(CrossBranchApprovalService);
+  private crossBranchAttendanceService = inject(CrossBranchAttendanceService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 
@@ -825,67 +827,95 @@ rejectCorrectionRequest(recordId: number, reason: string = ''): void {
 
 // ── STEP 6: Cross-Branch Approval Workflow ────────────────────────────────
 approveCrossBranch(recordId: number): void {
-  const adminName = sessionStorage.getItem('fullname') || 'Admin';
-
-  // Find record in both arrays
-  const attendanceRecord = this.attendance.find(r => r.id === recordId);
-  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
-
-  if (attendanceRecord && attendanceRecord.isCrossBranchAttendance) {
-    // Mark as approved
-    attendanceRecord.crossBranchApprovalStatus = 'APPROVED';
-    attendanceRecord.status = 'PRESENT'; // Confirm attendance is valid
-  }
-
-  if (filteredRecord && filteredRecord.isCrossBranchAttendance) {
-    filteredRecord.crossBranchApprovalStatus = 'APPROVED';
-    filteredRecord.status = 'PRESENT';
-  }
-
-  // Update in service
-  this.crossBranchApprovalService.approveCrossBranch(recordId, adminName);
-
-  // Close drawer
-  this.detailsRecord = null;
-
-  // Refresh
-  this.applyFilters();
-
-  this.toastService.success(
-    `✅ Approved! ${attendanceRecord?.employee} cross-branch: ${attendanceRecord?.homeBranchName} → ${attendanceRecord?.checkedInBranchName}`
-  );
+  this.decideCrossBranch(recordId, 'APPROVE', 'Cross-branch attendance approved');
 }
 
 rejectCrossBranch(recordId: number, reason: string = ''): void {
-  const rejectionReason = reason || 'Unauthorized cross-branch attendance';
+  this.decideCrossBranch(recordId, 'REJECT', reason || 'Unauthorized cross-branch attendance');
+}
 
-  // Find record in both arrays
-  const attendanceRecord = this.attendance.find(r => r.id === recordId);
-  const filteredRecord = this.filteredAttendance.find(r => r.id === recordId);
+/**
+ * Sends a cross-branch decision to the server, then updates the table. These used to be kept only in
+ * the approver's browser, so the server (and payroll) never saw the approval and the day could count
+ * as absent. The row only changes once the server has accepted the decision.
+ */
+private decideCrossBranch(recordId: number, action: 'APPROVE' | 'REJECT', note: string): void {
+  const rows = [this.attendance, this.filteredAttendance]
+    .map(list => list.find(r => r.id === recordId))
+    .filter((r): r is AttendanceTableRecord => !!r && !!r.isCrossBranchAttendance);
+  const record = rows[0];
+  if (!record) return;
 
-  if (attendanceRecord && attendanceRecord.isCrossBranchAttendance) {
-    // Mark as rejected
-    attendanceRecord.crossBranchApprovalStatus = 'REJECTED';
-    // Optionally mark attendance as ABSENT
-    attendanceRecord.status = 'ABSENT';
+  const approver = this.userSession.getCurrentUser();
+  if (!approver) {
+    this.toastService.error('No logged in user found');
+    return;
   }
 
-  if (filteredRecord && filteredRecord.isCrossBranchAttendance) {
-    filteredRecord.crossBranchApprovalStatus = 'REJECTED';
-    filteredRecord.status = 'ABSENT';
-  }
+  this.findCrossBranchRequestId(record).pipe(
+    switchMap(requestId => {
+      if (requestId === null) {
+        throw new Error('No matching cross-branch request was found on the server for this check-in.');
+      }
+      return action === 'APPROVE'
+        ? this.crossBranchAttendanceService.approveCrossBranchRequest(requestId, approver.id, approver.name, note)
+        : this.crossBranchAttendanceService.rejectCrossBranchRequest(requestId, approver.id, approver.name, note);
+    })
+  ).subscribe({
+    next: () => {
+      rows.forEach(r => {
+        r.crossBranchApprovalStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+        r.status = action === 'APPROVE' ? 'PRESENT' : 'ABSENT';
+      });
+      // Keeps the badge in step on this device until the next refresh brings the server's copy.
+      if (action === 'APPROVE') {
+        this.crossBranchApprovalService.approveCrossBranch(recordId, approver.name, note);
+      } else {
+        this.crossBranchApprovalService.rejectCrossBranch(recordId, approver.name, note);
+      }
+      this.detailsRecord = null;
+      this.applyFilters();
+      this.cdr.detectChanges();
+      if (action === 'APPROVE') {
+        this.toastService.success(`Approved: ${record.employee} cross-branch (${record.homeBranchName} → ${record.checkedInBranchName})`);
+      } else {
+        this.toastService.warning(`Rejected: ${record.employee} cross-branch attendance marked invalid`);
+      }
+    },
+    error: (err) => {
+      console.error('Cross-branch decision failed:', err);
+      const detail = err?.error?.message || err?.message || 'The server did not accept the decision.';
+      this.toastService.error(`Could not ${action === 'APPROVE' ? 'approve' : 'reject'} ${record.employee}'s cross-branch check-in: ${detail}`);
+    }
+  });
+}
 
-  // Update in service
-  this.crossBranchApprovalService.rejectCrossBranch(recordId, 'Admin', rejectionReason);
+/**
+ * The server's cross-branch request behind a table row. Rows are attendance records, not requests,
+ * so a stored numeric request id is used when there is one; otherwise the pending request for the
+ * same employee and work day.
+ */
+private findCrossBranchRequestId(record: AttendanceTableRecord): Observable<number | null> {
+  const storedId = Number((record as any).crossBranchRequestId);
+  if (Number.isFinite(storedId) && storedId > 0) return of(storedId);
 
-  // Close drawer
-  this.detailsRecord = null;
+  const day = (value: any) => {
+    const date = value ? new Date(value) : null;
+    if (!date || isNaN(date.getTime())) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  const recordDay = day(record.date);
+  const employeeId = String(record.employeeId ?? '');
 
-  // Refresh
-  this.applyFilters();
-
-  this.toastService.warning(
-    `❌ Rejected! ${attendanceRecord?.employee} cross-branch attendance marked invalid`
+  return this.crossBranchAttendanceService.getOutstandingRequests().pipe(
+    map(requests => {
+      const match = requests.find(req => {
+        const reqEmployeeId = String((req.employeeId as any)?.id ?? req.employeeId ?? '');
+        const reqDay = String(req.workDate || req.requestDate || '').slice(0, 10);
+        return reqEmployeeId === employeeId && (!recordDay || reqDay === recordDay);
+      });
+      return match?.id ?? null;
+    })
   );
 }
 
