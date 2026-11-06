@@ -66,7 +66,7 @@ jobs:
         run: npm ci
 
       - name: Build Angular (Tauri configuration)
-        run: npx ng build ERP-FE --configuration tauri --base-href ./
+        run: node --max-old-space-size=4096 node_modules/@angular/cli/bin/ng build ERP-FE --configuration tauri --base-href ./
 
       - name: Build Tauri desktop app
         uses: tauri-apps/tauri-action@v0
