@@ -1150,12 +1150,22 @@ export class MenuItemsService {
     const unlockedRoutes = this.appList.map((app: any) => this.getRegisteredItemCode(app)).filter(Boolean)
     const unlockedLabels = this.appList.map((app: any) => this.getRegisteredItemLabel(app)).filter(Boolean)
 
-    const alwaysUnlocked = ['General Settings', 'User and Roles Management', 'MODULE_REGISTRY', 'BUG_TRACKER'];
+    // loadUnlockedModules() runs before this — build a set of codes that are already unlocked
+    // in the main nav so settings entries inherit the same access without requiring a separate match.
+    const unlockedMainCodes = new Set<string>(
+      this.menuItems.filter(m => !m.locked && m.code).map(m => m.code as string)
+    );
+
+    const alwaysUnlocked = ['General Settings', 'User and Roles Management', 'MODULE_REGISTRY', 'BUG_TRACKER', 'optimaXCommerce'];
     this.settingsMenuItems.forEach((module) => {
       if (alwaysUnlocked.includes(module.code || '')) {
         module.locked = false;
       } else {
-        module.locked = !(unlockedRoutes.includes(module.code || 'null') || unlockedLabels.includes(module.label) || (module.registeredAs && unlockedLabels.includes(module.registeredAs)));
+        const matchesApp = unlockedRoutes.includes(module.code || 'null') ||
+                           unlockedLabels.includes(module.label) ||
+                           !!(module.registeredAs && unlockedLabels.includes(module.registeredAs));
+        const matchesMainMenu = !!module.code && unlockedMainCodes.has(module.code);
+        module.locked = !(matchesApp || matchesMainMenu);
       }
     });
     this.settingsMenuItemsSubject.next([...this.settingsMenuItems]);
@@ -1183,7 +1193,7 @@ export class MenuItemsService {
 
   getUnlockedSettingsModules(): MenuItem[] {
     const isAdmin = this.isSuperUser();
-    const alwaysShowAll = ['General Settings', 'Bug Tracker', 'Updates & Version'];
+    const alwaysShowAll = ['General Settings', 'Bug Tracker', 'Updates & Version', 'Commerce'];
     const adminOnly = ['User and Roles Management', 'Module Registry'];
     return this.settingsMenuItems.filter(module => {
       if (adminOnly.includes(module.label)) return isAdmin;
