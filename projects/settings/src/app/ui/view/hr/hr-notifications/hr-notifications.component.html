@@ -1,87 +1,131 @@
-<div class="hn-wrap">
-  <div class="hn-header">
-    <h3 class="hn-title">Notification Subscriptions</h3>
-    <p class="hn-sub">Choose which channels and events generate notifications for each HR project area.</p>
+<div class="ns-wrap">
+
+  <!-- Page header -->
+  <div class="ns-header">
+    <div class="ns-header-left">
+      <h3 class="ns-title">Notification Subscriptions</h3>
+      <p class="ns-sub">Control which events notify you and through which channels. Critical events cannot have In-App disabled.</p>
+    </div>
+    <div class="ns-header-right">
+      <span class="ns-saved" *ngIf="saved"><i class="fas fa-check-circle"></i> Saved</span>
+      <span class="ns-error" *ngIf="error"><i class="fas fa-exclamation-circle"></i> {{ error }}</span>
+      <button class="btn-save" (click)="save()" [disabled]="saving || loading">
+        <i class="fas" [class.fa-save]="!saving" [class.fa-spinner]="saving" [class.fa-spin]="saving"></i>
+        {{ saving ? 'Saving…' : 'Save changes' }}
+      </button>
+    </div>
   </div>
 
-  <!-- Per-project accordion -->
-  <div class="proj-list">
-    <div class="proj-card" *ngFor="let proj of projects" [class.open]="expandedProject === proj.projectKey">
+  <!-- Loading skeleton -->
+  <div class="ns-loading" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Loading your preferences…
+  </div>
 
-      <div class="proj-head" (click)="toggleProject(proj.projectKey)">
-        <div class="proj-head-left">
-          <i class="fas fa-folder-open proj-icon"></i>
-          <strong>{{ proj.projectLabel }}</strong>
+  <!-- Module accordions -->
+  <div class="ns-modules" *ngIf="!loading">
+    <div class="ns-module" *ngFor="let mod of modules"
+         [class.ns-module--open]="expanded === mod.key">
+
+      <!-- Module header -->
+      <div class="ns-mod-head" (click)="toggleExpanded(mod.key)">
+        <div class="ns-mod-head-left">
+          <span class="ns-mod-icon" [style.background]="mod.color + '1a'" [style.color]="mod.color">
+            <i [class]="mod.icon"></i>
+          </span>
+          <span class="ns-mod-label">{{ mod.label }}</span>
+          <span class="ns-mod-count">{{ mod.events.length }} events</span>
         </div>
-        <div class="proj-head-chips">
-          <span *ngFor="let ch of notifChannels" class="ch-chip"
-                [class.on]="proj.channels[ch.key]" [title]="ch.label">
-            <i [class]="'fas ' + ch.icon"></i>
+
+        <!-- Channel summary pills -->
+        <div class="ns-mod-pills">
+          <span class="ns-mod-pill" *ngFor="let ch of channels"
+                [class.ns-mod-pill--on]="channelOnCount(mod.key, ch.key) > 0"
+                [title]="ch.label + ': ' + channelOnCount(mod.key, ch.key) + ' / ' + mod.events.length">
+            <i [class]="ch.icon"></i>
+            <span>{{ channelOnCount(mod.key, ch.key) }}</span>
           </span>
         </div>
-        <i class="fas" [class.fa-chevron-down]="expandedProject !== proj.projectKey"
-                       [class.fa-chevron-up]="expandedProject === proj.projectKey"
-                       style="color:#9ca3af;margin-left:8px"></i>
+
+        <i class="fas ns-chevron"
+           [class.fa-chevron-down]="expanded !== mod.key"
+           [class.fa-chevron-up]="expanded === mod.key"></i>
       </div>
 
-      <div class="proj-body" *ngIf="expandedProject === proj.projectKey">
+      <!-- Module body -->
+      <div class="ns-mod-body" *ngIf="expanded === mod.key">
 
-        <!-- Channel toggles -->
-        <div class="sub-section">
-          <div class="sub-section-head">
-            <span class="sub-section-title">Notification Channels</span>
-            <div class="bulk-btns">
-              <button class="bulk-btn" (click)="toggleAllChannels(proj, true)">Enable all</button>
-              <button class="bulk-btn" (click)="toggleAllChannels(proj, false)">Disable all</button>
-            </div>
-          </div>
-          <div class="channel-grid">
-            <div class="channel-tile" *ngFor="let ch of notifChannels"
-                 [class.enabled]="proj.channels[ch.key]"
-                 (click)="proj.channels[ch.key] = !proj.channels[ch.key]">
-              <div class="ch-icon-wrap"><i [class]="'fas ' + ch.icon"></i></div>
-              <div class="ch-info">
-                <div class="ch-label">{{ ch.label }}</div>
-                <div class="ch-desc">{{ ch.desc }}</div>
-              </div>
-              <div class="ch-toggle">
-                <div class="toggle-pill" [class.on]="proj.channels[ch.key]">
-                  <div class="toggle-knob"></div>
-                </div>
+        <!-- Bulk controls -->
+        <div class="ns-bulk-row">
+          <span class="ns-bulk-label">Bulk toggle:</span>
+          <div class="ns-bulk-channels">
+            <div class="ns-bulk-ch" *ngFor="let ch of channels">
+              <span class="ns-bulk-ch-label"><i [class]="ch.icon"></i> {{ ch.label }}</span>
+              <div class="ns-bulk-btns">
+                <button class="btn-bulk btn-bulk--on"  (click)="bulkModule(mod.key, ch.key, true)">All on</button>
+                <button class="btn-bulk btn-bulk--off" (click)="bulkModule(mod.key, ch.key, false)">All off</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Event toggles -->
-        <div class="sub-section">
-          <div class="sub-section-head">
-            <span class="sub-section-title">Events</span>
-            <div class="bulk-btns">
-              <button class="bulk-btn" (click)="toggleAllEvents(proj, true)">All on</button>
-              <button class="bulk-btn" (click)="toggleAllEvents(proj, false)">All off</button>
-            </div>
-          </div>
-          <div class="event-list">
-            <label class="event-row" *ngFor="let key of eventKeys">
-              <div class="event-label">
-                <i class="fas fa-dot-circle" style="color:#d1d5db;font-size:9px;margin-right:6px"></i>
-                {{ eventLabels[key] }}
-              </div>
-              <input type="checkbox" [checked]="projEvents(proj)[key]" (change)="projEvents(proj)[key] = $any($event.target).checked" class="event-check">
-            </label>
-          </div>
+        <!-- Event matrix table -->
+        <div class="ns-table-wrap">
+          <table class="ns-table">
+            <thead>
+              <tr>
+                <th class="col-event">Event</th>
+                <th class="col-pri">Priority</th>
+                <th class="col-ch" *ngFor="let ch of channels">
+                  <i [class]="ch.icon"></i>
+                  <span>{{ ch.label }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ev of mod.events" class="ns-ev-row">
+                <td class="col-event">
+                  <div class="ev-name">{{ ev.label }}</div>
+                  <div class="ev-desc">{{ ev.description }}</div>
+                </td>
+                <td class="col-pri">
+                  <span class="pri-badge" [class]="priorityClass(ev.priority)">{{ ev.priority }}</span>
+                </td>
+                <td class="col-ch" *ngFor="let ch of channels">
+                  <!-- Locked in-app toggle for Critical events -->
+                  <ng-container *ngIf="ch.key === 'inApp' && isLocked(mod.key, ev.key); else normalToggle">
+                    <div class="ns-toggle ns-toggle--locked" title="In-App cannot be disabled for this event">
+                      <div class="toggle-pill on">
+                        <div class="toggle-knob"></div>
+                      </div>
+                      <i class="fas fa-lock lock-icon"></i>
+                    </div>
+                  </ng-container>
+                  <ng-template #normalToggle>
+                    <div class="ns-toggle" [class.ns-toggle--on]="isOn(mod.key, ev.key, ch.key)"
+                         (click)="toggle(mod.key, ev.key, ch.key)">
+                      <div class="toggle-pill" [class.on]="isOn(mod.key, ev.key, ch.key)">
+                        <div class="toggle-knob"></div>
+                      </div>
+                    </div>
+                  </ng-template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
       </div>
     </div>
   </div>
 
-  <!-- Save bar -->
-  <div class="save-bar">
-    <span class="save-success" *ngIf="saveSuccess">&#10003; Preferences saved</span>
-    <button class="btn-primary" (click)="savePrefs()">
-      <i class="fas fa-save"></i> Save Notification Preferences
+  <!-- Bottom save bar -->
+  <div class="ns-save-bar" *ngIf="!loading">
+    <span class="ns-saved" *ngIf="saved"><i class="fas fa-check-circle"></i> All changes saved</span>
+    <span class="ns-error" *ngIf="error"><i class="fas fa-exclamation-circle"></i> {{ error }}</span>
+    <button class="btn-save" (click)="save()" [disabled]="saving">
+      <i class="fas" [class.fa-save]="!saving" [class.fa-spinner]="saving" [class.fa-spin]="saving"></i>
+      {{ saving ? 'Saving…' : 'Save Notification Preferences' }}
     </button>
   </div>
+
 </div>
