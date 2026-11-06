@@ -86,6 +86,19 @@ export class ChatRealtimeNotifierService implements OnDestroy {
     this.stop();
   }
 
+  private handleModuleNotification(body: string): void {
+    try {
+      const payload = JSON.parse(body || '{}');
+      this.headerStateService.pushNotification({
+        title: String(payload.title || 'New notification'),
+        body: String(payload.body || ''),
+        category: 'module',
+        contextLabel: String(payload.module || ''),
+      });
+      this.playNotificationCue();
+    } catch (_) {}
+  }
+
   private connectSocket(): void {
     const token = this.normalizedToken();
     if (!token) {
@@ -119,6 +132,10 @@ export class ChatRealtimeNotifierService implements OnDestroy {
         client.subscribe(
           `/topic/collab/chat/user/${this.currentUserId}/unread`,
           () => this.ngZone.run(() => this.refreshChannels(true)),
+        );
+        client.subscribe(
+          `/topic/notifications/user/${this.currentUserId}`,
+          (frame) => this.ngZone.run(() => this.handleModuleNotification(frame.body)),
         );
         this.ngZone.run(() => this.refreshChannels(true));
       };
