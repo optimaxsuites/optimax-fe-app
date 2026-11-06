@@ -2,7 +2,8 @@ import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
 import { catchError, finalize, firstValueFrom, from, map, mergeMap, of, toArray } from 'rxjs';
-import { buildPayslipEmailHtml, payslipEmailAddress, periodLabel, toPayslip } from '../payslip.util';
+import { buildPayslipEmailHtml, formatNaira, payslipEmailAddress, periodLabel, toPayslip } from '../payslip.util';
+import { buildSchedule, ScheduleKind, scheduleToCsv } from '../statutory-schedules.util';
 import { EmployeeService } from '../../../service/employee.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
@@ -92,7 +93,13 @@ level: string[] = [];
 viewEmployee = false;
 openSummary = false;
 showDropdown = false;
-selectedEmployees: any[] = [];
+private _selectedEmployees: any[] = [];
+/** Rows ticked in the table. Menu actions apply to these, or to everyone when none are ticked. */
+get selectedEmployees(): any[] { return this._selectedEmployees; }
+set selectedEmployees(rows: any[]) {
+  this._selectedEmployees = rows ?? [];
+  this.buildActionItems();
+}
 currentEmployeeInView: any = {};
 payrollInView: any = {};
 canSeeApproveButton = false;
@@ -240,32 +247,47 @@ constructor(   private employeeService: EmployeeService,  private sanitizer: Dom
     this.generateYears();
     this.selectedMonth = this.months[new Date().getMonth()];
     
-    this.actionItems=[
-{
-        label: `Generate ${this.currentMonthName} ${this.currentYear} Payroll`,
-        icon: 'pi pi-cog',
-        command: () => this.generatePayrollSummary()
-      },
-            {
-        label: `View Summary`,
-        icon: 'pi pi-chart-bar',
-        command: () => this.viewSummary()
-      },
-      {
-        label: 'Download CSV',
-        icon: 'pi pi-download',
-        command: () => this.generateCSV()
-      },
-      { label: 'Download Bank CSV',
-        icon: 'pi pi-download',
-        command: () => this.downloadBankCSV()
-      },
-      { label: 'Email Payslips',
-        icon: 'pi pi-envelope',
-        command: () => this.emailPayslips(this.payrollInView)
-      }
-    ];
-     
+    this.buildActionItems();
+}
+
+/**
+ * The Actions menu. Every action except Generate works on the employees ticked in the table, or on
+ * everyone when none are ticked, and its label says which. Rebuilt whenever the selection changes.
+ */
+private buildActionItems(): void {
+  const n = this.selectedEmployees.length;
+  const scope = n ? ` (${n} selected)` : '';
+  this.actionItems = [
+    {
+      // Always the whole month: a month's payroll can only be generated once.
+      label: `Generate ${this.currentMonthName} ${this.currentYear} Payroll`,
+      icon: 'pi pi-cog',
+      command: () => this.generatePayrollSummary()
+    },
+    { label: `View Summary${scope}`, icon: 'pi pi-chart-bar', command: () => this.viewSummary() },
+    { label: `Download CSV${scope}`, icon: 'pi pi-download', command: () => this.generateCSV() },
+    { label: `Download Bank CSV${scope}`, icon: 'pi pi-download', command: () => this.downloadBankCSV() },
+    { label: `Email Payslips${scope}`, icon: 'pi pi-envelope', command: () => this.emailPayslips(this.payrollInView, this.selectedEmployeeIds()) },
+    { label: `PAYE Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('paye') },
+    { label: `Pension Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('pension') },
+    { label: `NHF Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('nhf') },
+  ];
+}
+
+/** Employee ids of the ticked rows, or null when nothing is ticked (meaning everyone). */
+private selectedEmployeeIds(): Set<string> | null {
+  if (!this.selectedEmployees.length) return null;
+  return new Set(this.selectedEmployees.map((row: any) => String(row?.employee?.id ?? row?.employeeId ?? '')));
+}
+
+/** `rows` narrowed to the ticked employees; all of them when nothing is ticked. */
+private inSelection<T>(rows: T[]): T[] {
+  const ids = this.selectedEmployeeIds();
+  return ids ? rows.filter((row: any) => ids.has(String(row?.employee?.id ?? row?.employeeId ?? ''))) : rows;
+}
+
+clearSelection(): void {
+  this.selectedEmployees = [];
 }
 ngOnInit(){
   const userId = sessionStorage.getItem('userid') || localStorage.getItem('userid')
@@ -323,6 +345,7 @@ generatePayrolls(onLoaded?: (records: any[]) => void){
             this.selectedMonth = this.months[this.months.length - 1];
             this.selectedYear = this.years[this.years.length - 1];
             this.filteredEmployeePayroll = this.activeOnly(this.payrollInView?.employees ?? []);
+            this.selectedEmployees = [];
             onLoaded?.(records);
         },
         error: err => {
@@ -1242,6 +1265,8 @@ private buildEmployeeFullName(employee: any): string {
 
       console.log(this.selectedYear, this.selectedMonth)
 
+        // The table's rows are about to be replaced; ticks on the old rows would point at nothing.
+        this.selectedEmployees = [];
         if (currentPayroll) {
                 const normalizedPayroll = await Promise.all(this.activeOnly(currentPayroll.employees).map(emp => this.applyPayrollRules(emp)));
                 this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
@@ -1324,9 +1349,11 @@ private buildEmployeeFullName(employee: any): string {
     }
 
   generateCSV() {
-  const source = this.filteredEmployeePayroll.length > 0
-    ? this.filteredEmployeePayroll
-    : this.currentPayroll;
+  const source = this.selectedEmployees.length
+    ? this.selectedEmployees
+    : this.filteredEmployeePayroll.length > 0
+      ? this.filteredEmployeePayroll
+      : this.currentPayroll;
 
   const csvData = this.convertToCSV(source);
 
@@ -1412,8 +1439,15 @@ private buildEmployeeFullName(employee: any): string {
         }
     }
 
+  /** Shown under the summary title: whose figures these are. */
+  summaryScopeLabel = '';
+
   viewSummary(){
-    this.payrollSumary = this.calculatePayrollSummary()
+    const rows = this.selectedEmployees.length ? this.selectedEmployees : this.filteredEmployeePayroll;
+    this.summaryScopeLabel = this.selectedEmployees.length
+      ? `${rows.length} selected employee(s)`
+      : `All ${rows.length} employee(s)`;
+    this.payrollSumary = this.calculatePayrollSummary(rows)
 
     this.openSummary = true
   }
@@ -1458,7 +1492,7 @@ private buildEmployeeFullName(employee: any): string {
         }
     }
 
- calculatePayrollSummary() {
+ calculatePayrollSummary(rows: any[] = this.filteredEmployeePayroll) {
   const summary = {
     totalSalary: 0,
     totalBonuses: 0,
@@ -1472,7 +1506,7 @@ private buildEmployeeFullName(employee: any): string {
     totalGross: 0
   }
 
-  this.filteredEmployeePayroll.forEach(emp => {
+  rows.forEach(emp => {
     // Base
     summary.totalSalary += emp.basePay ?? 0;
     summary.totalOvertimePay += emp.overtimePay ?? 0;
@@ -1630,7 +1664,8 @@ download(format: string) {
 
     downloadBankCSV() {
         const template = this.payrollService.getTemplate(); // select a template
-        const csv = this.payrollService.generateCSV(this.filteredEmployeePayroll, template);
+        const rows = this.selectedEmployees.length ? this.selectedEmployees : this.filteredEmployeePayroll;
+        const csv = this.payrollService.generateCSV(rows, template);
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1686,18 +1721,21 @@ download(format: string) {
     }
 
     /**
-     * Emails each employee in an approved run their payslip. Runs after the final approval, and from the
-     * "Email Payslips" menu item to resend. Employees without an email address are skipped and named.
+     * Emails payslips for an approved run: to everyone after the final approval, and from the
+     * "Email Payslips" menu item to the ticked employees (everyone when none are ticked).
+     * Employees without an email address are skipped and named; failed ones are ticked for a retry.
      */
-    emailPayslips(run: any): void {
+    emailPayslips(run: any, onlyEmployeeIds: Set<string> | null = null): void {
       if (this.emailingPayslips) return;
       if (!run?.id || !this.isRunFullyApproved(run)) {
         this.messageService.add({ severity: 'warn', summary: 'Not approved yet', detail: 'Payslips can be emailed once the payroll run is fully approved.', key: this.toastKey });
         return;
       }
-      const rows: any[] = run.employees ?? [];
+      const idOf = (row: any) => String(row?.employee?.id ?? row?.employeeId ?? '');
+      const everyone = !onlyEmployeeIds;
+      const rows: any[] = (run.employees ?? []).filter((row: any) => everyone || onlyEmployeeIds!.has(idOf(row)));
       if (!rows.length) {
-        this.messageService.add({ severity: 'warn', summary: 'No payslips', detail: 'This payroll run has no employees.', key: this.toastKey });
+        this.messageService.add({ severity: 'warn', summary: 'No payslips', detail: everyone ? 'This payroll run has no employees.' : 'None of the ticked employees are in this payroll run.', key: this.toastKey });
         return;
       }
 
@@ -1723,11 +1761,15 @@ download(format: string) {
               const employee = { ...(row?.employee || {}), ...(byId.get(id) || {}) };
               const slip = toPayslip(row, run, employee);
               const to = payslipEmailAddress(employee);
-              if (!to) return of({ name: slip.name || `#${id}`, result: 'skipped' as const });
+              if (!to) return of({ id, name: slip.name || `#${id}`, result: 'skipped' as const, reason: '' });
               const html = buildPayslipEmailHtml(slip, companyName, payslipsUrl);
               return this.employeeService.sendNotificationEmail(to, `${companyName}: your payslip for ${period}`, html).pipe(
-                map(() => ({ name: slip.name, result: 'sent' as const })),
-                catchError(() => of({ name: slip.name || `#${id}`, result: 'failed' as const }))
+                map(() => ({ id, name: slip.name, result: 'sent' as const, reason: '' })),
+                // Keep the server's answer, so the message can say why (e.g. 401: not signed in).
+                catchError((err: any) => of({
+                  id, name: slip.name || `#${id}`, result: 'failed' as const,
+                  reason: [err?.status || '', err?.error?.message || err?.message || ''].filter(Boolean).join(': ').slice(0, 160),
+                }))
               );
             }, 4),
             toArray()
@@ -1737,15 +1779,62 @@ download(format: string) {
       ).subscribe(results => {
         const sent = results.filter(r => r.result === 'sent');
         const skipped = results.filter(r => r.result === 'skipped').map(r => r.name);
-        const failed = results.filter(r => r.result === 'failed').map(r => r.name);
-        if (sent.length) this.markPayslipsEmailed(run);
+        const failedResults = results.filter(r => r.result === 'failed');
+        const failed = failedResults.map(r => r.reason ? `${r.name} (${r.reason})` : r.name);
+        // Only a send to the whole run counts as "the run was emailed" (it stops the automatic resend).
+        if (sent.length && everyone) this.markPayslipsEmailed(run);
+        // Tick the failed employees, so "Email Payslips (n selected)" retries just them.
+        if (failedResults.length) {
+          const failedIds = new Set(failedResults.map(r => r.id));
+          this.selectedEmployees = this.filteredEmployeePayroll.filter(row => failedIds.has(idOf(row)));
+        }
         this.messageService.add({
           severity: failed.length || skipped.length ? 'warn' : 'success',
           summary: 'Payslips emailed',
           detail: [
             `${sent.length} of ${results.length} ${period} payslip(s) sent.`,
             skipped.length ? `No email address: ${skipped.join(', ')}.` : '',
-            failed.length ? `Failed to send: ${failed.join(', ')}. "Email Payslips" in the menu sends the run's payslips again (to everyone).` : '',
+            failed.length ? `Failed to send: ${failed.join(', ')}. They're now ticked in the table; choose "Email Payslips (${failed.length} selected)" to retry just them.` : '',
+          ].filter(Boolean).join(' '),
+          key: this.toastKey,
+          life: 10000
+        });
+      });
+    }
+
+    // ── Statutory schedules ────────────────────────────────────────────────────
+    /**
+     * Downloads the PAYE, pension or NHF schedule for the run on screen. A run that isn't fully approved
+     * yet is marked DRAFT in the file name, since its figures can still change.
+     */
+    downloadStatutorySchedule(kind: ScheduleKind): void {
+      const run = this.payrollInView;
+      if (!run?.employees?.length) {
+        this.messageService.add({ severity: 'warn', summary: 'No payroll run', detail: 'Generate a payroll run first.', key: this.toastKey });
+        return;
+      }
+      // Ticked employees only, when any are ticked; the file name says so, since a remittance needs everyone.
+      const scopedRun = { ...run, employees: this.inSelection(run.employees) };
+      const partial = this.selectedEmployees.length ? `_${scopedRun.employees.length}_selected` : '';
+      this.employeeService.getAllEmployee().pipe(catchError(() => of([] as any[]))).subscribe((employees: any[]) => {
+        const schedule = buildSchedule(kind, scopedRun, new Map(employees.map(e => [String(e?.id), e])));
+        if (!schedule.count) {
+          this.messageService.add({ severity: 'info', summary: schedule.title, detail: `No ${schedule.title.replace(' Schedule', '')} was deducted ${partial ? 'for the ticked employees' : 'in this run'}.`, key: this.toastKey });
+          return;
+        }
+        const draft = this.isRunFullyApproved(run) ? '' : '_DRAFT';
+        const period = periodLabel(run.month, run.year).replace(/\s+/g, '_');
+        this.downloadCSV(scheduleToCsv(schedule), `${schedule.title.replace(/\s+/g, '_')}_${period}${partial}${draft}.csv`);
+
+        const idName = { paye: 'TIN', pension: 'RSA PIN or PFA', nhf: 'NHF number' }[kind];
+        this.messageService.add({
+          severity: schedule.missingIds || draft ? 'warn' : 'success',
+          summary: `${schedule.title} downloaded`,
+          detail: [
+            `${schedule.count} employee(s), ${formatNaira(schedule.total)} to remit.`,
+            partial ? 'Only the ticked employees are included; untick everyone for the full schedule to send.' : '',
+            draft ? 'The run is not fully approved yet, so this is a draft.' : '',
+            schedule.missingIds ? `${schedule.missingIds} employee(s) have no ${idName} on record; fill those in before sending.` : '',
           ].filter(Boolean).join(' '),
           key: this.toastKey,
           life: 10000
