@@ -1,6 +1,6 @@
 [package]
 name = "optimaxerp-desktop"
-version = "26.11.5"
+version = "26.11.6"
 description = "OptimaXERP Desktop Application"
 authors = ["Optimax"]
 edition = "2021"
