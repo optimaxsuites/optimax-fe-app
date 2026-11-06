@@ -115,6 +115,7 @@ import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-set
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
 import { AppUpdatesComponent } from './ui/view/app-updates/app-updates.component';
 import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.component';
+import { CommerceSettingsComponent } from './ui/view/commerce/commerce-settings/commerce-settings.component';
 // import { DrawerModule } from 'primeng/drawer';
 //
 
@@ -176,6 +177,7 @@ import { SettingsHomeComponent } from './ui/view/settings-home/settings-home.com
     FinanceSettingsComponent,
     FinancePeriodCloseComponent,
     AppUpdatesComponent,
+    CommerceSettingsComponent,
   ],
   imports: [
     // BrowserModule,

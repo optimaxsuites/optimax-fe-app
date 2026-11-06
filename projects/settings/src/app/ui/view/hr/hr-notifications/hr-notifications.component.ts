@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit } from '@angular/core';
 import {
   NotificationSubscriptionService,
   NotificationSubscription,
@@ -181,13 +181,24 @@ function buildDefaults(): SubState {
   templateUrl: './hr-notifications.component.html',
   styleUrl: './hr-notifications.component.scss',
 })
-export class HrNotificationsComponent implements OnInit {
+export class HrNotificationsComponent implements OnInit, OnChanges {
 
-  readonly modules  = MODULES;
+  @Input() moduleKeys: string[] | null = null;
+
+  get modules(): ModuleDef[] {
+    return this.moduleKeys ? MODULES.filter(m => this.moduleKeys!.includes(m.key)) : MODULES;
+  }
+
   readonly channels = CHANNELS;
 
   subs: SubState = buildDefaults();
-  expanded: string | null = 'INVENTORY';
+  expanded: string | null = null;
+
+  ngOnChanges(): void {
+    if (this.modules.length > 0 && (this.expanded === null || !this.modules.find(m => m.key === this.expanded))) {
+      this.expanded = this.modules[0].key;
+    }
+  }
 
   loading = false;
   saving  = false;
@@ -197,6 +208,9 @@ export class HrNotificationsComponent implements OnInit {
   constructor(private subService: NotificationSubscriptionService) {}
 
   ngOnInit(): void {
+    if (this.modules.length > 0) {
+      this.expanded = this.modules[0].key;
+    }
     this.loading = true;
     this.subService.getSubscriptions().subscribe({
       next: (data) => {
@@ -257,7 +271,7 @@ export class HrNotificationsComponent implements OnInit {
     this.saving = true;
     this.error  = '';
     const payload: NotificationSubscription[] = [];
-    for (const mod of MODULES) {
+    for (const mod of this.modules) {
       for (const ev of mod.events) {
         const s = this.subs[mod.key][ev.key];
         payload.push({ module: mod.key, eventType: ev.key, inApp: s.inApp, email: s.email, pushNotif: s.pushNotif, sms: s.sms });

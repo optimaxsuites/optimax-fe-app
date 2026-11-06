@@ -50,3 +50,13 @@ Thumbs.db
 *-prd.html
 *.prd.html
 .claude/
+
+# Tauri — build artifacts and generated platform code (never commit these)
+src-tauri/target/
+src-tauri/gen/
+src-tauri/Cargo.lock
+
+# Large binary / media assets (keep out of git)
+src/assets/splash.mp4
+src-tauri/splash.mp4
+src/splash.h

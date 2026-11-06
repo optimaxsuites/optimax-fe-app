@@ -874,6 +874,17 @@ export class MenuItemsService {
       submenu: [],
     },
     {
+      label: 'Commerce',
+      code: 'optimaXCommerce',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('commerceSettings'),
+      icon: 'fas fa-chart-line',
+      description: 'Configure Commerce modules: Sales, Procurement, Inventory, Vendor Management, and Logistics.',
+      submenu: [
+        { label: 'Notification Subscriptions', route: this.navigationLink.getLink('commerceSettings'), queryParams: { panel: 'notifications' }, roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fas fa-bell' },
+      ],
+    },
+    {
       label: 'Finance',
       code: 'optimaXAccounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],

@@ -599,6 +599,12 @@ private setProbationValidators(): void {
   }
 
   addNewEmployee(shouldRedirect: boolean){
+  this.applyImportLookups();
+  if (!this.basicForm.valid || !this.employeeForm.valid) {
+    this.basicForm.markAllAsTouched();
+    this.employeeForm.markAllAsTouched();
+    return;
+  }
   const newEmployee: any = {
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
