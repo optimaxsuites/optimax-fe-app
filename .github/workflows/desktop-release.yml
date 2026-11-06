@@ -19,9 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            target: universal-apple-darwin
-            args: '--target universal-apple-darwin --bundles dmg'
+          - platform: macos-14
+            target: aarch64-apple-darwin
+            args: '--bundles dmg'
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             args: '--bundles nsis'
@@ -43,7 +43,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+          targets: ${{ matrix.target }}
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
