@@ -66,7 +66,7 @@
       <div class="hero-content">
         <div class="hero-text">
           <h1>Welcome back, <span class="lm-dashboard-emp-name">{{ displayEmployeeName }}</span>!</h1>
-          <p class="hero-subtitle">Your financial journey at a glance. Track loans, make payments, and stay on top of your finances.</p>
+          <p class="hero-subtitle">Your financial journey at a glance. Track your loans and the repayments taken from your salary.</p>
           <div class="employee-chip">
             <i class="fas fa-id-card"></i>
             <span>Employee ID: {{ displayEmployeeId }}</span>
@@ -238,7 +238,15 @@
             <i class="fas fa-chevron-right"></i>
           </button>
 
-          <button class="command-btn make-payment" (click)="openPaymentFormModal()" [class.disabled]="!payableLoans.length">
+          <!-- Self-service repayments are off for now: repayments come off salary (SELF_SERVICE_PAYMENTS_ENABLED). -->
+          <div class="command-btn make-payment disabled" *ngIf="!selfServicePayments" role="note">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <div class="btn-text">
+              <strong>Deducted from Salary</strong>
+              <span>{{ salaryDeductionNote }}</span>
+            </div>
+          </div>
+          <button *ngIf="selfServicePayments" class="command-btn make-payment" (click)="openPaymentFormModal()" [class.disabled]="!payableLoans.length">
             <i class="fas fa-credit-card"></i>
             <div class="btn-text">
               <strong>Make Payment</strong>

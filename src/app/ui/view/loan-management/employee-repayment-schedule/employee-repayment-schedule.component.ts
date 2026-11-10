@@ -1,4 +1,5 @@
 // employee-repayment-schedule.component.ts
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
@@ -23,6 +24,9 @@ import { formatNaira, getLoanStatusClass, getLoanStatusLabel } from '../../../se
   encapsulation: ViewEncapsulation.None
 })
 export class EmployeeRepaymentScheduleComponent implements OnInit, OnChanges {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   @Input() loan!: LoanApplication;
   @Input() paymentMode: 'advance' | 'cooperative' = 'advance';
   @Input() cooperativeLoan: CooperativeLoan | null = null;

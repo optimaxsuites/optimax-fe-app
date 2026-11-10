@@ -255,6 +255,9 @@
             <h3>Terms & Agreement</h3>
           </div>
           
+          <!-- Employees must always know repayments come straight off their salary. -->
+          <p-message severity="warn" styleClass="w-full mb-3" [text]="salaryDeductionDisclaimer"></p-message>
+
           <div class="terms-list">
             <div class="term-item">
               <div class="term-icon"><i class="fas fa-check-circle"></i></div>
@@ -285,7 +288,7 @@
           <div class="agreement">
             <label class="checkbox">
               <input type="checkbox" formControlName="acknowledgment">
-              <span>I confirm that I have read, understood, and agree to all the terms and conditions <span class="required">*</span></span>
+              <span>I confirm that I have read, understood, and agree to all the terms and conditions, including that the total repayable amount will be deducted from my salary <span class="required">*</span></span>
             </label>
             <div class="error" *ngIf="acknowledgment?.invalid && acknowledgment?.touched">
               <i class="fas fa-exclamation-circle"></i> You must agree to the terms to proceed

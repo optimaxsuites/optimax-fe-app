@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { TableAction, TableColumn } from '../../../shared-component/view/table/table.component';
 import { PayrollLoanDeductionService } from '../../../service/payroll-loan-deduction.service';
-import { catchError, finalize, firstValueFrom, from, map, mergeMap, of, toArray } from 'rxjs';
-import { buildPayslipEmailHtml, formatNaira, payslipEmailAddress, periodLabel, toPayslip } from '../payslip.util';
+import { catchError, finalize, from, map, mergeMap, of, toArray } from 'rxjs';
+import { buildPayslipEmailHtml, formatNaira, payslipEmailAddress, payslipFigures, periodLabel, toPayslip } from '../payslip.util';
 import { buildSchedule, ScheduleKind, scheduleToCsv } from '../statutory-schedules.util';
+import { EmployeeObligations, OBLIGATION_KIND_LABEL, PayrollObligation } from '../../../service/payroll-obligations';
 import { EmployeeService } from '../../../service/employee.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { PayrollService } from '../../../service/payroll.service';
@@ -11,61 +12,6 @@ import { Employee, Payroll } from '../../../domain/payroll.dto';
 import { MailNotificationService } from '../../../service/mailNotification.service';
 import { MessageService } from 'primeng/api';
 import { RolesService } from '../../../service/roles.service';
-interface Allowances {
-    housingAllowance: number;
-    transportationAllowance: number;
-    mealAllowance: number;
-    healthAllowance: number;
-    carAllowance: number;
-    securityAllowance: number;
-    travelAllowance: number;
-    [key: string]: number; 
-}
-type PenaltyType = 'fixed' | 'percentage';
-type PayType = 'monthly' | 'daily' | 'hourly' | 'project';
-
-
-interface AttendanceSummary {
-  lateDays: number;
-  absentDays: number;
-}
-
-interface SalaryLevelSetting {
-  level: string;
-  monthly: number;
-  daily: number;
-  hourly?: number;
-}
-
-interface PayrollSettings {
-  paySchedule: {
-    startDay: number;
-    endDay: number;
-    workingDaysPerPeriod: number;
-    hoursPerDay: number;
-  };
-  attendancePolicy: {
-    resumptionTime: string;
-    graceMinutes: number;
-    lateWindowEnd: string;
-    latePenalty: {
-      type: PenaltyType;
-      amount: number;
-    };
-    absentPenalty: {
-      type: PenaltyType;
-      amount: number;
-    };
-  };
-  overtime: {
-    enabled: boolean;
-    rateType: 'percentage' | 'fixed';
-    rateValue: number;
-    maxHoursPerPeriod: number;
-  };
-  salaryByLevel: SalaryLevelSetting[];
-}
-
 @Component({
   selector: 'app-employee-payroll',
   templateUrl: './employee-payroll.component.html',
@@ -75,9 +21,6 @@ export class EmployeePayrollComponent {
 private readonly payrollLoanDeductionService = inject(PayrollLoanDeductionService);
 private readonly rolesService = inject(RolesService);
 private readonly toastKey = 'tf';
-isApplyingLoanDeductions = false;
-loanDeductionSyncMessage = '';
-autoApplyLoanDeductions = true;
 isLoadingPayroll = false;
 isApprovingPayroll = false;
 private readonly approverNameByUserId = new Map<string, string>();
@@ -108,42 +51,7 @@ openRejectModal = false
 approvalComment = '';
 currentStageRequiresComment = false;
 
-  uniqueLevels: any;
-  uniquePositions: any;
   currentPage = 1;
-  fetchEmployeeLoading = false;
-
-// The server's payroll run already applies salary, attendance penalties and overtime. These used to hold
-// made-up rates (₦1,000 late, ₦3,000 absent, 150% overtime, "Junior" ₦4,500…) that changed real pay,
-// so the browser no longer adds its own penalties, overtime or fallback salaries.
-payrollSettings: PayrollSettings = {
-  paySchedule: {
-    startDay: 15,
-    endDay: 15,
-    workingDaysPerPeriod: 22,
-    hoursPerDay: 8
-  },
-  attendancePolicy: {
-    resumptionTime: '09:00',
-    graceMinutes: 15,
-    lateWindowEnd: '10:30',
-    latePenalty: {
-      type: 'fixed',
-      amount: 0
-    },
-    absentPenalty: {
-      type: 'fixed',
-      amount: 0
-    }
-  },
-  overtime: {
-    enabled: false,
-    rateType: 'percentage',
-    rateValue: 0,
-    maxHoursPerPeriod: 0
-  },
-  salaryByLevel: []
-};
 
  payrollColumns: TableColumn[] = [
   {
@@ -183,6 +91,12 @@ payrollSettings: PayrollSettings = {
     field: 'grossPay',
     className: 'table-item',
     formatter: (row) => this.formatCurrency(row.grossPay)
+  },
+  {
+    // What the employee owes this month for loans and cooperatives; flagged when the run differs.
+    header: 'Loans & Coop',
+    className: 'table-item',
+    formatter: (row) => this.loansAndCoopLabel(row)
   },
   {
     header: 'Total Deductions',
@@ -229,8 +143,6 @@ years: any[] = [];
 filteredEmployeePayroll: any[] = []
 currentPayroll: any[] = []
 payrollSumary: any = {}
-employees: any = []
-filteredEmployees: any[] = [];
 employeeProfilePhotoUrl: string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 triggeredGeneration = false;
 selectedFile: File | null = null;
@@ -241,7 +153,6 @@ actionItems: any = []
   canSeeApprovalButton: any;
   isDocumentRequired: any;
   canEditRecord: any;
-  salaryInputMode: 'monthly' | 'yearly' = 'monthly';
 // payrollRecords: any[] = []
 constructor(   private employeeService: EmployeeService,  private sanitizer: DomSanitizer, private payrollService: PayrollService, private mailNotificationService: MailNotificationService, private messageService: MessageService) {
     this.generateYears();
@@ -271,6 +182,7 @@ private buildActionItems(): void {
     { label: `PAYE Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('paye') },
     { label: `Pension Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('pension') },
     { label: `NHF Schedule (CSV)${scope}`, icon: 'pi pi-file', command: () => this.downloadStatutorySchedule('nhf') },
+    { label: `Loan & Coop Deductions (CSV)${scope}`, icon: 'pi pi-wallet', command: () => this.downloadObligationsCsv() },
   ];
 }
 
@@ -296,10 +208,6 @@ ngOnInit(){
     next: data => {this.currentUser = data;},
     error: () => {}
   })
-  this.payrollService.getGeneralSettingsById().subscribe({
-    next: (res: any) => { this.salaryInputMode = (res?.salaryInputMode as 'monthly' | 'yearly') || 'monthly'; },
-    error: () => {}
-  });
   this.loadApproverDirectory();
   this.loadApproverRoles();
   this.generatePayrolls();
@@ -317,35 +225,20 @@ formatCurrency(value: number | null | undefined): string {
   return value < 0 ? `- ${formatted}` : formatted;
 }
 
+/** Every run, newest first. */
+runs: any[] = [];
+
 /** `onLoaded` runs with the fresh runs once they arrive (used after an approval). */
 generatePayrolls(onLoaded?: (records: any[]) => void){
     this.isLoadingPayroll = true;
+    const keepRunId = this.payrollInView?.id;
     this.payrollService.getPayrollGenerationResponses().subscribe({
         next: response => {
             const records: any[] = Array.isArray(response) ? response : (response?.content ?? []);
             this.payrollRecords = records;
-            const sorted = [...records].sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
-            this.payrollInView = sorted.length > 0 ? sorted[0] : {};
-            const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
-
-            const assignments = this.getStageAssignments(currentStage);
-
-            this.canSeeApprovalButton = assignments.some((a: any) => this.canCurrentUserApproveAssignment(a));
-            this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
-            this.currentStageRequiresComment = currentStage?.requiresComment ?? false;
-            this.canEditRecord = currentStage?.canEditRecord ?? false;
-            this.canSeeApproveButton = this.payrollInView?.payrollApprovalInstance?.approval ? true : false;
-            const hasEditAction = this.payrollActions.some(action => action.id === 'edit');
-            if (this.canEditRecord && !hasEditAction) {
-              this.payrollActions.push({ id: 'edit', label: 'Edit', icon: 'pi pi-pencil' });
-            }
-            this.years = Array.from(new Set(records.map((r: any) => r.year))).sort((a, b) => a - b);
-            const monthIndices = Array.from(new Set(records.map((r: any) => r.month - 1)));
-            this.months = monthIndices.map(index => this.monthNames[index]).sort((a, b) => this.monthNames.indexOf(a) - this.monthNames.indexOf(b));
-            this.selectedMonth = this.months[this.months.length - 1];
-            this.selectedYear = this.years[this.years.length - 1];
-            this.filteredEmployeePayroll = this.activeOnly(this.payrollInView?.employees ?? []);
-            this.selectedEmployees = [];
+            this.runs = [...records].sort((a, b) => (+b.year - +a.year) || (+b.month - +a.month));
+            // Stay on the run being looked at (e.g. after approving it); otherwise open the newest.
+            this.selectRun(this.runs.find(r => keepRunId != null && String(r.id) === String(keepRunId)) ?? this.runs[0]);
             onLoaded?.(records);
         },
         error: err => {
@@ -356,12 +249,64 @@ generatePayrolls(onLoaded?: (records: any[]) => void){
             detail: 'Unable to load payroll records right now.',
             key: this.toastKey
           });
+          this.isLoadingPayroll = false;
         },
         complete: () => {
           this.isLoadingPayroll = false;
         }
     })
 }
+
+/**
+ * Shows one run: its rows exactly as the server calculated them, its approval state, and its month for
+ * everything else on the screen (payslip emails, statutory schedules, loan checks, bank file).
+ */
+selectRun(run: any): void {
+    this.payrollInView = run ?? {};
+    const currentStage = this.payrollInView?.payrollApprovalInstance?.currentStage;
+    const assignments = this.getStageAssignments(currentStage);
+    this.canSeeApprovalButton = assignments.some((a: any) => this.canCurrentUserApproveAssignment(a));
+    this.isDocumentRequired = currentStage?.isDocumentRequired ?? false;
+    this.currentStageRequiresComment = currentStage?.requiresComment ?? false;
+    this.canEditRecord = currentStage?.canEditRecord ?? false;
+    this.canSeeApproveButton = !!this.payrollInView?.payrollApprovalInstance?.approval;
+    const hasEditAction = this.payrollActions.some(action => action.id === 'edit');
+    if (this.canEditRecord && !hasEditAction) {
+      this.payrollActions.push({ id: 'edit', label: 'Edit', icon: 'pi pi-pencil' });
+    }
+
+    this.selectedMonth = run ? this.monthNames[+run.month - 1] : undefined;
+    this.selectedYear = run?.year;
+    this.currentPayroll = this.activeOnly(this.payrollInView?.employees ?? []);
+    const options = (pick: (row: any) => any) =>
+      Array.from(new Set(this.currentPayroll.map(pick).filter(v => v !== undefined && v !== null && v !== ''))).sort();
+    this.payType = options(row => this.rowJobType(row));
+    this.department = options(row => this.rowDepartment(row));
+    this.level = options(row => this.rowLevel(row));
+    this.selectedPayType = [];
+    this.selectedDepartment = [];
+    this.selectedLevel = [];
+    this.searchTerm = '';
+    this.filteredEmployeePayroll = [...this.currentPayroll];
+    this.selectedEmployees = [];
+    this.loadObligations(this.payrollInView?.month, this.payrollInView?.year);
+}
+
+selectRunById(runId: any): void {
+    this.selectRun(this.runs.find(r => String(r.id) === String(runId)));
+}
+
+runOptionLabel(run: any): string {
+    const status = String(run?.payrollApprovalInstance?.status || run?.status || 'PENDING').toUpperCase();
+    return `${periodLabel(run?.month, run?.year)} · ${status}`;
+}
+
+private rowName(row: any): string {
+    return `${row?.employee?.firstName ?? ''} ${row?.employee?.lastName ?? ''}`.trim();
+}
+private rowDepartment(row: any): string { return row?.employee?.department?.name ?? ''; }
+private rowLevel(row: any): string { return row?.employee?.level?.name ?? ''; }
+private rowJobType(row: any): string { return row?.employee?.jobType?.name ?? ''; }
 
 private loadApproverDirectory(): void {
   this.employeeService.getAllEmployee().subscribe({
@@ -560,78 +505,6 @@ private buildEmployeeFullName(employee: any): string {
 
      }
     })
-  }
-
-  fetchEmployees(){
-    this.filteredEmployees = []
-    this.employeeService.getAllEmployee().subscribe({
-      next: (employees) => {
-        this.employees = this.sortEmployeesLatest(employees);
-        this.uniqueLevels = [
-          ...new Set(
-            this.employees
-              .map((employee: { level: any }) => employee?.level?.name)
-              .filter((level: string) => level != null) 
-          ),
-        ];
-        
-        this.uniquePositions = [
-          ...new Set(
-            this.employees
-              .map((employee: { jobTitle: string }) => employee?.jobTitle)
-              .filter((jobTitle: string) => jobTitle != undefined) 
-          ),
-        ];
-
-        this.filteredEmployees = this.employees.map((employee: any) => {
-        //   if (employee.employeeMedia?.mediaNo) {
-        //     this.fetchProfilePhoto(employee);
-        //   } else {
-        //     employee.imageUrl = this.employeeProfilePhotoUrl; // Assign default image if no mediaNo
-        //   }
-          if(employee?.level.id){
-                this.employeeService.getSalaryById(employee.level.id).subscribe({
-                next: data => {
-                    employee.netPayable = this.calculateNetSalary(data[0])
-                },
-                error: err => console.log(err)
-                })
-            }
-          employee.name = `${employee.firstName} ${employee.lastName}`;
-          employee.level = employee.level?.name || 'N/A';
-          employee.department = employee.department?.name || 'N/A';
-        //   employee.netPayable = 0; // Initialize netPayable to 0 or calculate based on your logic
-
-          return employee;
-        });
-
-        this.fetchEmployeeLoading= false
-        this.resetPagination();
-    console.log(this.filteredEmployees)
-    
-
-      },
-      error: err => {
-        console.log(err)
-        this.fetchEmployeeLoading= false
-    }
-    })
-
-
-  }
-
-  private toMonthly(amount: number): number {
-    return this.salaryInputMode === 'yearly' ? Math.round(amount / 12) : amount;
-  }
-
-  private calculateNetSalary(details: any): number {
-    if (!details) return 0;
-    const base = this.toMonthly(this.toNumber(details.baseSalary));
-    const allowances = this.toMonthly(this.sumAmounts(details.allowance, ['amount', 'value']));
-    const bonuses = this.toMonthly(this.sumAmounts(details.bonus, ['amount', 'value']));
-    const overtime = this.toMonthly(this.sumAmounts(details.overtime, ['amount', 'rate', 'value']));
-    const deductions = this.toMonthly(this.sumAmounts(details.deductions, ['amount', 'value']));
-    return base + allowances + bonuses + overtime - deductions;
   }
 
     fetchProfilePhoto(employee: any): void {
@@ -1108,245 +981,27 @@ private buildEmployeeFullName(employee: any): string {
   //   return `₦${normalized.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   // }
 
-  private resolvePayType(employee: any): PayType {
-    if (employee.payType) return employee.payType as PayType;
-    if (employee.type === 'daily') return 'daily';
-    if (employee.type === 'hourly') return 'hourly';
-    if (employee.type === 'project-based') return 'project';
-    return 'monthly';
-  }
-
-  private getLevelRate(level: string, payType: Exclude<PayType, 'project'>): number {
-    const match = this.payrollSettings.salaryByLevel.find(setting => setting.level === level);
-    if (!match) return 0;
-    if (payType === 'hourly') {
-      return match.hourly ?? (match.daily / this.payrollSettings.paySchedule.hoursPerDay);
-    }
-    return match[payType];
-  }
-
-  private getDailyRate(employee: any, payType: PayType, basePay: number): number {
-    if (payType === 'daily') return employee.dailyRate ?? this.getLevelRate(employee.level, 'daily');
-    if (payType === 'hourly') return (employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly')) * this.payrollSettings.paySchedule.hoursPerDay;
-    if (payType === 'monthly') return basePay / this.payrollSettings.paySchedule.workingDaysPerPeriod;
-    return 0;
-  }
-
-  private getHourlyRate(employee: any, payType: PayType, basePay: number): number {
-    if (payType === 'hourly') return employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly');
-    const dailyRate = this.getDailyRate(employee, payType, basePay);
-    return dailyRate / this.payrollSettings.paySchedule.hoursPerDay;
-  }
-
-  private getAttendanceSummary(employee: any): AttendanceSummary {
-    return employee.attendanceSummary ?? { lateDays: 0, absentDays: 0 };
-  }
-
-  private resolvePenaltyAmount(penalty: { type: PenaltyType; amount: number }, dailyRate: number): number {
-    if (penalty.type === 'percentage') {
-      return dailyRate * (penalty.amount / 100);
-    }
-    return penalty.amount;
-  }
-
-  private calculateAttendancePenalty(employee: any, basePay: number, payType: PayType): number {
-    const attendance = this.getAttendanceSummary(employee);
-    if (!attendance.lateDays && !attendance.absentDays) return 0;
-    const dailyRate = this.getDailyRate(employee, payType, basePay);
-    const latePenalty = this.resolvePenaltyAmount(this.payrollSettings.attendancePolicy.latePenalty, dailyRate);
-    const absentPenalty = this.resolvePenaltyAmount(this.payrollSettings.attendancePolicy.absentPenalty, dailyRate);
-    return (attendance.lateDays * latePenalty) + (attendance.absentDays * absentPenalty);
-  }
-
-  private calculateOvertimePay(employee: any, basePay: number, payType: PayType): { overtimePay: number; overtimeHours: number } {
-    // Overtime the server already paid (the run's overtimePay) is kept; the browser adds none of its own.
-    if (!this.payrollSettings.overtime.enabled) {
-      return { overtimePay: Number(employee.overtimePay) || 0, overtimeHours: Number(employee.overtimeHours) || 0 };
-    }
-    const overtimeHours = Math.min(employee.overtimeHours ?? 0, this.payrollSettings.overtime.maxHoursPerPeriod);
-    if (!overtimeHours) return { overtimePay: 0, overtimeHours: 0 };
-    const hourlyRate = this.getHourlyRate(employee, payType, basePay);
-    if (!hourlyRate) return { overtimePay: 0, overtimeHours: 0 };
-    const overtimeRate = this.payrollSettings.overtime.rateType === 'percentage'
-      ? hourlyRate * (this.payrollSettings.overtime.rateValue / 100)
-      : this.payrollSettings.overtime.rateValue;
-    return { overtimePay: overtimeRate * overtimeHours, overtimeHours };
-  }
-
-  private calculateBasePay(employee: any, payType: PayType): number {
-    // The run's own base pay is authoritative; the rest only applies to rows without one.
-    if (typeof employee.basePay === 'number') return employee.basePay;
-    if (payType === 'project') {
-      if (employee.totalProjectPay) return employee.totalProjectPay;
-      return (employee.projects || []).reduce((sum: number, project: any) => sum + (project.projectPay || 0), 0);
-    }
-    if (payType === 'daily') {
-      const dailyRate = employee.dailyRate ?? this.getLevelRate(employee.level, 'daily');
-      const daysWorked = employee.daysWorked ?? this.payrollSettings.paySchedule.workingDaysPerPeriod;
-      return dailyRate * daysWorked;
-    }
-    if (payType === 'hourly') {
-      const hourlyRate = employee.hourlyRate ?? this.getLevelRate(employee.level, 'hourly');
-      return hourlyRate * (employee.hoursWorked ?? 0);
-    }
-    return this.toMonthly(employee.salary ?? this.getLevelRate(employee.level, 'monthly'));
-  }
-
-  private getBasePayLabel(payType: PayType): string {
-    if (payType === 'daily') return 'Daily Wage';
-    if (payType === 'hourly') return 'Hourly Pay';
-    if (payType === 'project') return 'Project Pay';
-    return 'Base Salary';
-  }
-
-  private sumAllowances(allowances?: Allowances): number {
-    if (!allowances) return 0;
-    return Object.values(allowances).reduce((sum, amount) => sum + (amount || 0), 0);
-  }
-
-  private sumBonuses(bonuses?: { amount: number }[]): number {
-    if (!bonuses) return 0;
-    return bonuses.reduce((sum, bonus) => sum + (bonus.amount || 0), 0);
-  }
-
-  private sumDeductions(deductions?: { amount: number }[]): number {
-    if (!deductions) return 0;
-    return deductions.reduce((sum, deduction) => sum + (deduction.amount || 0), 0);
-  }
-
-    private async applyPayrollRules(employee: any): Promise<any> {
-        const payType = this.resolvePayType(employee);
-        const basePay = this.calculateBasePay(employee, payType);
-        const attendancePenalty = this.calculateAttendancePenalty(employee, basePay, payType);
-        const overtime = this.calculateOvertimePay(employee, basePay, payType);
-        const bonuses = (employee.bonuses || []).map((bonus: any) => ({ ...bonus }));
-        const allowances = { ...(employee.allowances || {}) };
-        const deductions = (employee.deductions || []).map((deduction: any) => ({ ...deduction }));
-        if (attendancePenalty > 0) {
-            deductions.push({ amount: attendancePenalty, reason: 'Attendance deduction' });
-        }
-
-        const loanDeductions = await this.payrollLoanDeductionService.getLoanDeductionsForEmployee(employee, this.selectedMonthNumber, Number(this.selectedYear));
-        loanDeductions.forEach((deduction: { amount: number; reason: string }) => {
-            deductions.push({
-                amount: deduction.amount,
-                reason: deduction.reason
-            });
-        });
-
-        const totalAllowances = this.sumAllowances(allowances);
-        const totalBonuses = this.sumBonuses(bonuses);
-        const totalDeductions = this.sumDeductions(deductions);
-        const grossPay = basePay + totalAllowances + totalBonuses + overtime.overtimePay;
-        const netPayable = grossPay - totalDeductions;
-
-        return {
-            ...employee,
-            payType,
-            basePay,
-            basePayLabel: this.getBasePayLabel(payType),
-            attendanceSummary: this.getAttendanceSummary(employee),
-            attendancePenalty,
-            overtimeHours: overtime.overtimeHours,
-            overtimePay: overtime.overtimePay,
-            deductions,
-            totalAllowances,
-            totalBonuses,
-            totalDeductions,
-            grossPay,
-            netPayable
-        };
-    }
-    async handlePeriodChange(autoSyncLoanDeductions = true){
+  /** The month picker: opens that month's run, if one was generated. */
+  handlePeriodChange(){
     const monthIndex = this.monthNames.indexOf(this.selectedMonth) + 1;
-    const currentPayroll = this.payrollRecords.find(
-        (payroll) => payroll.year == this.selectedYear && payroll.month == monthIndex
-      );
-
-      console.log(this.selectedYear, this.selectedMonth)
-
-        // The table's rows are about to be replaced; ticks on the old rows would point at nothing.
-        this.selectedEmployees = [];
-        if (currentPayroll) {
-                const normalizedPayroll = await Promise.all(this.activeOnly(currentPayroll.employees).map(emp => this.applyPayrollRules(emp)));
-                this.payType = Array.from(new Set(normalizedPayroll.map(emp => emp.type)));
-                this.department = Array.from(new Set(normalizedPayroll.map(emp => emp.department)));
-                this.level = Array.from(new Set(normalizedPayroll.map(emp => emp.level)));
-                this.filteredEmployeePayroll = [...normalizedPayroll];
-                this.currentPayroll = [...normalizedPayroll];
-            } else {
-                this.payType = [];
-                this.department = [];
-                this.level = [];
-                this.filteredEmployeePayroll = [];
-                this.currentPayroll = [];
-            }
-            this.payrollSumary = this.calculatePayrollSummary();
-
-                        if (autoSyncLoanDeductions && this.autoApplyLoanDeductions && this.currentPayroll.length > 0) {
-                                void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: false });
-                        }
+    const run = this.runs.find(r => +r.year === +this.selectedYear && +r.month === monthIndex);
+    this.selectRun(run);
   }
-   
-    filterEmployee() {
-        const term = (this.searchTerm || '').toLowerCase();
-        this.filteredEmployeePayroll = this.currentPayroll.filter(employee => {
-            const matchesSearchTerm = !term || employee.name.toLowerCase().includes(term);
-            const matchesPay = this.selectedPayType.length === 0 || this.selectedPayType.includes(employee.type);
-            const matchesLevel = this.selectedLevel.length === 0 || this.selectedLevel.includes(employee.level);
-            const matchesDepartment = this.selectedDepartment.length === 0 || this.selectedDepartment.includes(employee.department);
-            return matchesSearchTerm && matchesLevel && matchesDepartment && matchesPay;
-        });
-    }
 
-    filterBySelectedPayType() {
-        if (this.selectedPayType.length == 0 ) {
-   
-            this.filteredEmployeePayroll = [...this.currentPayroll]; 
-          } else {
-            this.filteredEmployeePayroll = this.currentPayroll.filter((employee: { type: string; }) => 
-                this.selectedPayType.some((type: string) => 
-                  employee.type.toLowerCase().includes(type.toLowerCase()) 
-                )
-              );
-          }
-    
-          if (this.searchTerm && this.searchTerm.trim() !== '') {
-            this.filterEmployee();
-          }
-    }
-    filterBySelectedDepartment(){
-        console.log(this.selectedDepartment)
+  /** Search, salary structure (job type), department and level filters, all applied together. */
+  filterEmployee() {
+    const term = (this.searchTerm || '').trim().toLowerCase();
+    this.filteredEmployeePayroll = this.currentPayroll.filter(row =>
+      (!term || this.rowName(row).toLowerCase().includes(term))
+      && (!this.selectedPayType.length || this.selectedPayType.includes(this.rowJobType(row)))
+      && (!this.selectedDepartment.length || this.selectedDepartment.includes(this.rowDepartment(row)))
+      && (!this.selectedLevel.length || this.selectedLevel.includes(this.rowLevel(row)))
+    );
+  }
 
-        if (this.selectedDepartment.length == 0 ) {
-   
-            this.filteredEmployeePayroll = [...this.currentPayroll]; 
-          } else {
-            this.filteredEmployeePayroll = this.currentPayroll.filter((employee: { department: string; }) => 
-                this.selectedDepartment.includes(employee.department)
-              );
-          }
-    
-          if (this.searchTerm && this.searchTerm.trim() !== '') {
-            this.filterEmployee();
-          }
-    }
-    filterBySelectedLevel(){
-        console.log(this.selectedLevel)
-        if (this.selectedLevel.length == 0 ) {
-   
-            this.filteredEmployeePayroll = [...this.currentPayroll]; 
-          } else {
-            this.filteredEmployeePayroll = this.currentPayroll.filter((employee: { level: string; }) => 
-                this.selectedLevel.includes(employee.level)
-              );
-              console.log(this.filteredEmployeePayroll)
-          }
-    
-          if (this.searchTerm && this.searchTerm.trim() !== '') {
-            this.filterEmployee();
-          }
-    }
+  filterBySelectedPayType() { this.filterEmployee(); }
+  filterBySelectedDepartment() { this.filterEmployee(); }
+  filterBySelectedLevel() { this.filterEmployee(); }
 
   generateCSV() {
   const source = this.selectedEmployees.length
@@ -1424,21 +1079,6 @@ private buildEmployeeFullName(employee: any): string {
     }
   }
 
-  onSettingsChange() {
-    if (!this.selectedMonth || !this.selectedYear) return;
-    this.handlePeriodChange();
-  }
-
-    onAutoLoanApplyToggle(): void {
-        if (!this.autoApplyLoanDeductions || !this.selectedMonth || !this.selectedYear) {
-            return;
-        }
-
-        if (this.currentPayroll.length > 0) {
-            void this.syncLoanDeductions({ refreshAfterSync: false, showNoDataMessage: true });
-        }
-    }
-
   /** Shown under the summary title: whose figures these are. */
   summaryScopeLabel = '';
 
@@ -1451,46 +1091,6 @@ private buildEmployeeFullName(employee: any): string {
 
     this.openSummary = true
   }
-
-        async applyLoanDeductionsToLoans(): Promise<void> {
-            await this.syncLoanDeductions({ refreshAfterSync: true, showNoDataMessage: true });
-        }
-
-        private async syncLoanDeductions(options: { refreshAfterSync: boolean; showNoDataMessage: boolean }): Promise<void> {
-        if (this.isApplyingLoanDeductions) {
-            return;
-        }
-
-        if (!this.currentPayroll.length || !this.selectedMonth || !this.selectedYear) {
-                        if (options.showNoDataMessage) {
-                            this.loanDeductionSyncMessage = 'No payroll period selected for loan deduction posting.';
-                        }
-            return;
-        }
-
-        this.isApplyingLoanDeductions = true;
-                if (options.showNoDataMessage) {
-                    this.loanDeductionSyncMessage = '';
-                }
-
-        try {
-            // Use getLoanDeductionsForPayroll for batch deduction
-
-            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(this.currentPayroll, this.selectedMonthNumber, Number(this.selectedYear)));
-            if (options.showNoDataMessage || (Array.isArray(result) && result.length > 0)) {
-                this.loanDeductionSyncMessage = `Loan deductions sync complete: ${Array.isArray(result) ? result.length : 0} employees processed.`;
-            }
-
-                        if (options.refreshAfterSync) {
-                            this.handlePeriodChange(false);
-                        }
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unexpected error while syncing loan deductions.';
-            this.loanDeductionSyncMessage = `Loan deductions sync failed: ${message}`;
-        } finally {
-            this.isApplyingLoanDeductions = false;
-        }
-    }
 
  calculatePayrollSummary(rows: any[] = this.filteredEmployeePayroll) {
   const summary = {
@@ -1618,71 +1218,68 @@ download(format: string) {
     this.currentPage = 1;
   }
 
-   private sumAmounts(items: any, fields: string[]): number {
-    if (!Array.isArray(items)) return 0;
-    return items.reduce((total, item) => {
-      if (item === null || item === undefined) return total;
-      if (typeof item === 'number') return total + item;
-      for (const field of fields) {
-        const value = this.toNumber(item?.[field]);
-        if (value !== 0) return total + value;
-      }
-      return total + this.toNumber(item);
-    }, 0);
-  }
-
-  private toNumber(value: any): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-
-      async applyLoanDeductionsToPayroll(period: { month: string; year: number }) {
-        this.isApplyingLoanDeductions = true;
-        this.loanDeductionSyncMessage = 'Applying loan deductions...';
-        try {
-            const payrollRows = this.getCurrentPayrollRows();
-            // Convert month string to number (1-12)
-            const monthIndex = this.monthNames.indexOf(period.month) + 1;
-            const result = await firstValueFrom(this.payrollLoanDeductionService.getLoanDeductionsForPayroll(payrollRows, monthIndex, period.year));
-            this.loanDeductionSyncMessage = `Loan deductions processed for ${Array.isArray(result) ? result.length : 0} employees.`;
-        } catch (error) {
-            this.loanDeductionSyncMessage = 'Error applying loan deductions.';
-        } finally {
-            this.isApplyingLoanDeductions = false;
-        }
-    }
-
-    getCurrentPayrollRows() {
-        // Example: return current payroll employees for the selected period
-        // Replace with actual logic as needed
-        const currentPeriod = this.payrollRecords.find(
-            (payroll) => payroll.year == this.selectedYear && payroll.month == (this.monthNames.indexOf(this.selectedMonth) + 1)
-        );
-        return currentPeriod?.employees || [];
-    }
-
+    /**
+     * The bank file for the run on screen, from the saved template. Only for a fully approved run, and
+     * never with a zero or negative amount: those rows are left out and named.
+     */
     downloadBankCSV() {
-        const template = this.payrollService.getTemplate(); // select a template
-        const rows = this.selectedEmployees.length ? this.selectedEmployees : this.filteredEmployeePayroll;
-        const csv = this.payrollService.generateCSV(rows, template);
+        const run = this.payrollInView;
+        if (!run?.employees?.length) {
+          this.messageService.add({ severity: 'warn', summary: 'No payroll run', detail: 'Generate a payroll run first.', key: this.toastKey });
+          return;
+        }
+        if (!this.isRunFullyApproved(run)) {
+          this.messageService.add({ severity: 'warn', summary: 'Not approved yet', detail: 'The bank file can be downloaded once this payroll run is fully approved.', key: this.toastKey });
+          return;
+        }
+        const template = this.payrollService.getTemplate();
+        if (!template?.columns?.length) {
+          this.messageService.add({ severity: 'warn', summary: 'No bank template', detail: 'Set up a bank export template under Payroll Disbursement first.', key: this.toastKey });
+          return;
+        }
+        const scoped = this.selectedEmployees.length ? this.selectedEmployees : this.filteredEmployeePayroll;
+        const payable = scoped.filter(row => Number(row?.netPayable) > 0);
+        const unpaid = scoped.filter(row => !(Number(row?.netPayable) > 0));
+        if (!payable.length) {
+          this.messageService.add({ severity: 'warn', summary: 'Nothing to pay', detail: 'No employee in this selection has a net pay above zero.', key: this.toastKey });
+          return;
+        }
+        const csv = this.payrollService.generateCSV(payable, template);
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${template.name}-${this.currentMonthName}-${this.currentYear}.csv`;
+        a.download = `${template.name}-${periodLabel(run.month, run.year).replace(/\s+/g, '-')}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
+        if (unpaid.length) {
+          this.messageService.add({
+            severity: 'warn', summary: 'Some employees left out',
+            detail: `Net pay is zero or negative for: ${unpaid.map(row => this.rowName(row) || `#${this.rowEmployeeId(row)}`).join(', ')}. Check their deductions before paying them.`,
+            key: this.toastKey, life: 10000
+          });
+        }
     }
 
-    get earningsList() {
-      const e = this.currentEmployeeInView;
-      return [
-        { name: 'Base Pay', amount: e.basePay },
-        ...(e.allowances ? [{ name: e.allowances.allowanceType?.name, amount: e.allowances.amount }] : []),
-        ...e.bonuses.map((b: { reason: any; amount: any; }) => ({ name: b.reason, amount: b.amount })),
-        ...(e.overtimePay ? [{ name: 'Overtime', amount: e.overtimePay }] : [])
-      ];
+    /**
+     * Every deduction on the payslip on screen: tax, pension, NHF, health insurance, loans, cooperatives,
+     * then the named lines (ad-hocs, queries…). When named lines exist they stand in for "Other".
+     */
+    get payslipDeductionLines(): { label: string; amount: number }[] {
+      const row = this.currentEmployeeInView;
+      const details: any[] = Array.isArray(row?.deductions?.details) ? row.deductions.details : [];
+      const fixed = payslipFigures(row).deductionLines.filter(l => !(details.length && l.label === 'Other'));
+      return [...fixed, ...details.map(d => ({ label: d?.name || d?.description || 'Deduction', amount: Number(d?.amount) || 0 }))];
+    }
+
+    get payslipDeductionSum(): number {
+      return this.payslipDeductionLines.reduce((t, l) => t + l.amount, 0);
+    }
+
+    /** True when the deduction lines don't add up to the run's total deductions for this payslip. */
+    get payslipDeductionsMismatch(): boolean {
+      const total = Number(this.currentEmployeeInView?.totalDeductions) || 0;
+      return Math.abs(total - this.payslipDeductionSum) > 0.5;
     }
 
     formatDate(arr: number[]): string {
@@ -1800,6 +1397,97 @@ download(format: string) {
           life: 10000
         });
       });
+    }
+
+    // ── Loan & cooperative deductions ──────────────────────────────────────────
+    /** What each employee owes this month for loans and cooperatives, by employee id (payroll-obligations.ts). */
+    obligationsByEmployee = new Map<string, EmployeeObligations>();
+    obligationsMonthLabel = '';
+    readonly obligationKindLabel = OBLIGATION_KIND_LABEL;
+
+    private loadObligations(month: any, year: any): void {
+      const m = Number(month), y = Number(year);
+      if (!m || !y) { this.obligationsByEmployee = new Map(); return; }
+      this.payrollLoanDeductionService.getPayrollObligations(m, y).subscribe(map => {
+        this.obligationsByEmployee = map;
+        this.obligationsMonthLabel = periodLabel(m, y);
+        // New array so the table re-runs its formatters with the amounts.
+        this.filteredEmployeePayroll = [...this.filteredEmployeePayroll];
+      });
+    }
+
+    private rowEmployeeId(row: any): string {
+      return String(row?.employee?.id ?? row?.employeeId ?? '');
+    }
+
+    obligationsFor(row: any): EmployeeObligations | undefined {
+      return this.obligationsByEmployee.get(this.rowEmployeeId(row));
+    }
+
+    /** Loan and cooperative deductions the generated run actually contains for this row. */
+    runLoanDeduction(row: any): number {
+      const d = row?.deductions;
+      return d && !Array.isArray(d) ? (Number(d.advances) || 0) + (Number(d.cooperatives) || 0) : 0;
+    }
+
+    /** True when the run took a different amount than the employee owes this month. */
+    obligationMismatch(row: any): boolean {
+      return Math.abs((this.obligationsFor(row)?.total ?? 0) - this.runLoanDeduction(row)) > 0.5;
+    }
+
+    get obligationMismatchCount(): number {
+      return this.filteredEmployeePayroll.filter(row => this.obligationMismatch(row)).length;
+    }
+
+    loansAndCoopLabel(row: any): string {
+      const owed = this.obligationsFor(row)?.total ?? 0;
+      const inRun = this.runLoanDeduction(row);
+      if (!owed && !inRun) return '—';
+      return this.obligationMismatch(row)
+        ? `${this.formatCurrency(owed)} ⚠ run has ${this.formatCurrency(inRun)}`
+        : this.formatCurrency(owed);
+    }
+
+    obligationStatusLabel(item: PayrollObligation): string {
+      if (item.status === 'NOT_STARTED') return item.startsOn ? `Starts ${periodLabel(+item.startsOn.slice(5, 7), +item.startsOn.slice(0, 4))}` : 'Not started';
+      if (item.status === 'REPAID') return 'Fully repaid';
+      if (item.status === 'TERM_ENDED') return 'Repayment period over, balance still showing: check the loan';
+      return 'Deducted this month';
+    }
+
+    /**
+     * One line per loan or contribution: total repayable, balance, group, and the exact amount taken
+     * this month. Ticked employees only, when any are ticked.
+     */
+    downloadObligationsCsv(): void {
+      const run = this.payrollInView;
+      if (!run?.employees?.length) {
+        this.messageService.add({ severity: 'warn', summary: 'No payroll run', detail: 'Generate a payroll run first.', key: this.toastKey });
+        return;
+      }
+      const cell = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = [['Staff ID', 'Employee', 'Type', 'Loan / Group', 'Cooperative Group', 'Total Repayable (NGN)', 'Outstanding (NGN)', 'Monthly Amount (NGN)', 'This Month (NGN)', 'Starts', 'Status', 'In Payroll Run (NGN)']];
+      let total = 0, people = 0;
+      for (const row of this.inSelection(run.employees as any[])) {
+        const obligations = this.obligationsFor(row);
+        if (!obligations?.items.length) continue;
+        people++;
+        total += obligations.total;
+        const name = `${row?.employee?.firstName ?? ''} ${row?.employee?.lastName ?? ''}`.trim();
+        obligations.items.forEach((item, i) => lines.push([
+          this.rowEmployeeId(row), name, OBLIGATION_KIND_LABEL[item.kind], item.reference, item.groupName ?? '',
+          item.totalRepayable ?? '', item.outstanding ?? '', item.monthlyAmount, item.thisMonth, item.startsOn ?? '',
+          this.obligationStatusLabel(item), i === 0 ? this.runLoanDeduction(row) : '',
+        ] as any[]));
+      }
+      if (!people) {
+        this.messageService.add({ severity: 'info', summary: 'No loan or cooperative deductions', detail: 'Nobody has a loan repayment or cooperative contribution this month.', key: this.toastKey });
+        return;
+      }
+      const period = periodLabel(run.month, run.year).replace(/\s+/g, '_');
+      const partial = this.selectedEmployees.length ? `_${this.selectedEmployees.length}_selected` : '';
+      this.downloadCSV(lines.map(r => r.map(cell).join(',')).join('\r\n'), `Loan_and_Coop_Deductions_${period}${partial}.csv`);
+      this.messageService.add({ severity: 'success', summary: 'Loan & cooperative deductions downloaded', detail: `${people} employee(s), ${formatNaira(total)} to deduct this month.`, key: this.toastKey, life: 8000 });
     }
 
     // ── Statutory schedules ────────────────────────────────────────────────────

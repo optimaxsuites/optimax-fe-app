@@ -9,6 +9,18 @@ export interface RepaymentMethodOption {
 
 export const PAYROLL_DEDUCTION = 'PAYROLL_DEDUCTION';
 
+/**
+ * Whether employees and cooperative members can make repayments or post contributions themselves
+ * (the "Make Payment" / "Post Contribution" buttons and the choose-a-payment-type screens). Off for now:
+ * loan repayments and cooperative contributions come off salary automatically through payroll.
+ * Admin "Record Payment" is not affected. Set to true to bring the self-service buttons back.
+ */
+export const SELF_SERVICE_PAYMENTS_ENABLED = false;
+
+/** Shown where the self-service payment buttons used to be. */
+export const SALARY_DEDUCTION_NOTE =
+  'Repayments are deducted from your salary automatically each month, starting from the repayment start date you chose. No action is needed from you.';
+
 export const REPAYMENT_METHODS: RepaymentMethodOption[] = [
   { value: 'PAYROLL_DEDUCTION', label: 'Payroll Deduction', icon: 'fas fa-file-invoice-dollar', description: 'Taken from your salary', available: true },
   { value: 'BANK_TRANSFER', label: 'Bank Transfer', icon: 'fas fa-university', description: 'Coming soon', available: false },

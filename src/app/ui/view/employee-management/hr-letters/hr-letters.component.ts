@@ -293,9 +293,9 @@ export class HrLettersComponent implements OnInit {
       amount: this.toMonthly(this.toNum(b.amount ?? b.value)),
     }));
 
+    // Bonuses are paid when awarded, not every month, so they stay out of monthly gross (payroll-calculation.ts).
     const grossTotal = base
-      + allowances.reduce((s: number, a: any) => s + a.amount, 0)
-      + bonuses.reduce((s: number, b: any) => s + b.amount, 0);
+      + allowances.reduce((s: number, a: any) => s + a.amount, 0);
 
     const deductions = (d?.deductions ?? []).map((x: any) => {
       const type = this.deductionTypes.find(t => t.id === (x.deductionsTypeId ?? x.typeId));

@@ -198,25 +198,24 @@
         <div class="metric-grid">
           <div class="metric-card">
             <span class="metric-label">Base salary</span>
-            <span class="metric-value">{{ employeeInView?.salaryDetails?.baseSalary | currency: 'NGN' }}</span>
+            <span class="metric-value">{{ salaryStructure ? (salaryStructure.baseSalary | currency: 'NGN') : '—' }}</span>
           </div>
           <div class="metric-card">
-            <span class="metric-label">Net salary</span>
-            <span class="metric-value">
-              {{
-                (employeeInView?.salaryDetails?.netSalaryComputed ??
-                  employeeInView?.salaryDetails?.netSalary) | currency: 'NGN'
-              }}
-            </span>
+            <span class="metric-label">Gross pay</span>
+            <span class="metric-value">{{ salaryStructure ? (salaryStructure.grossPay | currency: 'NGN') : '—' }}</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Net pay (before PAYE)</span>
+            <span class="metric-value">{{ salaryStructure ? (salaryStructure.netPay | currency: 'NGN') : '—' }}</span>
           </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-4 mt-4">
           <div class="list-block">
             <p class="list-title">Allowances</p>
-            <div *ngIf="employeeInView?.salaryDetails?.allowance?.length; else noAllowances" class="list-stack">
-              <p *ngFor="let allowance of employeeInView?.salaryDetails?.allowance">
-                {{ (getAllowanceName(allowance.allowanceTypeId) | async) || allowance.allowanceTypeId }}:
+            <div *ngIf="salaryStructure?.allowances?.length; else noAllowances" class="list-stack">
+              <p *ngFor="let allowance of salaryStructure!.allowances">
+                {{ (getAllowanceName(allowance.typeId) | async) || allowance.typeId }}:
                 {{ allowance.amount | currency: 'NGN' }}
               </p>
             </div>
@@ -226,7 +225,7 @@
           </div>
 
           <div class="list-block">
-            <p class="list-title">Bonuses</p>
+            <p class="list-title">Bonuses <span class="text-xs text-slate-400">(paid when awarded, not monthly)</span></p>
             <div *ngIf="employeeInView?.salaryDetails?.bonus?.length; else noBonuses" class="list-stack">
               <p *ngFor="let bonus of employeeInView?.salaryDetails?.bonus">
                 {{ (getBonusName(bonus.bonusTypeId) | async) || bonus.bonusTypeId }}:
@@ -240,10 +239,10 @@
 
           <div class="list-block">
             <p class="list-title">Deductions</p>
-            <div *ngIf="employeeInView?.salaryDetails?.deductions?.length; else noDeduction" class="list-stack">
-              <p *ngFor="let deduction of employeeInView?.salaryDetails?.deductions">
-                {{ (getDeductionName(deduction.deductionsTypeId) | async) || deduction.deductionsTypeId }}:
-                {{ deduction.amount | currency: 'NGN' }}
+            <div *ngIf="salaryStructure?.deductions?.length; else noDeduction" class="list-stack">
+              <p *ngFor="let deduction of salaryStructure!.deductions">
+                {{ (getDeductionName(deduction.typeId) | async) || deduction.typeId }}:
+                {{ deduction.amount | currency: 'NGN' }}<span *ngIf="deduction.percent != null"> ({{ deduction.percent }}% of base)</span>
               </p>
             </div>
             <ng-template #noDeduction>
@@ -252,7 +251,7 @@
           </div>
 
           <div class="list-block">
-            <p class="list-title">Overtime</p>
+            <p class="list-title">Overtime <span class="text-xs text-slate-400">(rate, paid per hour worked)</span></p>
             <div *ngIf="employeeInView?.salaryDetails?.overtime?.length; else noOvertime" class="list-stack">
               <p *ngFor="let overtime of employeeInView?.salaryDetails?.overtime">
                 {{ (getOvertimeName(overtime.overtimeTypeId) | async) || overtime.overtimeTypeId }}:

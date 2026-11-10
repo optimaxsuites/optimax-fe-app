@@ -169,14 +169,14 @@
         <span class="ep-summary-label">Net salary</span>
         <div class="ep-salary-row">
           <strong class="ep-summary-value">
-            <span *ngIf="salaryVisible">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</span>
+            <span *ngIf="salaryVisible">{{ takeHomePay != null ? (takeHomePay | currency:'NGN') : '—' }}</span>
             <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
           </strong>
           <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
             <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
           </button>
         </div>
-        <span class="ep-summary-meta">Monthly take-home</span>
+        <span class="ep-summary-meta">{{ takeHomeLabel }}</span>
       </div>
       <div class="ep-summary-card">
         <i class="fa-solid fa-umbrella-beach ep-summary-icon ep-summary-icon--emerald"></i>
@@ -368,7 +368,7 @@
             <span class="ep-metric-label">Base Salary</span>
             <div class="ep-salary-row">
               <span class="ep-metric-value">
-                <span *ngIf="salaryVisible">{{ employeeInView?.salaryDetails?.baseSalary | currency:'NGN' }}</span>
+                <span *ngIf="salaryVisible">{{ salaryStructure ? (salaryStructure.baseSalary | currency:'NGN') : '—' }}</span>
                 <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
               </span>
               <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
@@ -376,29 +376,43 @@
               </button>
             </div>
           </div>
-          <div class="ep-metric-card ep-metric-card--accent">
-            <span class="ep-metric-label">Net Salary</span>
+          <div class="ep-metric-card">
+            <span class="ep-metric-label">Gross Pay</span>
             <div class="ep-salary-row">
               <span class="ep-metric-value">
-                <span *ngIf="salaryVisible">{{ (employeeInView?.salaryDetails?.netSalaryComputed ?? employeeInView?.salaryDetails?.netSalary) | currency:'NGN' }}</span>
+                <span *ngIf="salaryVisible">{{ salaryStructure ? (salaryStructure.grossPay | currency:'NGN') : '—' }}</span>
                 <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
               </span>
               <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
                 <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
             </div>
+            <span class="ep-metric-note">Base + allowances</span>
+          </div>
+          <div class="ep-metric-card ep-metric-card--accent">
+            <span class="ep-metric-label">Net Pay</span>
+            <div class="ep-salary-row">
+              <span class="ep-metric-value">
+                <span *ngIf="salaryVisible">{{ takeHomePay != null ? (takeHomePay | currency:'NGN') : '—' }}</span>
+                <span *ngIf="!salaryVisible" class="ep-salary-mask">••••••</span>
+              </span>
+              <button type="button" class="ep-salary-toggle" (click)="salaryVisible = !salaryVisible" [title]="salaryVisible ? 'Hide salary' : 'Show salary'">
+                <i class="fa-solid" [ngClass]="salaryVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+            </div>
+            <span class="ep-metric-note">{{ takeHomeLabel }}</span>
           </div>
           <div class="ep-list-block">
             <p class="ep-list-title">Allowances</p>
-            <div *ngIf="employeeInView?.salaryDetails?.allowance?.length; else noAllowances" class="ep-list-stack">
-              <p *ngFor="let a of employeeInView?.salaryDetails?.allowance">{{ (getAllowanceName(a.allowanceTypeId) | async) }}: {{ a.amount | currency:'NGN' }}</p>
+            <div *ngIf="salaryStructure?.allowances?.length; else noAllowances" class="ep-list-stack">
+              <p *ngFor="let a of salaryStructure!.allowances">{{ (getAllowanceName(a.typeId) | async) }}: {{ a.amount | currency:'NGN' }}</p>
             </div>
             <ng-template #noAllowances><p class="ep-empty">None</p></ng-template>
           </div>
           <div class="ep-list-block">
             <p class="ep-list-title">Deductions</p>
-            <div *ngIf="employeeInView?.salaryDetails?.deductions?.length; else noDeductions" class="ep-list-stack">
-              <p *ngFor="let d of employeeInView?.salaryDetails?.deductions">{{ (getDeductionName(d.deductionsTypeId) | async) }}: {{ d.amount | currency:'NGN' }}</p>
+            <div *ngIf="salaryStructure?.deductions?.length; else noDeductions" class="ep-list-stack">
+              <p *ngFor="let d of salaryStructure!.deductions">{{ (getDeductionName(d.typeId) | async) }}: {{ d.amount | currency:'NGN' }}<span *ngIf="d.percent != null"> ({{ d.percent }}% of base)</span></p>
             </div>
             <ng-template #noDeductions><p class="ep-empty">None</p></ng-template>
           </div>

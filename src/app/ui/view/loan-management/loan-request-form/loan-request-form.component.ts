@@ -443,6 +443,18 @@ export class LoanRequestFormComponent implements OnInit {
   get amount(): AbstractControl | null { return this.loanRequestForm.get('amount'); }
   get repaymentTime(): AbstractControl | null { return this.loanRequestForm.get('repaymentTime'); }
   get repaymentStartDate(): AbstractControl | null { return this.loanRequestForm.get('repaymentStartDate'); }
+
+  /** The salary-deduction disclaimer above the terms, with this application's own figures once they're known. */
+  get salaryDeductionDisclaimer(): string {
+    const naira = (v: number) => `₦${(Number(v) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const { repaymentAmount, totalRepayment } = this.repaymentBreakdown;
+    const start = this.repaymentStartDate?.value ? new Date(this.repaymentStartDate.value) : null;
+    const startLabel = start && !isNaN(start.getTime()) ? start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : 'the repayment start date you choose';
+    const amounts = totalRepayment > 0
+      ? ` That is ${naira(repaymentAmount)} a month, ${naira(totalRepayment)} in total,`
+      : '';
+    return `Repayments are deducted from your salary. If this loan is approved, the total repayable amount (amount borrowed plus interest) will be taken from your monthly salary through payroll.${amounts} starting from ${startLabel} and continuing until the loan is fully repaid.`;
+  }
   get repaymentDay(): AbstractControl | null { return this.loanRequestForm.get('repaymentDay'); }
   get repaymentAmountAmount(): AbstractControl | null { return this.loanRequestForm.get('repaymentAmountAmount'); }
   get modeOfPayment(): AbstractControl | null { return this.loanRequestForm.get('modeOfPayment'); }

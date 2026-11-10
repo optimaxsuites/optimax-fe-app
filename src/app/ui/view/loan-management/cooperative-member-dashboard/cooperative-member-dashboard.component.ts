@@ -1,5 +1,6 @@
 // ...existing code...
 // ...existing code...
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
@@ -50,6 +51,9 @@ interface CooperativeMemberLoanRow {
 })
 
 export class CooperativeMemberDashboardComponent implements OnInit, OnDestroy {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   showGracePeriodModal = false;
   gracePeriodLoan: CooperativeLoan | null = null;
   gracePeriodInstallment: CooperativeRepayment | null = null;

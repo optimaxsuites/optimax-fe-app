@@ -57,6 +57,18 @@ export class CooperativeLoanApplicationComponent implements OnInit {
 
   // Calculated values
   repaymentAmount = 0;
+
+  /** The salary-deduction disclaimer above the terms: loan repayments and the group's monthly contribution. */
+  get salaryDeductionDisclaimer(): string {
+    const naira = (v: number) => `₦${(Number(v) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const amounts = this.totalRepayment > 0
+      ? ` That is ${naira(this.repaymentAmount)} a month, ${naira(this.totalRepayment)} in total, until the loan is fully repaid.`
+      : ' It continues every month until the loan is fully repaid.';
+    const contribution = this.selectedGroup?.monthlyContributionAmount
+      ? ` Your monthly contribution to ${this.selectedGroup.name} (${naira(this.selectedGroup.monthlyContributionAmount)}) is also deducted from your salary every month while you are a member.`
+      : ' Your monthly cooperative group contribution is also deducted from your salary every month while you are a member.';
+    return `Repayments are deducted from your salary. If this loan is approved, the total repayable amount (amount borrowed plus interest) will be taken from your monthly salary through payroll.${amounts}${contribution}`;
+  }
   totalRepayment = 0;
   totalInterest = 0;
   showConfirmation = false;

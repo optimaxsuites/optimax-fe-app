@@ -1,3 +1,4 @@
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, OnInit, OnDestroy, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
@@ -40,6 +41,9 @@ interface EmployeeLoanHistoryRow {
   encapsulation: ViewEncapsulation.None 
 })
 export class EmployeeDashboardComponent implements OnInit, OnDestroy {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   private readonly destroyRef = inject(DestroyRef);
   private hasInitializedLoanSubscription = false;
   tableRefreshInProgress = false;

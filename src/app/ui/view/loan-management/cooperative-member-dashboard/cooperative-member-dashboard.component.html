@@ -666,7 +666,15 @@
                 <i class="fas fa-chevron-right"></i>
               </button>
 
-              <button class="command-btn make-payment" [class.disabled]="!payableLoans.length" (click)="openQuickPaymentModal()">
+              <!-- Self-service repayments are off for now: repayments come off salary (SELF_SERVICE_PAYMENTS_ENABLED). -->
+              <div class="command-btn make-payment disabled" *ngIf="!selfServicePayments" role="note">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <div class="btn-text">
+                  <strong>Deducted from Salary</strong>
+                  <span>{{ salaryDeductionNote }}</span>
+                </div>
+              </div>
+              <button *ngIf="selfServicePayments" class="command-btn make-payment" [class.disabled]="!payableLoans.length" (click)="openQuickPaymentModal()">
                 <i class="fas fa-credit-card"></i>
                 <div class="btn-text">
                   <strong>Make Payment</strong>
