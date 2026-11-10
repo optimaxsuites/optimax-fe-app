@@ -323,9 +323,9 @@ export class HrLettersComponent implements OnInit {
     return Number.isFinite(n) ? n : 0;
   }
 
-  /** Salary records hold yearly amounts when payroll is set to yearly input; letters show monthly figures. */
+  /** Salary record amounts are monthly, as payroll pays them (see payroll-calculation.ts). */
   private toMonthly(amount: number): number {
-    return this.salaryInputMode === 'yearly' ? amount / 12 : amount;
+    return amount;
   }
 
   /**

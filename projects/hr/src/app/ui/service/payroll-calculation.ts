@@ -7,25 +7,22 @@
  *   Gross    = base + every allowance line
  *   Net      = gross − every deduction line on the structure
  *
+ * Amounts are used exactly as stored. They are monthly naira figures, already worked out from the
+ * percentages in settings, and the same figures payroll pays (a run's basePay is the record's
+ * baseSalary). They are not converted here: not by the salary input mode, and not as percentages.
+ *
  * Bonus and overtime lines on a salary structure are not part of regular monthly pay (bonuses are paid
  * when awarded; an overtime line is a rate, not an amount), so they are listed but never added.
- * Statutory items the structure doesn't list (PAYE, pension, NHF) and one-offs (ad-hocs, fines, loans)
- * are only known once payroll runs: the payroll run's own figures are the employee's real take-home.
- *
- * Amounts follow the payroll setting `salaryInputMode`: records entered yearly are divided by 12.
- * A percentage deduction is that share of the monthly base salary.
+ * Statutory items the structure doesn't list (PAYE) and one-offs (ad-hocs, fines, loans) are only known
+ * once payroll runs: the payroll run's own figures are the employee's real take-home.
  */
 import { pickSalaryRecordForLevel } from './loan/level-salary.util';
-
-export type SalaryInputMode = 'monthly' | 'yearly';
 
 export interface SalaryLine {
   /** Allowance/deduction/bonus/overtime type id on the record, for looking up its name. */
   typeId: any;
-  /** Monthly naira amount. */
+  /** Monthly naira amount, as stored. */
   amount: number;
-  /** The percentage, when the line is a share of base salary. */
-  percent?: number;
   raw: any;
 }
 
@@ -46,27 +43,21 @@ export interface SalaryStructure {
 const num = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 export const money = (v: number) => Math.round(v * 100) / 100;
 
-function isPercentage(line: any): boolean {
-  return String(line?.calculationType || '').toUpperCase().includes('PERCENT');
-}
-
 /**
  * The monthly structure from a level's salary records (or a single record). Of several records the
  * most complete, then newest, is used, the same choice loans make. Null when there is no record.
  */
-export function resolveSalaryStructure(records: any, salaryInputMode: SalaryInputMode | string = 'monthly'): SalaryStructure | null {
+export function resolveSalaryStructure(records: any): SalaryStructure | null {
   const record = Array.isArray(records) ? pickSalaryRecordForLevel(records) : records;
   if (!record || typeof record !== 'object') return null;
 
-  const monthly = (amount: number) => money(salaryInputMode === 'yearly' ? amount / 12 : amount);
-  const baseSalary = monthly(num(record.baseSalary));
+  const baseSalary = money(num(record.baseSalary));
 
-  const lineOf = (item: any, typeKeys: string[], amountKeys: string[] = ['amount', 'value']): SalaryLine => {
-    const typeId = typeKeys.map(k => item?.[k]).find(v => v !== undefined && v !== null);
-    const value = num(amountKeys.map(k => item?.[k]).find(v => v !== undefined && v !== null));
-    if (isPercentage(item)) return { typeId, amount: money((baseSalary * value) / 100), percent: value, raw: item };
-    return { typeId, amount: monthly(value), raw: item };
-  };
+  const lineOf = (item: any, typeKeys: string[], amountKeys: string[] = ['amount', 'value']): SalaryLine => ({
+    typeId: typeKeys.map(k => item?.[k]).find(v => v !== undefined && v !== null),
+    amount: money(num(amountKeys.map(k => item?.[k]).find(v => v !== undefined && v !== null))),
+    raw: item,
+  });
   const linesOf = (items: any, typeKeys: string[], amountKeys?: string[]) =>
     (Array.isArray(items) ? items : []).filter(i => i != null).map(i => lineOf(i, typeKeys, amountKeys));
 

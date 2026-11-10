@@ -412,7 +412,7 @@
           <div class="ep-list-block">
             <p class="ep-list-title">Deductions</p>
             <div *ngIf="salaryStructure?.deductions?.length; else noDeductions" class="ep-list-stack">
-              <p *ngFor="let d of salaryStructure!.deductions">{{ (getDeductionName(d.typeId) | async) }}: {{ d.amount | currency:'NGN' }}<span *ngIf="d.percent != null"> ({{ d.percent }}% of base)</span></p>
+              <p *ngFor="let d of salaryStructure!.deductions">{{ (getDeductionName(d.typeId) | async) }}: {{ d.amount | currency:'NGN' }}</p>
             </div>
             <ng-template #noDeductions><p class="ep-empty">None</p></ng-template>
           </div>
