@@ -8,6 +8,8 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { SelectedEmployeeStore } from '../selected-employee.store';
+import { PayrollService } from '../../../service/payroll.service';
+import { resolveSalaryStructure, SalaryStructure } from '../../../service/payroll-calculation';
 
 export interface NextOfKin {
   id?: number;
@@ -51,7 +53,20 @@ export class ViewEmployeeComponent {
 
   employeeProfilePhotoUrl: SafeUrl | string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 
-  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService, private selectedEmployee: SelectedEmployeeStore){}
+  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService, private selectedEmployee: SelectedEmployeeStore, private payrollService: PayrollService){}
+
+  /** Regular monthly pay from the level's salary structure (payroll-calculation.ts). */
+  salaryStructure: SalaryStructure | null = null;
+  private salaryRecords: any[] = [];
+  private salaryInputMode: 'monthly' | 'yearly' = 'monthly';
+
+  private applySalaryStructure(): void {
+    this.salaryStructure = resolveSalaryStructure(this.salaryRecords, this.salaryInputMode);
+    const record = this.salaryStructure ? this.salaryRecords.find(r => r?.id === this.salaryStructure!.recordId) ?? this.salaryRecords[0] : null;
+    if (this.employeeInView) {
+      this.employeeInView.salaryDetails = record ? { ...record, netSalaryComputed: this.salaryStructure!.netPay, grossSalaryComputed: this.salaryStructure!.grossPay } : null;
+    }
+  }
   
   ngOnInit(): void {
     this.loading = true;
@@ -66,11 +81,17 @@ export class ViewEmployeeComponent {
       this.loadEmployeeRelatives();
 
       if(this.employeeInView?.level){
+        this.payrollService.getGeneralSettingsById().subscribe({
+          next: (res: any) => {
+            this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly';
+            this.applySalaryStructure();
+          },
+          error: () => {}
+        });
         this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
           next: data => {
-            this.employeeInView.salaryDetails = data[0]
-            this.employeeInView.salaryDetails.netSalary = this.calculateNetSalary(data[0])
-            console.log(this.employeeInView)
+            this.salaryRecords = Array.isArray(data) ? data : (data ? [data] : []);
+            this.applySalaryStructure();
             // this.employeeInView.leaveEvents = this.generateLeaveEvents(this.employeeInView.salaryDetails.leaveDetails)
           },
           error: err => console.log(err)
@@ -286,33 +307,6 @@ export class ViewEmployeeComponent {
   }
 
 
-  private calculateNetSalary(details: any): number {
-    if (!details) return 0;
-    const base = this.toNumber(details.baseSalary);
-    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
-    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
-    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
-    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
-    return base + allowances + bonuses + overtime - deductions;
-  }
-
-  private sumAmounts(items: any, fields: string[]): number {
-    if (!Array.isArray(items)) return 0;
-    return items.reduce((total, item) => {
-      if (item === null || item === undefined) return total;
-      if (typeof item === 'number') return total + item;
-      for (const field of fields) {
-        const value = this.toNumber(item?.[field]);
-        if (value !== 0) return total + value;
-      }
-      return total + this.toNumber(item);
-    }, 0);
-  }
-
-  private toNumber(value: any): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
 
   loadEmployeeRelatives(): void {
     if (!this.employeeInView?.id) return;

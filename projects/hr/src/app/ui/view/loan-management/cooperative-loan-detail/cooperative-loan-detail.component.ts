@@ -1,3 +1,4 @@
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -29,6 +30,9 @@ type CooperativeLoanAuditEntryView = {
   styleUrls: ['./cooperative-loan-detail.component.scss']
 })
 export class CooperativeLoanDetailComponent implements OnInit {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   /**
    * Opened from the member side (/member/cooperative/loans/:id): read-only for the borrower, with the
    * admin actions hidden and access limited to the member's own loans.

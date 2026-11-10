@@ -4,6 +4,8 @@ import { PayrollService } from '../../../service/payroll.service';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { SelectedEmployeeStore } from '../selected-employee.store';
+import { pickSalaryRecordForLevel } from '../../../service/loan/level-salary.util';
+import { resolveSalaryStructure, SalaryLine, SalaryStructure } from '../../../service/payroll-calculation';
 
 @Component({
   selector: 'app-employment-letter',
@@ -31,7 +33,7 @@ export class EmploymentLetterComponent implements OnInit {
       this.salaryDetails = this.employee.salaryDetails;
     } else if (this.employee?.level?.id) {
       this.employeeService.getSalaryById(this.employee.level.id).subscribe({
-        next: (data: any) => { this.salaryDetails = Array.isArray(data) ? data[0] : data; },
+        next: (data: any) => { this.salaryDetails = (Array.isArray(data) ? pickSalaryRecordForLevel(data) : data) ?? null; },
         error: () => {}
       });
     }
@@ -115,9 +117,13 @@ export class EmploymentLetterComponent implements OnInit {
     return this.companyProfile?.logoUrl || '';
   }
 
-  // HR letters always show annual figures regardless of input mode
-  private toAnnual(amount: number): number {
-    return this.salaryInputMode === 'monthly' ? Math.round(amount * 12) : amount;
+  /** Monthly structure (payroll-calculation.ts); the letter shows it as annual figures. */
+  private get structure(): SalaryStructure | null {
+    return resolveSalaryStructure(this.salaryDetails, this.salaryInputMode);
+  }
+
+  private toAnnual(monthly: number): number {
+    return Math.round(monthly * 12 * 100) / 100;
   }
 
   get isConsultant(): boolean {
@@ -128,27 +134,24 @@ export class EmploymentLetterComponent implements OnInit {
   // ── Salary getters (always annual) ───────────────────────
 
   get baseSalary(): number {
-    return this.toAnnual(this.n(this.salaryDetails?.baseSalary));
+    return this.toAnnual(this.structure?.baseSalary ?? 0);
   }
 
   get allowancesTotal(): number {
-    return this.toAnnual(this.sumAmounts(this.salaryDetails?.allowance));
-  }
-
-  get bonusesTotal(): number {
-    return this.toAnnual(this.sumAmounts(this.salaryDetails?.bonuses));
+    return this.toAnnual(this.structure?.allowanceTotal ?? 0);
   }
 
   get deductionsTotal(): number {
-    return this.toAnnual(this.sumAmounts(this.salaryDetails?.deductions));
+    return this.toAnnual(this.structure?.deductionTotal ?? 0);
   }
 
+  /** Base + allowances. Bonuses are paid when awarded, so they're not part of the contracted salary. */
   get grossSalary(): number {
-    return this.baseSalary + this.allowancesTotal + this.bonusesTotal;
+    return this.toAnnual(this.structure?.grossPay ?? 0);
   }
 
   get netSalary(): number {
-    return this.grossSalary - this.deductionsTotal;
+    return this.toAnnual(this.structure?.netPay ?? 0);
   }
 
   get hasSalaryData(): boolean {
@@ -156,11 +159,11 @@ export class EmploymentLetterComponent implements OnInit {
   }
 
   get allowanceLines(): { label: string; amount: number }[] {
-    return this.toLines(this.salaryDetails?.allowance);
+    return this.toLines(this.structure?.allowances);
   }
 
   get deductionLines(): { label: string; amount: number }[] {
-    return this.toLines(this.salaryDetails?.deductions);
+    return this.toLines(this.structure?.deductions);
   }
 
   // ── Helpers ───────────────────────────────────────────────
@@ -180,19 +183,11 @@ export class EmploymentLetterComponent implements OnInit {
     } catch { return String(d); }
   }
 
-  private n(v: any): number {
-    const parsed = Number(v);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  private sumAmounts(arr: any): number {
-    if (!Array.isArray(arr)) return 0;
-    return arr.reduce((s: number, i: any) => s + this.n(i?.amount ?? i?.value), 0);
-  }
-
-  private toLines(arr: any): { label: string; amount: number }[] {
-    if (!Array.isArray(arr)) return [];
-    return arr.map((i: any) => ({ label: i?.name || i?.type || i?.allowanceType?.name || i?.deductionType?.name || 'Item', amount: this.toAnnual(this.n(i?.amount ?? i?.value)) }));
+  private toLines(lines: SalaryLine[] | undefined): { label: string; amount: number }[] {
+    return (lines || []).map(l => {
+      const i = l.raw;
+      return { label: i?.name || i?.type || i?.allowanceType?.name || i?.deductionType?.name || 'Item', amount: this.toAnnual(l.amount) };
+    });
   }
 
   fmt2(n: number): string {

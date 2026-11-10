@@ -21,6 +21,8 @@ import { PayrollService } from '../../service/payroll.service';
 import { AttendancetableService } from '../../service/attendance/attendancetable.service';
 import { buildOnboardingEmailHtml, buildOnboardingLink, escapeHtml, generateTemporaryPassword, onboardingLinkExpiry } from '../employee-management/onboarding-credentials.util';
 import { SelectedEmployeeStore } from '../employee-management/selected-employee.store';
+import { resolveSalaryStructure, SalaryStructure } from '../../service/payroll-calculation';
+import { payslipFigures, periodLabel } from '../payroll/payslip.util';
 
 export interface NextOfKin {
   id?: number;
@@ -158,6 +160,10 @@ export class EmployeeProfileDashboardComponent {
   ];
   recentPayslips: any[] = [];
   payslipsLoading = false;
+  /** Regular monthly pay from the level's salary structure (payroll-calculation.ts). */
+  salaryStructure: SalaryStructure | null = null;
+  private salaryRecords: any[] = [];
+  private salaryInputMode: 'monthly' | 'yearly' = 'monthly';
   viewPayslip = false;
   activePayslip: any = {};
 
@@ -219,6 +225,13 @@ export class EmployeeProfileDashboardComponent {
   ngOnInit(): void {
     this.canManageEmployees = this.resolveCanManageEmployees();
     this.fetchEmployeeForCurrentUser();
+    this.payrollService.getGeneralSettingsById().subscribe({
+      next: (res: any) => {
+        this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly';
+        this.applySalaryStructure();
+      },
+      error: () => { },
+    });
     this.dataService.getDepartment().subscribe({ next: (d: any[]) => this.departments = d, error: () => { } });
     this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = (d || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name })), error: () => { } });
     this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => { } });
@@ -420,12 +433,8 @@ export class EmployeeProfileDashboardComponent {
   }
 
   get salaryTrendLabel(): string {
-    const base = Number(this.employeeInView?.salaryDetails?.baseSalary || 0);
-    const net = Number(
-      this.employeeInView?.salaryDetails?.netSalaryComputed ??
-      this.employeeInView?.salaryDetails?.netSalary ??
-      0
-    );
+    const base = Number(this.salaryStructure?.baseSalary || 0);
+    const net = Number(this.takeHomePay || 0);
     if (!base || !net) return 'Awaiting payroll data';
     const ratio = Math.round((net / base) * 100);
     return `${ratio}% of base retained`;
@@ -648,14 +657,13 @@ export class EmployeeProfileDashboardComponent {
     this.loadRecentPayslips(employee?.id);
     this.loadAttendanceSummary(employee?.id);
 
+    this.salaryRecords = [];
+    this.salaryStructure = null;
     if (this.employeeInView?.level) {
       this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
         next: (salaryData) => {
-          const salaryDetails = salaryData?.[0] ?? {};
-          this.employeeInView.salaryDetails = {
-            ...salaryDetails,
-            netSalaryComputed: this.calculateNetSalary(salaryDetails),
-          };
+          this.salaryRecords = Array.isArray(salaryData) ? salaryData : (salaryData ? [salaryData] : []);
+          this.applySalaryStructure();
         },
         error: () => {},
       });
@@ -672,6 +680,41 @@ export class EmployeeProfileDashboardComponent {
         events: this.generateLeaveEvents(this.employeeInView.leaveDetails),
       };
     }
+  }
+
+  /** Builds the structure from the loaded records and the payroll's monthly/yearly setting. */
+  private applySalaryStructure(): void {
+    this.salaryStructure = resolveSalaryStructure(this.salaryRecords, this.salaryInputMode);
+    if (!this.employeeInView) return;
+    const record = this.salaryStructure ? this.salaryRecords.find(r => r?.id === this.salaryStructure!.recordId) ?? this.salaryRecords[0] : null;
+    // Other screens (letters) read salaryDetails; keep the chosen record there with the shared figures.
+    this.employeeInView.salaryDetails = record ? {
+      ...record,
+      netSalaryComputed: this.salaryStructure!.netPay,
+      grossSalaryComputed: this.salaryStructure!.grossPay,
+    } : null;
+  }
+
+  /** The newest payroll run row for this employee, with its figures, or null. */
+  get latestPayslip(): { label: string; grossPay: number; netPay: number; runStatus: string } | null {
+    const slip = this.recentPayslips[0];
+    if (!slip) return null;
+    const f = payslipFigures(slip);
+    return { label: periodLabel(slip.month, slip.year), grossPay: f.grossPay, netPay: f.netPay, runStatus: slip.runStatus };
+  }
+
+  /**
+   * Take-home pay: the latest payroll run's net when there is one (it includes PAYE, pension, loans,
+   * bonuses and fines for that month); otherwise the salary structure's net.
+   */
+  get takeHomePay(): number | null {
+    return this.latestPayslip?.netPay ?? this.salaryStructure?.netPay ?? null;
+  }
+
+  get takeHomeLabel(): string {
+    if (this.latestPayslip) return `From ${this.latestPayslip.label} payroll`;
+    if (this.salaryStructure) return 'Salary structure, before PAYE and payroll deductions';
+    return 'No salary structure for this level';
   }
 
   loadRecentPayslips(empId?: number): void {
@@ -1133,34 +1176,6 @@ export class EmployeeProfileDashboardComponent {
     });
   }
 
-  private calculateNetSalary(details: any): number {
-    if (!details) return 0;
-    const base = this.toNumber(details.baseSalary);
-    const allowances = this.sumAmounts(details.allowance, ['amount', 'value']);
-    const bonuses = this.sumAmounts(details.bonus, ['amount', 'value']);
-    const overtime = this.sumAmounts(details.overtime, ['amount', 'rate', 'value']);
-    const deductions = this.sumAmounts(details.deductions, ['amount', 'value']);
-    return base + allowances + bonuses + overtime - deductions;
-  }
-
-  private sumAmounts(items: any, fields: string[]): number {
-    if (!Array.isArray(items)) return 0;
-    return items.reduce((total, item) => {
-      if (item === null || item === undefined) return total;
-      if (typeof item === 'number') return total + item;
-      for (const field of fields) {
-        const value = this.toNumber(item?.[field]);
-        if (value !== 0) return total + value;
-      }
-      return total + this.toNumber(item);
-    }, 0);
-  }
-
-  private toNumber(value: any): number {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
   openBankChangeRequest(): void {
     this.bankChangeRequestForm.reset();
     this.isBankChangeRequestOpen = true;
@@ -1618,10 +1633,11 @@ export class EmployeeProfileDashboardComponent {
     twoCol('Bank Name', e.bankName, 'Account Number', e.accountNumber);
 
     // Compensation
-    if (e.salaryDetails?.baseSalary) {
+    if (this.salaryStructure?.baseSalary) {
       section('Compensation');
-      const fmt = (n: any) => n ? `NGN ${Number(n).toLocaleString()}` : '—';
-      twoCol('Base Salary', fmt(e.salaryDetails.baseSalary), 'Net Salary', fmt(e.salaryDetails.netSalaryComputed ?? e.salaryDetails.netSalary));
+      const fmt = (n: any) => n ? `NGN ${Number(n).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+      twoCol('Base Salary', fmt(this.salaryStructure.baseSalary), 'Gross Pay', fmt(this.salaryStructure.grossPay));
+      oneRow('Net Pay', `${fmt(this.takeHomePay)} (${this.takeHomeLabel})`);
     }
 
     // Footer

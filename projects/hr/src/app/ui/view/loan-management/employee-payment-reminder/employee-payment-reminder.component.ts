@@ -1,3 +1,4 @@
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, Input, OnChanges, OnInit, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { LoanApplication, RepaymentScheduleItem } from '../../../service/loan/loan.types';
 import { formatNaira } from '../../../service/loan/loan-format.util';
@@ -8,6 +9,9 @@ import { formatNaira } from '../../../service/loan/loan-format.util';
   styleUrls: ['./employee-payment-reminder.component.scss']
 })
 export class EmployeePaymentReminderComponent implements OnInit, OnChanges {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   @Input() loans: LoanApplication[] = [];
   @Output() makePaymentClick = new EventEmitter<{ loan: LoanApplication; installment: RepaymentScheduleItem }>();
 

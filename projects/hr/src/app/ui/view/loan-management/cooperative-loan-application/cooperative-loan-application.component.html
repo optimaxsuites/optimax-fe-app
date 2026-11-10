@@ -375,6 +375,9 @@
             <h3>Terms & Agreement</h3>
           </div>
 
+          <!-- Members must always know repayments and contributions come straight off their salary. -->
+          <p-message severity="warn" styleClass="w-full mb-3" [text]="salaryDeductionDisclaimer"></p-message>
+
           <div class="terms-list">
             <div class="term-item">
               <div class="term-icon"><i class="fas fa-check-circle"></i></div>
@@ -405,7 +408,7 @@
             </label>
             <label class="checkbox">
               <input type="checkbox" formControlName="acceptAcknowledgement">
-              <span>I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable. <span class="required">*</span></span>
+              <span>I understand and accept the loan policy, repayment obligations, and collateral conditions where applicable, and that my loan repayments and monthly group contributions will be deducted from my salary. <span class="required">*</span></span>
             </label>
             <div class="error" *ngIf="applicationForm.get('acceptTerms')?.invalid && applicationForm.get('acceptTerms')?.touched">
               <i class="fas fa-exclamation-circle"></i> You must confirm the information is correct

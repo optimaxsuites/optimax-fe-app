@@ -214,17 +214,6 @@
                   </tr>
                 </ng-container>
 
-                <!-- Bonuses -->
-                <ng-container *ngIf="salaryBreakdown.bonuses.length > 0">
-                  <tr class="hl-salary-row hl-salary-row--section-head">
-                    <td colspan="2">Bonuses</td>
-                  </tr>
-                  <tr *ngFor="let b of salaryBreakdown.bonuses" class="hl-salary-row hl-salary-row--item">
-                    <td class="hl-salary-label hl-salary-label--indent">{{ b.name }}</td>
-                    <td class="hl-salary-amount">+ {{ formatCurrency(b.amount) }}</td>
-                  </tr>
-                </ng-container>
-
                 <!-- Gross total -->
                 <tr class="hl-salary-row hl-salary-row--subtotal">
                   <td class="hl-salary-label">Gross Pay</td>

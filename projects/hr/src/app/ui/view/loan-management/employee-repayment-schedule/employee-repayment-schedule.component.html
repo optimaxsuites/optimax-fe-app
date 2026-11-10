@@ -64,9 +64,12 @@
 
   <!-- Action Bar -->
   <div class="action-bar" *ngIf="canTakeRepaymentActions()">
-    <button class="action-btn payment" (click)="openPaymentModal()">
+    <button *ngIf="selfServicePayments" class="action-btn payment" (click)="openPaymentModal()">
       <i class="fas fa-credit-card"></i> Make Payment
     </button>
+    <span *ngIf="!selfServicePayments" class="action-btn payment disabled" role="note" [title]="salaryDeductionNote">
+      <i class="fas fa-file-invoice-dollar"></i> Deducted from salary
+    </span>
     <button class="action-btn extension" (click)="openGracePeriodModal()">
       <i class="fas fa-hourglass-half"></i> Request Extension
     </button>
@@ -189,7 +192,7 @@
                 <span>Interest: {{ formatCurrency(item.interestAmount) }}</span>
               </div>
               <div class="timeline-actions">
-                <button class="timeline-pay" (click)="openPaymentModal(item)">
+                <button *ngIf="selfServicePayments" class="timeline-pay" (click)="openPaymentModal(item)">
                   <i class="fas fa-credit-card"></i> Pay
                 </button>
                 <button class="timeline-extend" (click)="openGracePeriodModal(item)">
@@ -234,7 +237,7 @@
                   </span>
                 </td>
                 <td class="action-cell">
-                  <button *ngIf="canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" 
+                  <button *ngIf="selfServicePayments && canTakeRepaymentActions() && (item.status === 'PENDING' || item.status === 'OVERDUE')" 
                           class="table-action pay" 
                           (click)="openPaymentModal(item)"
                           title="Make Payment">

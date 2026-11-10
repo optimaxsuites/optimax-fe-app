@@ -8,6 +8,13 @@
     <button type="button" class="close-btn" (click)="onClose()" aria-label="Close join group modal">&times;</button>
   </div>
 
+  <!-- Members must know the group's monthly contribution comes straight off their salary. -->
+  <p-message
+    severity="warn"
+    styleClass="w-full mb-3"
+    text="Monthly contributions are deducted from your salary. Once your membership is approved, the group's monthly contribution shown below will be taken from your salary through payroll every month while you remain a member.">
+  </p-message>
+
   <div class="group-list" *ngIf="availableGroups.length > 0; else emptyState">
     <article class="group-card" *ngFor="let group of availableGroups">
       <div class="group-card-top">

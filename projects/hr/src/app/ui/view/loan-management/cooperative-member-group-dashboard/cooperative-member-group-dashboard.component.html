@@ -32,7 +32,7 @@
           Apply for Extension
         </button>
         <button
-          *ngIf="canPostContribution"
+          *ngIf="canPostContribution && selfServicePayments"
           type="button"
           class="action-btn contribution-btn"
           (click)="openContributionModal()">
@@ -145,7 +145,8 @@
       </div>
 
       <div class="confirmation-empty-state" *ngIf="getPendingContributionRequestsForCurrentMember().length === 0; else confirmationRequestsTable">
-        <p>No contribution confirmation requests yet. Submit one from the Post Contribution action above.</p>
+        <p *ngIf="selfServicePayments">No contribution confirmation requests yet. Submit one from the Post Contribution action above.</p>
+        <p *ngIf="!selfServicePayments">Your monthly contribution of {{ formatCurrency(currentMembership?.monthlyContributionAmount || 0) }} is deducted from your salary through payroll each month.</p>
       </div>
 
       <ng-template #confirmationRequestsTable>

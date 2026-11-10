@@ -1,5 +1,6 @@
 // ...existing code...
 // ...existing code...
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, OnDestroy, OnInit, ViewEncapsulation, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -93,6 +94,9 @@ interface GroupActivityItem {
   encapsulation: ViewEncapsulation.Emulated
 })
 export class CooperativeMemberGroupDashboardComponent implements OnInit, OnDestroy {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   private readonly destroyRef = inject(DestroyRef);
 
   // Format loan code for display (with COPLO- prefix)

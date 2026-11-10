@@ -1,3 +1,4 @@
+import { SALARY_DEDUCTION_NOTE, SELF_SERVICE_PAYMENTS_ENABLED } from '../repayment-methods';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { CooperativeLoan } from '../../../domain/loan/cooperative-loan.dto';
 import { CooperativeLoanGroup, CooperativeMember, CooperativeRepayment } from '../../../service/loan/cooperative-loan/cooperative.types';
@@ -11,6 +12,9 @@ import { formatNaira, getLoanStatusLabel } from '../../../service/loan/loan-form
   encapsulation: ViewEncapsulation.None
 })
 export class CooperativeRepaymentScheduleComponent implements OnInit, OnChanges {
+  /** Self-service repayment buttons are off for now: repayments come off salary (see repayment-methods.ts). */
+  readonly selfServicePayments = SELF_SERVICE_PAYMENTS_ENABLED;
+  readonly salaryDeductionNote = SALARY_DEDUCTION_NOTE;
   @Input() loan!: CooperativeLoan;
   @Input() member!: CooperativeMember;
   @Input() group: CooperativeLoanGroup | null = null;

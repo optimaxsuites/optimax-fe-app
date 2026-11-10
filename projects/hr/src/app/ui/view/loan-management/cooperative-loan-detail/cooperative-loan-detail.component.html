@@ -229,7 +229,8 @@
         <section class="repayment-card" *ngIf="loan.status === 'ACTIVE' && repaymentSchedule.length > 0">
         <div class="repayment-card-header">
           <h3>Active Loan: {{ loan.loanId }}</h3>
-          <button class="record-btn" *ngIf="hasOpenRepayments" (click)="openRecordPaymentModal()">{{ isMemberView ? 'Make Payment' : 'Record Payment' }}</button>
+          <!-- Members don't pay here for now (salary deduction); admins can still record a payment. -->
+          <button class="record-btn" *ngIf="hasOpenRepayments && (!isMemberView || selfServicePayments)" (click)="openRecordPaymentModal()">{{ isMemberView ? 'Make Payment' : 'Record Payment' }}</button>
         </div>
 
         <div class="loan-summary-line">

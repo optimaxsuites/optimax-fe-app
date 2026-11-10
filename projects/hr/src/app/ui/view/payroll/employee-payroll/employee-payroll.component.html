@@ -19,6 +19,10 @@
         <ng-template pTemplate="left">
             <div class="flex gap-3 text-gray-700 items-center">
                 <p class="text-gray-700  text-[20px]">Payroll for {{selectedMonth}} {{selectedYear}}</p>
+                <select *ngIf="runs.length > 1" class="editInput bg-gray-50 text-sm"
+                  [ngModel]="payrollInView?.id" (ngModelChange)="selectRunById($event)" title="Open another month's payroll run">
+                  <option *ngFor="let run of runs" [ngValue]="run.id">{{ runOptionLabel(run) }}</option>
+                </select>
                 <!-- <div class="flex items-center gap-4">
                     <label for="calendar" (click)="toggleCalendar()"><i class="fa-solid fa-calendar-days text-[20px] text-gray-500 cursor-pointer "></i></label>
                     <div *ngIf="showCalendar" class="calendar-modal">
@@ -200,6 +204,11 @@
       </div>
     </div>
 
+    <!-- The run must take exactly what each employee owes for loans and cooperatives this month. -->
+    <p-message *ngIf="obligationMismatchCount" severity="warn" styleClass="mx-3 my-2 w-full"
+      [text]="obligationMismatchCount + ' employee(s): this payroll run’s loan and cooperative deductions don’t match what they owe for ' + obligationsMonthLabel + '. See the Loans & Coop column, or download Actions → Loan & Coop Deductions (CSV).'">
+    </p-message>
+
     <!-- While rows are ticked, the Actions menu works on just those employees. -->
     <div *ngIf="selectedEmployees.length" class="mx-3 my-2 flex items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
       <span><strong>{{ selectedEmployees.length }}</strong> employee(s) selected. Actions apply to them only.</span>
@@ -307,7 +316,33 @@
       </ng-template>
     </p-table>
 
-    <p-table [value]="currentEmployeeInView?.deductions?.details || []" styleClass="p-datatable-sm">
+    <!-- Loans and cooperatives: what this employee owes, and exactly what comes off this month. -->
+    <div *ngIf="obligationsFor(currentEmployeeInView) as owed" class="mb-6 rounded-md border border-slate-200">
+      <div class="flex justify-between items-center bg-slate-50 px-4 py-3 border-b">
+        <span class="font-bold text-slate-600">Loans &amp; Cooperative · {{ obligationsMonthLabel }}</span>
+        <span class="font-bold text-slate-700">₦{{ owed.total | number:'1.2-2' }} this month</span>
+      </div>
+      <table class="w-full text-sm">
+        <tr class="text-slate-400 text-left">
+          <th class="px-4 py-2">Item</th><th class="px-4 py-2">Group</th>
+          <th class="px-4 py-2 text-right">Total repayable</th><th class="px-4 py-2 text-right">Outstanding</th>
+          <th class="px-4 py-2 text-right">This month</th><th class="px-4 py-2">Status</th>
+        </tr>
+        <tr *ngFor="let item of owed.items" class="border-t border-slate-100 text-slate-600">
+          <td class="px-4 py-2">{{ obligationKindLabel[item.kind] }} <span class="text-slate-400">{{ item.kind === 'COOPERATIVE_CONTRIBUTION' ? '' : item.reference }}</span></td>
+          <td class="px-4 py-2">{{ item.groupName || '—' }}</td>
+          <td class="px-4 py-2 text-right">{{ item.totalRepayable != null ? '₦' + (item.totalRepayable | number:'1.2-2') : '—' }}</td>
+          <td class="px-4 py-2 text-right">{{ item.outstanding != null ? '₦' + (item.outstanding | number:'1.2-2') : '—' }}</td>
+          <td class="px-4 py-2 text-right font-semibold">₦{{ item.thisMonth | number:'1.2-2' }}</td>
+          <td class="px-4 py-2">{{ obligationStatusLabel(item) }}</td>
+        </tr>
+      </table>
+      <p *ngIf="obligationMismatch(currentEmployeeInView)" class="px-4 py-2 text-sm text-amber-700 bg-amber-50 border-t">
+        This payroll run deducted ₦{{ runLoanDeduction(currentEmployeeInView) | number:'1.2-2' }} for loans and cooperatives, not ₦{{ owed.total | number:'1.2-2' }}.
+      </p>
+    </div>
+
+    <p-table [value]="payslipDeductionLines" styleClass="p-datatable-sm">
       <ng-template pTemplate="header">
         <tr class="bg-slate-50">
           <th class="py-3 px-4 text-slate-600 border-y">Deductions</th>
@@ -316,7 +351,7 @@
       </ng-template>
       <ng-template pTemplate="body" let-d>
         <tr class="border-b border-slate-100">
-          <td class="px-4 py-2 text-slate-600">{{ d.name }}</td>
+          <td class="px-4 py-2 text-slate-600">{{ d.label }}</td>
           <td class="px-4 py-2 text-right text-slate-600">₦{{ d.amount | number:'1.2-2' }}</td>
         </tr>
       </ng-template>
@@ -327,6 +362,9 @@
         </tr>
       </ng-template>
     </p-table>
+    <p *ngIf="payslipDeductionsMismatch" class="px-4 py-2 text-sm text-amber-700 bg-amber-50 rounded">
+      These deduction lines add up to ₦{{ payslipDeductionSum | number:'1.2-2' }}, but the run's total deductions are ₦{{ currentEmployeeInView.totalDeductions | number:'1.2-2' }}. Check this payslip before approving.
+    </p>
 
     <div class="mt-10 p-6 bg-slate-900 text-white rounded-lg flex justify-between items-center shadow-lg">
       <div>
