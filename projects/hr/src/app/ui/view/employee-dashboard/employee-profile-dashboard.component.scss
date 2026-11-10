@@ -1030,6 +1030,7 @@ p { margin-bottom: 0; }
 .ep-payslip-amount { font-weight: 600; color: #1e293b; }
 .ep-payslip-deduct { color: #dc2626; font-weight: 600; }
 .ep-payslip-net    { color: #16a34a; font-weight: 700; }
+.ep-payslip-net--negative { color: #dc2626; i { margin-left: 4px; font-size: 0.85em; } }
 
 .ep-payslip-badge {
   display: inline-flex;

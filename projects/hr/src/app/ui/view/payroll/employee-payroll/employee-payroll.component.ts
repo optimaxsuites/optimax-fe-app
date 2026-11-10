@@ -1261,15 +1261,9 @@ download(format: string) {
         }
     }
 
-    /**
-     * Every deduction on the payslip on screen: tax, pension, NHF, health insurance, loans, cooperatives,
-     * then the named lines (ad-hocs, queries…). When named lines exist they stand in for "Other".
-     */
+    /** Every deduction on the payslip on screen, itemised the same way as the payslip and its email. */
     get payslipDeductionLines(): { label: string; amount: number }[] {
-      const row = this.currentEmployeeInView;
-      const details: any[] = Array.isArray(row?.deductions?.details) ? row.deductions.details : [];
-      const fixed = payslipFigures(row).deductionLines.filter(l => !(details.length && l.label === 'Other'));
-      return [...fixed, ...details.map(d => ({ label: d?.name || d?.description || 'Deduction', amount: Number(d?.amount) || 0 }))];
+      return payslipFigures(this.currentEmployeeInView).deductionLines;
     }
 
     get payslipDeductionSum(): number {
@@ -1278,8 +1272,7 @@ download(format: string) {
 
     /** True when the deduction lines don't add up to the run's total deductions for this payslip. */
     get payslipDeductionsMismatch(): boolean {
-      const total = Number(this.currentEmployeeInView?.totalDeductions) || 0;
-      return Math.abs(total - this.payslipDeductionSum) > 0.5;
+      return payslipFigures(this.currentEmployeeInView).unitemisedDeductions !== 0;
     }
 
     formatDate(arr: number[]): string {
@@ -1357,6 +1350,8 @@ download(format: string) {
               const id = String(row?.employee?.id ?? row?.employeeId ?? '');
               const employee = { ...(row?.employee || {}), ...(byId.get(id) || {}) };
               const slip = toPayslip(row, run, employee);
+              // A payslip with nothing to pay out isn't sent: it would tell the employee they owe money.
+              if (payslipFigures(row).notPayable) return of({ id, name: slip.name || `#${id}`, result: 'notPayable' as const, reason: '' });
               const to = payslipEmailAddress(employee);
               if (!to) return of({ id, name: slip.name || `#${id}`, result: 'skipped' as const, reason: '' });
               const html = buildPayslipEmailHtml(slip, companyName, payslipsUrl);
@@ -1376,6 +1371,7 @@ download(format: string) {
       ).subscribe(results => {
         const sent = results.filter(r => r.result === 'sent');
         const skipped = results.filter(r => r.result === 'skipped').map(r => r.name);
+        const notPayable = results.filter(r => r.result === 'notPayable').map(r => r.name);
         const failedResults = results.filter(r => r.result === 'failed');
         const failed = failedResults.map(r => r.reason ? `${r.name} (${r.reason})` : r.name);
         // Only a send to the whole run counts as "the run was emailed" (it stops the automatic resend).
@@ -1386,11 +1382,12 @@ download(format: string) {
           this.selectedEmployees = this.filteredEmployeePayroll.filter(row => failedIds.has(idOf(row)));
         }
         this.messageService.add({
-          severity: failed.length || skipped.length ? 'warn' : 'success',
+          severity: failed.length || skipped.length || notPayable.length ? 'warn' : 'success',
           summary: 'Payslips emailed',
           detail: [
             `${sent.length} of ${results.length} ${period} payslip(s) sent.`,
             skipped.length ? `No email address: ${skipped.join(', ')}.` : '',
+            notPayable.length ? `Not sent, net pay is zero or negative: ${notPayable.join(', ')}.` : '',
             failed.length ? `Failed to send: ${failed.join(', ')}. They're now ticked in the table; choose "Email Payslips (${failed.length} selected)" to retry just them.` : '',
           ].filter(Boolean).join(' '),
           key: this.toastKey,

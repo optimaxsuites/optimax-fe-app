@@ -52,6 +52,9 @@ export class PayslipViewComponent implements OnInit {
   get deductionLines(): { label: string; amount: number }[] { return this.figures.deductionLines; }
   get totalDeductions(): number { return this.figures.totalDeductions; }
   get netPay(): number { return this.figures.netPay; }
+  get unitemisedEarnings(): number { return this.figures.unitemisedEarnings; }
+  get unitemisedDeductions(): number { return this.figures.unitemisedDeductions; }
+  get notPayable(): boolean { return this.figures.notPayable; }
 
   statusClass(): string {
     const s = (this.payslip?.runStatus || '').toUpperCase();

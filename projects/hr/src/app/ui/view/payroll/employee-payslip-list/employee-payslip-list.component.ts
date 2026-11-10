@@ -61,7 +61,9 @@ export class EmployeePayslipListComponent implements OnInit {
     {
       header: 'Net Pay',
       className: 'table-item',
-      formatter: (row) => this.fmtCurrency(row?.netPayable ?? 0)
+      formatter: (row) => (Number(row?.netPayable) || 0) <= 0
+        ? `${this.fmtCurrency(row?.netPayable ?? 0)} (not payable)`
+        : this.fmtCurrency(row?.netPayable ?? 0)
     },
     {
       header: 'Status',

@@ -696,11 +696,19 @@ export class EmployeeProfileDashboardComponent {
   }
 
   /** The newest payroll run row for this employee, with its figures, or null. */
+  /**
+   * The newest payslip that actually pays something. A run whose deductions exceed gross (net ≤ 0) is
+   * a payroll error, not the employee's take-home, so it is skipped here and flagged in the list.
+   */
   get latestPayslip(): { label: string; grossPay: number; netPay: number; runStatus: string } | null {
-    const slip = this.recentPayslips[0];
+    const slip = this.recentPayslips.find(s => !payslipFigures(s).notPayable);
     if (!slip) return null;
     const f = payslipFigures(slip);
     return { label: periodLabel(slip.month, slip.year), grossPay: f.grossPay, netPay: f.netPay, runStatus: slip.runStatus };
+  }
+
+  isPayslipNotPayable(slip: any): boolean {
+    return payslipFigures(slip).notPayable;
   }
 
   /**
@@ -712,7 +720,10 @@ export class EmployeeProfileDashboardComponent {
   }
 
   get takeHomeLabel(): string {
-    if (this.latestPayslip) return `From ${this.latestPayslip.label} payroll`;
+    if (this.latestPayslip) {
+      const approved = ['APPROVED', 'COMPLETED'].includes(String(this.latestPayslip.runStatus || '').toUpperCase());
+      return `From ${this.latestPayslip.label} payroll${approved ? '' : ' (not yet approved)'}`;
+    }
     if (this.salaryStructure) return 'Salary structure, before PAYE and payroll deductions';
     return 'No salary structure for this level';
   }
