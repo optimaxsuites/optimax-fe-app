@@ -27,9 +27,10 @@ export class SettingsPageComponent implements OnDestroy {
 
     this.subs.add(
       this.menuService.settingsMenuItems$.subscribe(() => {
+        const prevOpen = new Map(this.menuItems.map(i => [i.label, (i as any).open as boolean]));
         this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
           ...item,
-          open: false
+          open: prevOpen.get(item.label) ?? false
         }));
       })
     );

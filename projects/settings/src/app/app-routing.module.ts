@@ -12,6 +12,7 @@ import { AppUpdatesComponent } from './ui/view/app-updates/app-updates.component
 import { CrmSettingsComponent } from './ui/view/crm/crm-settings.component';
 import { FinanceSettingsComponent } from './ui/view/finance-settings/finance-settings.component';
 import { FinancePeriodCloseComponent } from './ui/view/finance-period-close/finance-period-close.component';
+import { CommerceSettingsComponent } from './ui/view/commerce/commerce-settings/commerce-settings.component';
 
 const routes: Routes = [
   {
@@ -59,6 +60,10 @@ const routes: Routes = [
       {
         path: 'finance-period-close/:uuid',
         component: FinancePeriodCloseComponent,
+      },
+      {
+        path: 'commerce-settings/:uuid',
+        component: CommerceSettingsComponent,
       },
     ],
   },

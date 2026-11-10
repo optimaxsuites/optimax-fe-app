@@ -19,15 +19,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            target: universal-apple-darwin
-            args: '--target universal-apple-darwin --bundle dmg'
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            args: '--bundle nsis'
+            args: '--bundles nsis'
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            args: '--bundle appimage,deb'
+            args: '--bundles appimage,deb'
 
     runs-on: ${{ matrix.platform }}
 
@@ -43,7 +40,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target == 'universal-apple-darwin' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+          targets: ${{ matrix.target }}
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
@@ -66,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Build Angular (Tauri configuration)
-        run: npx ng build ERP-FE --configuration tauri --base-href ./
+        run: node --max-old-space-size=4096 node_modules/@angular/cli/bin/ng build ERP-FE --configuration tauri --base-href ./
 
       - name: Build Tauri desktop app
         uses: tauri-apps/tauri-action@v0
@@ -91,8 +88,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
           tauriScript: npx tauri
-          # Skip the Angular build step inside tauri-action — we built it above
-          beforeBuildCommand: ''
 
   publish-update-manifest:
     needs: build

@@ -178,6 +178,7 @@ export class NavigationLinksService {
     this.links['bugTracker'] = 'bug-tracker/' + uuidV4();
     this.links['CRMSettings'] = 'crm-settings/' + uuidV4();
     this.links['appUpdates'] = 'app-updates/' + uuidV4();
+    this.links['commerceSettings'] = 'commerce-settings/' + uuidV4();
 
     // POS ================================================================================================================
     this.links['productLink'] = '/admin/pos/product/' + uuidV4();
