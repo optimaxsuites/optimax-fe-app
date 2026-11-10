@@ -163,7 +163,6 @@ export class EmployeeProfileDashboardComponent {
   /** Regular monthly pay from the level's salary structure (payroll-calculation.ts). */
   salaryStructure: SalaryStructure | null = null;
   private salaryRecords: any[] = [];
-  private salaryInputMode: 'monthly' | 'yearly' = 'monthly';
   viewPayslip = false;
   activePayslip: any = {};
 
@@ -225,13 +224,6 @@ export class EmployeeProfileDashboardComponent {
   ngOnInit(): void {
     this.canManageEmployees = this.resolveCanManageEmployees();
     this.fetchEmployeeForCurrentUser();
-    this.payrollService.getGeneralSettingsById().subscribe({
-      next: (res: any) => {
-        this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly';
-        this.applySalaryStructure();
-      },
-      error: () => { },
-    });
     this.dataService.getDepartment().subscribe({ next: (d: any[]) => this.departments = d, error: () => { } });
     this.dataService.getAllLevels().subscribe({ next: (d: any[]) => this.levels = (d || []).map((l: any) => ({ ...l, displayLabel: l.position?.trim() || l.name })), error: () => { } });
     this.dataService.getGender().subscribe({ next: (d: any[]) => this.genders = d, error: () => { } });
@@ -682,9 +674,9 @@ export class EmployeeProfileDashboardComponent {
     }
   }
 
-  /** Builds the structure from the loaded records and the payroll's monthly/yearly setting. */
+  /** Builds the structure from the level's salary records, amounts as stored. */
   private applySalaryStructure(): void {
-    this.salaryStructure = resolveSalaryStructure(this.salaryRecords, this.salaryInputMode);
+    this.salaryStructure = resolveSalaryStructure(this.salaryRecords);
     if (!this.employeeInView) return;
     const record = this.salaryStructure ? this.salaryRecords.find(r => r?.id === this.salaryStructure!.recordId) ?? this.salaryRecords[0] : null;
     // Other screens (letters) read salaryDetails; keep the chosen record there with the shared figures.

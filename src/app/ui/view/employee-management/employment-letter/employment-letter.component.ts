@@ -17,7 +17,6 @@ export class EmploymentLetterComponent implements OnInit {
   companyProfile: any = {};
   salaryDetails: any = null;
   generatingPdf = false;
-  salaryInputMode: 'monthly' | 'yearly' = 'monthly';
   today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
   constructor(
@@ -37,13 +36,6 @@ export class EmploymentLetterComponent implements OnInit {
         error: () => {}
       });
     }
-
-    this.payrollService.getGeneralSettingsById().subscribe({
-      next: (res: any) => {
-        this.salaryInputMode = (res?.salaryInputMode as 'monthly' | 'yearly') || 'monthly';
-      },
-      error: () => {}
-    });
   }
 
   async generatePdf() {
@@ -119,7 +111,7 @@ export class EmploymentLetterComponent implements OnInit {
 
   /** Monthly structure (payroll-calculation.ts); the letter shows it as annual figures. */
   private get structure(): SalaryStructure | null {
-    return resolveSalaryStructure(this.salaryDetails, this.salaryInputMode);
+    return resolveSalaryStructure(this.salaryDetails);
   }
 
   private toAnnual(monthly: number): number {

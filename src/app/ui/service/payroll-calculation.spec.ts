@@ -27,18 +27,12 @@ describe('resolveSalaryStructure', () => {
     expect(s.overtime[0].amount).toBe(1500);
   });
 
-  it('takes a percentage deduction as a share of base salary', () => {
-    const s = resolveSalaryStructure({ baseSalary: 100000, allowance: [], deductions: [{ amount: 8, calculationType: 'PERCENTAGE' }] })!;
-    expect(s.deductions[0].amount).toBe(8000);
-    expect(s.deductions[0].percent).toBe(8);
-    expect(s.netPay).toBe(92000);
-  });
-
-  it('divides yearly records by 12', () => {
-    const s = resolveSalaryStructure({ baseSalary: 1200000, allowance: [{ amount: 120000 }], deductions: [{ amount: 12000 }] }, 'yearly')!;
-    expect(s.baseSalary).toBe(100000);
-    expect(s.grossPay).toBe(110000);
-    expect(s.netPay).toBe(109000);
+  it('uses amounts exactly as stored: no ÷12 and no percentage maths', () => {
+    const s = resolveSalaryStructure({ baseSalary: 120000, allowance: [{ amount: 12000 }], deductions: [{ amount: 9600, calculationType: 'PERCENTAGE' }] })!;
+    expect(s.baseSalary).toBe(120000);
+    expect(s.grossPay).toBe(132000);
+    expect(s.deductions[0].amount).toBe(9600);
+    expect(s.netPay).toBe(122400);
   });
 
   it('uses the most complete record of a level, like loans do', () => {

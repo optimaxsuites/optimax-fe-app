@@ -242,7 +242,7 @@
             <div *ngIf="salaryStructure?.deductions?.length; else noDeduction" class="list-stack">
               <p *ngFor="let deduction of salaryStructure!.deductions">
                 {{ (getDeductionName(deduction.typeId) | async) || deduction.typeId }}:
-                {{ deduction.amount | currency: 'NGN' }}<span *ngIf="deduction.percent != null"> ({{ deduction.percent }}% of base)</span>
+                {{ deduction.amount | currency: 'NGN' }}
               </p>
             </div>
             <ng-template #noDeduction>

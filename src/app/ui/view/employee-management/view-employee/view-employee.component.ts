@@ -8,7 +8,6 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { SelectedEmployeeStore } from '../selected-employee.store';
-import { PayrollService } from '../../../service/payroll.service';
 import { resolveSalaryStructure, SalaryStructure } from '../../../service/payroll-calculation';
 
 export interface NextOfKin {
@@ -53,15 +52,14 @@ export class ViewEmployeeComponent {
 
   employeeProfilePhotoUrl: SafeUrl | string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
 
-  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService, private selectedEmployee: SelectedEmployeeStore, private payrollService: PayrollService){}
+  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient, private messageService: MessageService, private selectedEmployee: SelectedEmployeeStore){}
 
   /** Regular monthly pay from the level's salary structure (payroll-calculation.ts). */
   salaryStructure: SalaryStructure | null = null;
   private salaryRecords: any[] = [];
-  private salaryInputMode: 'monthly' | 'yearly' = 'monthly';
 
   private applySalaryStructure(): void {
-    this.salaryStructure = resolveSalaryStructure(this.salaryRecords, this.salaryInputMode);
+    this.salaryStructure = resolveSalaryStructure(this.salaryRecords);
     const record = this.salaryStructure ? this.salaryRecords.find(r => r?.id === this.salaryStructure!.recordId) ?? this.salaryRecords[0] : null;
     if (this.employeeInView) {
       this.employeeInView.salaryDetails = record ? { ...record, netSalaryComputed: this.salaryStructure!.netPay, grossSalaryComputed: this.salaryStructure!.grossPay } : null;
@@ -81,13 +79,6 @@ export class ViewEmployeeComponent {
       this.loadEmployeeRelatives();
 
       if(this.employeeInView?.level){
-        this.payrollService.getGeneralSettingsById().subscribe({
-          next: (res: any) => {
-            this.salaryInputMode = res?.salaryInputMode === 'yearly' ? 'yearly' : 'monthly';
-            this.applySalaryStructure();
-          },
-          error: () => {}
-        });
         this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
           next: data => {
             this.salaryRecords = Array.isArray(data) ? data : (data ? [data] : []);
