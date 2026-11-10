@@ -23,6 +23,23 @@
   </div>
 
   <!-- Payslip document — captured by html2canvas -->
+  <!-- Screen-only: why these figures need checking. Not part of the PDF. -->
+  <div class="ps-alert" *ngIf="notPayable || unitemisedEarnings || unitemisedDeductions">
+    <i class="fas fa-triangle-exclamation"></i>
+    <div>
+      <p *ngIf="notPayable">
+        Deductions ({{ fmt(totalDeductions) }}) are more than gross pay ({{ fmt(grossPay) }}), so there is nothing to pay.
+        This payroll needs correcting before it is approved or paid.
+      </p>
+      <p *ngIf="unitemisedEarnings">
+        Gross pay includes {{ fmt(unitemisedEarnings) }} that payroll didn't itemise. It is shown as "Other earnings".
+      </p>
+      <p *ngIf="unitemisedDeductions">
+        Total deductions include {{ fmt(unitemisedDeductions) }} that payroll didn't itemise. It is shown as "Other deductions".
+      </p>
+    </div>
+  </div>
+
   <div class="ps-doc" #payslipDoc>
 
     <!-- ── Header ── -->
@@ -115,6 +132,10 @@
               <td>Bonuses &amp; Commissions</td>
               <td class="ps-table__amt">{{ fmt(bonusTotal) }}</td>
             </tr>
+            <tr *ngIf="unitemisedEarnings">
+              <td>Other earnings (not itemised)</td>
+              <td class="ps-table__amt">{{ fmt(unitemisedEarnings) }}</td>
+            </tr>
           </tbody>
           <tfoot>
             <tr class="ps-table__total ps-table__total--earn">
@@ -137,7 +158,11 @@
               <td>{{ line.label }}</td>
               <td class="ps-table__amt">{{ fmt(line.amount) }}</td>
             </tr>
-            <tr *ngIf="deductionLines.length === 0">
+            <tr *ngIf="unitemisedDeductions">
+              <td>Other deductions (not itemised)</td>
+              <td class="ps-table__amt">{{ fmt(unitemisedDeductions) }}</td>
+            </tr>
+            <tr *ngIf="deductionLines.length === 0 && !unitemisedDeductions">
               <td colspan="2" class="ps-table__empty">No deductions recorded</td>
             </tr>
           </tbody>
@@ -159,11 +184,15 @@
           <p class="ps-netpay__label">Net Pay</p>
           <p class="ps-netpay__period">{{ periodLabel }}</p>
         </div>
-        <p class="ps-netpay__amount">{{ fmt(netPay) }}</p>
+        <p class="ps-netpay__amount" [class.ps-netpay__amount--negative]="notPayable">{{ fmt(netPay) }}</p>
       </div>
-      <p class="ps-netpay__note">
+      <p class="ps-netpay__note" *ngIf="!notPayable">
         <i class="fas fa-circle-info"></i>
         Amount credited to {{ payslip?.bank || 'your bank account' }} · {{ payslip?.accountNumber || '' }}
+      </p>
+      <p class="ps-netpay__note ps-netpay__note--warn" *ngIf="notPayable">
+        <i class="fas fa-triangle-exclamation"></i>
+        Not payable: deductions are more than gross pay. Nothing will be credited until this payslip is corrected.
       </p>
     </div>
 

@@ -331,6 +331,8 @@
     margin: 0;
     letter-spacing: -1px;
     font-variant-numeric: tabular-nums;
+
+    &--negative { color: #fca5a5; }
   }
 
   &__note {
@@ -342,6 +344,8 @@
     gap: 6px;
 
     i { font-size: 11px; }
+
+    &--warn { color: #fecaca; font-weight: 600; }
   }
 }
 
@@ -360,4 +364,21 @@
     color: #94a3b8;
     margin: 0;
   }
+}
+
+.ps-alert {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.5;
+
+  i { margin-top: 3px; }
+  p { margin: 0; }
+  p + p { margin-top: 4px; }
 }

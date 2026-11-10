@@ -319,7 +319,7 @@ export class EmployeeService {
     return this.http
     .get<any>(
         this.baseurl +
-            `/x/api/v2/hr/deductionsType/${id}`)
+            `/x/api/v2/hr/deductionsTypes/${id}`)
     .pipe(catchError(this.handleError));
   }
 

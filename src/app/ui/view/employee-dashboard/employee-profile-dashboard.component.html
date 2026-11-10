@@ -492,7 +492,11 @@
             <span class="ep-payslip-period">{{ payslipMonthNames[(slip.month || 1) - 1] }} {{ slip.year }}</span>
             <span class="ep-payslip-amount">{{ fmtPayslipAmount(slip.grossPay ?? slip.basePay ?? 0) }}</span>
             <span class="ep-payslip-deduct">{{ fmtPayslipAmount(slip.totalDeductions ?? 0) }}</span>
-            <span class="ep-payslip-net">{{ fmtPayslipAmount(slip.netPayable ?? 0) }}</span>
+            <span class="ep-payslip-net" [class.ep-payslip-net--negative]="isPayslipNotPayable(slip)"
+              [title]="isPayslipNotPayable(slip) ? 'Deductions are more than gross pay: this payslip needs correcting' : ''">
+              {{ fmtPayslipAmount(slip.netPayable ?? 0) }}
+              <i *ngIf="isPayslipNotPayable(slip)" class="fas fa-triangle-exclamation"></i>
+            </span>
             <span>
               <span class="ep-payslip-badge"
                 [class.ep-payslip-badge--green]="slip.runStatus === 'APPROVED' || slip.runStatus === 'COMPLETED'"

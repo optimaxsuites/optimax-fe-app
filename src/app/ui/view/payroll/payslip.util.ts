@@ -14,10 +14,21 @@ export interface PayslipFigures {
   overtimePay: number;
   bonusTotal: number;
   grossPay: number;
+  /**
+   * Gross pay minus the earnings lines above (base, allowances, overtime, bonuses). Not zero when the
+   * run's gross includes earnings the row doesn't itemise, e.g. allowances beyond the one the row carries.
+   */
+  unitemisedEarnings: number;
   deductionLines: { label: string; amount: number }[];
   totalDeductions: number;
+  /** Total deductions minus the deduction lines. Not zero when the run's total includes unlisted items. */
+  unitemisedDeductions: number;
   netPay: number;
+  /** Net pay is zero or negative: deductions exceed gross, so this payslip can't be paid as it stands. */
+  notPayable: boolean;
 }
+
+const GAP_TOLERANCE = 0.5;
 
 /** A run row's pay figures. Server totals win; parts are summed only when a total is missing. */
 export function payslipFigures(slip: any): PayslipFigures {
@@ -32,21 +43,35 @@ export function payslipFigures(slip: any): PayslipFigures {
   const grossPay = typeof slip?.grossPay === 'number' ? slip.grossPay : basePay + allowanceTotal + bonusTotal + overtimePay;
 
   const d = slip?.deductions || {};
-  const deductionLines = [
+  const fixed = [
     { label: 'Tax (PAYE)',       amount: num(d.tax) },
     { label: 'Pension',          amount: num(d.pension) },
     { label: 'NHF',              amount: num(d.nhf) },
     { label: 'Health Insurance', amount: num(d.healthInsurance) },
     { label: 'Loan / Advances',  amount: num(d.advances) },
     { label: 'Cooperatives',     amount: num(d.cooperatives) },
-    { label: 'Other',            amount: num(d.other) },
+  ];
+  // Named lines (ad-hocs, queries, fines…) itemise "Other", so when there are any they stand in for it.
+  const details: any[] = Array.isArray(d.details) ? d.details.filter((x: any) => x != null) : [];
+  const deductionLines = [
+    ...fixed,
+    ...(details.length
+      ? details.map((x) => ({ label: x?.name || x?.description || 'Deduction', amount: num(x?.amount) }))
+      : [{ label: 'Other', amount: num(d.other) }]),
   ].filter((l) => l.amount > 0);
-  const totalDeductions = typeof slip?.totalDeductions === 'number'
-    ? slip.totalDeductions
-    : deductionLines.reduce((t, l) => t + l.amount, 0);
-  const netPay = num(slip?.netPayable) || grossPay - totalDeductions;
+  const lineSum = deductionLines.reduce((t, l) => t + l.amount, 0);
+  const totalDeductions = typeof slip?.totalDeductions === 'number' ? slip.totalDeductions : lineSum;
+  const netPay = typeof slip?.netPayable === 'number' ? slip.netPayable : grossPay - totalDeductions;
 
-  return { basePay, allowanceTotal, overtimePay, bonusTotal, grossPay, deductionLines, totalDeductions, netPay };
+  const gap = (v: number) => (Math.abs(v) > GAP_TOLERANCE ? Math.round(v * 100) / 100 : 0);
+  return {
+    basePay, allowanceTotal, overtimePay, bonusTotal, grossPay,
+    unitemisedEarnings: gap(grossPay - (basePay + allowanceTotal + overtimePay + bonusTotal)),
+    deductionLines, totalDeductions,
+    unitemisedDeductions: gap(totalDeductions - lineSum),
+    netPay,
+    notPayable: netPay <= 0,
+  };
 }
 
 export function periodLabel(month: any, year: any): string {
@@ -111,10 +136,12 @@ export function buildPayslipEmailHtml(slip: any, companyName: string, payslipsUr
     f.allowanceTotal ? row('Allowances', f.allowanceTotal) : '',
     f.overtimePay ? row('Overtime', f.overtimePay) : '',
     f.bonusTotal ? row('Bonuses', f.bonusTotal) : '',
+    f.unitemisedEarnings ? row('Other earnings (not itemised)', f.unitemisedEarnings) : '',
     row('Gross Pay', f.grossPay, true),
   ].join('');
   const deductions = [
     ...f.deductionLines.map((l) => row(l.label, l.amount)),
+    f.unitemisedDeductions ? row('Other deductions (not itemised)', f.unitemisedDeductions) : '',
     row('Total Deductions', f.totalDeductions, true),
   ].join('');
   const info = [
