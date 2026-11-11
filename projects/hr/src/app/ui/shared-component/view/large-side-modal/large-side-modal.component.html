@@ -1,7 +1,8 @@
 <div class="modal-backdrop" (click)="closeModal()"></div>
 <div
   class="modal-content"
-  [style.transform]="'translate(' + dragOffset.x + 'px,' + dragOffset.y + 'px)'"
+  [style.right.px]="-dragOffset.x"
+  [style.top.px]="dragOffset.y"
   (click)="$event.stopPropagation()">
   <div class="modal-topbar">
     <button type="button" class="drag-handle" (mousedown)="beginDrag($event)">

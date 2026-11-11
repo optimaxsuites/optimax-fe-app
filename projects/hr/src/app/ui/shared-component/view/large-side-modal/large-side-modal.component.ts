@@ -27,6 +27,12 @@ import { Component, EventEmitter, HostListener, Output } from '@angular/core';
 })
 export class LargeSideModalComponent {
   @Output() close = new EventEmitter<void>();
+  /**
+   * How far the panel has been dragged. It is applied as top/right offsets, not a CSS transform: a
+   * transform makes the panel the box that `position: fixed` children are placed in, so a modal opened
+   * from inside this one (e.g. a payslip from an employee profile) would sit at the top of this panel's
+   * scrolled content, out of view, instead of over the screen.
+   */
   dragOffset = { x: 0, y: 0 };
   private dragging = false;
   private dragStart = { x: 0, y: 0 };
