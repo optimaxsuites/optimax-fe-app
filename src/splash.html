@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-  <video id="v" autoplay playsinline>
+  <video id="v" autoplay muted playsinline>
     <source src="splash.mp4" type="video/mp4">
   </video>
   <div id="fallback">
@@ -65,11 +65,20 @@
       }
     }
 
+    function showFallback() {
+      v.style.display = 'none';
+      fallback.style.display = 'flex';
+    }
+
     v.addEventListener('ended', done);
 
     v.addEventListener('error', function() {
-      v.style.display = 'none';
-      fallback.style.display = 'flex';
+      showFallback();
+      setTimeout(done, 2500);
+    });
+
+    v.play().catch(function() {
+      showFallback();
       setTimeout(done, 2500);
     });
 
