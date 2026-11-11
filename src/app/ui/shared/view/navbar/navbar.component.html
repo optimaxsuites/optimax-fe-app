@@ -74,7 +74,7 @@
               (click)="openNotification(item); notificationsPanel.hide()"
             >
               <div class="np__avatar" [class.np__avatar--chat]="item.category === 'chat'" [class.np__avatar--feed]="item.category === 'feed'">
-                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+                <img *ngIf="item.avatarUrl" [src]="item.avatarUrl | tauriImg" [alt]="item.title" />
                 <span *ngIf="!item.avatarUrl">{{ (item.title || 'N').charAt(0).toUpperCase() }}</span>
               </div>
               <div class="np__content">
@@ -109,7 +109,7 @@
     <!-- Profile -->
     <button type="button" class="profile-trigger" (click)="profilePanel.toggle($event)">
       <div class="profile-avatar">
-        <img *ngIf="headerProfile.imageUrl; else initialsAvatar" [src]="headerProfile.imageUrl" [alt]="headerProfile.name" />
+        <img *ngIf="headerProfile.imageUrl; else initialsAvatar" [src]="headerProfile.imageUrl | tauriImg" [alt]="headerProfile.name" />
         <ng-template #initialsAvatar><span>{{ headerProfile.initials }}</span></ng-template>
       </div>
       <div class="profile-copy">
@@ -123,7 +123,7 @@
       <div class="profile-panel">
         <div class="profile-panel__identity">
           <div class="profile-avatar profile-avatar--large">
-            <img *ngIf="headerProfile.imageUrl; else panelInitialsAvatar" [src]="headerProfile.imageUrl" [alt]="headerProfile.name" />
+            <img *ngIf="headerProfile.imageUrl; else panelInitialsAvatar" [src]="headerProfile.imageUrl | tauriImg" [alt]="headerProfile.name" />
             <ng-template #panelInitialsAvatar><span>{{ headerProfile.initials }}</span></ng-template>
           </div>
           <div>
@@ -177,7 +177,7 @@
       (click)="openNotification(item); closeUnreadNotificationsDialog()"
     >
       <div class="np__avatar np__avatar--chat">
-        <img *ngIf="item.avatarUrl" [src]="item.avatarUrl" [alt]="item.title" />
+        <img *ngIf="item.avatarUrl" [src]="item.avatarUrl | tauriImg" [alt]="item.title" />
         <span *ngIf="!item.avatarUrl">{{ (item.title || 'N').charAt(0).toUpperCase() }}</span>
       </div>
       <div class="np__content">

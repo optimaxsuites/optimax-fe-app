@@ -115,6 +115,7 @@ import { PurchasePageComponent } from './ui/purchase/view/purchase-page.componen
 import { RfqModalComponent } from './ui/purchase/view/rfq-modal/rfq-modal.component';
 import { BookKeepingComponent } from './ui/accounting/view/book-keeping/book-keeping.component';
 import { StripHtmlPipe } from './ui/shared/service/strip-html/strip-html.pipe';
+import { TauriImgPipe } from './ui/shared/service/tauri-img.pipe';
 import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
 import { ProformaInvoiceModalComponent } from './ui/sales/view/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteComponent } from './ui/sales/view/dispatch-note/dispatch-note.component';
@@ -386,6 +387,7 @@ const dbConfig: DBConfig = {
     RfqModalComponent,
     BookKeepingComponent,
     StripHtmlPipe,
+    TauriImgPipe,
     QuotationModalComponent,
     ProformaInvoiceModalComponent,
     DispatchNoteComponent,

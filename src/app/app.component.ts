@@ -96,6 +96,7 @@ export class AppComponent implements OnInit {
   // Angular lifecycle hook must be lowercase
   ngOnInit(): void {
     this.syncSessionAuthToLocalStorage();
+    this.syncProxyToken();
     this.checkEligibility();
     this.checkOnboardingStatus();
     this.sessionExpiredService.expired$.subscribe(() => {
@@ -111,6 +112,15 @@ export class AppComponent implements OnInit {
     });
     // this.tenantService.loadFullTenants();
 
+  }
+
+  private syncProxyToken(): void {
+    if (typeof (window as any).__TAURI_INTERNALS__ === 'undefined') return;
+    const token = sessionStorage.getItem('Token') || sessionStorage.getItem('token') ||
+                  sessionStorage.getItem('accessToken') || localStorage.getItem('Token2') || '';
+    if (token) {
+      import('@tauri-apps/api/core').then(({ invoke }) => invoke('proxy_set_token', { token }).catch(() => {}));
+    }
   }
 
   private syncSessionAuthToLocalStorage(): void {

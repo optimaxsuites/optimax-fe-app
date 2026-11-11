@@ -36,8 +36,15 @@ pub async fn get_auth_token(_state: State<'_, AppState>) -> Result<Option<String
 }
 
 #[tauri::command]
-pub async fn clear_auth_token(_state: State<'_, AppState>) -> Result<(), String> {
+pub async fn clear_auth_token(state: State<'_, AppState>) -> Result<(), String> {
     let _ = Entry::new(SERVICE, AUTH_KEY).map_err(|e| e.to_string())?.delete_password();
     let _ = Entry::new(SERVICE, REFRESH_KEY).map_err(|e| e.to_string())?.delete_password();
+    *state.proxy_token.write().await = None;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn proxy_set_token(state: State<'_, AppState>, token: String) -> Result<(), String> {
+    *state.proxy_token.write().await = if token.is_empty() { None } else { Some(token) };
     Ok(())
 }

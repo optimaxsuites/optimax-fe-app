@@ -457,6 +457,9 @@ async posLoginAction(): Promise<void> {
       localStorage.setItem("Token2", accessToken);
       localStorage.removeItem("token");
       localStorage.removeItem("accessToken");
+      if (typeof (window as any).__TAURI_INTERNALS__ !== 'undefined') {
+        import('@tauri-apps/api/core').then(({ invoke }) => invoke('proxy_set_token', { token: accessToken }).catch(() => {}));
+      }
     } else {
       sessionStorage.removeItem("Token");
       sessionStorage.removeItem("token");

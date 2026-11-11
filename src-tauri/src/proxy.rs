@@ -7,11 +7,17 @@ use axum::{
     Router,
 };
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 const BACKEND: &str = "https://be.optimaxsuites.com";
 const CORS_ORIGIN: &str = "tauri://localhost";
 
-pub async fn start(port: u16) {
+struct ProxyState {
+    client: Arc<reqwest::Client>,
+    token: Arc<RwLock<Option<String>>>,
+}
+
+pub async fn start(port: u16, token: Arc<RwLock<Option<String>>>) {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
@@ -23,9 +29,10 @@ pub async fn start(port: u16) {
         }
     };
 
+    let state = Arc::new(ProxyState { client, token });
     let app = Router::new()
         .fallback(any(handler))
-        .with_state(client);
+        .with_state(state);
 
     let listener = match tokio::net::TcpListener::bind(("127.0.0.1", port)).await {
         Ok(l) => l,
@@ -40,12 +47,14 @@ pub async fn start(port: u16) {
 }
 
 async fn handler(
-    State(client): State<Arc<reqwest::Client>>,
+    State(state): State<Arc<ProxyState>>,
     req: Request,
 ) -> Response {
     if req.method() == Method::OPTIONS {
         return cors_preflight();
     }
+
+    let client = &state.client;
 
     let path = req
         .uri()
@@ -62,6 +71,7 @@ async fn handler(
     };
 
     let mut fwd_headers = reqwest::header::HeaderMap::new();
+    let has_auth = req.headers().contains_key("authorization");
     for (k, v) in req.headers() {
         match k.as_str() {
             "host" | "origin" | "referer" | "connection" | "content-length" => continue,
@@ -72,6 +82,15 @@ async fn handler(
             reqwest::header::HeaderValue::from_bytes(v.as_bytes()),
         ) {
             fwd_headers.insert(name, val);
+        }
+    }
+
+    // Inject stored auth token for requests that don't already carry one
+    if !has_auth {
+        if let Some(token) = state.token.read().await.as_deref() {
+            if let Ok(val) = reqwest::header::HeaderValue::from_str(&format!("Bearer {}", token)) {
+                fwd_headers.insert(reqwest::header::AUTHORIZATION, val);
+            }
         }
     }
 

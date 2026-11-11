@@ -20,8 +20,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            let proxy_token: std::sync::Arc<tokio::sync::RwLock<Option<String>>> =
+                std::sync::Arc::new(tokio::sync::RwLock::new(None));
             // Start proxy on Tauri's managed tokio runtime — no custom runtime needed
-            tauri::async_runtime::spawn(proxy::start(PROXY_PORT));
+            tauri::async_runtime::spawn(proxy::start(PROXY_PORT, std::sync::Arc::clone(&proxy_token)));
 
             // Minimal menu: only Edit shortcuts (Cmd+C/V/X/A/Z/Shift+Z).
             // No File/View/Window — keeps the menu bar clean while preserving keyboard shortcuts.
@@ -42,6 +44,7 @@ pub fn run() {
             app.manage(state::AppState {
                 db: std::sync::Arc::new(tokio::sync::Mutex::new(db)),
                 http: std::sync::Arc::new(http::ApiClient::new()),
+                proxy_token,
             });
 
             let init_script = format!(
@@ -72,6 +75,7 @@ pub fn run() {
             commands::auth::save_auth_token,
             commands::auth::get_auth_token,
             commands::auth::clear_auth_token,
+            commands::auth::proxy_set_token,
             commands::sync::sync_pending_ops,
             commands::sync::queue_operation,
             commands::sync::get_pending_count,
